@@ -1,0 +1,86 @@
+rules_version = '2';
+
+// ROBLOC Firestore security rules.
+// Paste this into Firebase console → Firestore Database → Rules, then Publish.
+//
+// Data model
+//   users/{uid}  one document per Google account (only that account can write it)
+//   roles/{uid}  special roles (owner = Trevor, siwei = Si Wei); created by hand in the console only
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
+
+    function rolePath(uid) { return /databases/$(database)/documents/roles/$(uid); }
+    function roleFieldsOk(uid, d) {
+      return (exists(rolePath(uid))
+               && d.role == get(rolePath(uid)).data.role
+               && d.moneyBase == string(get(rolePath(uid)).data.moneyBase)
+               && d.coinsBase == string(get(rolePath(uid)).data.coinsBase))
+          || (!exists(rolePath(uid)) && d.role == 'player' && d.moneyBase == '0' && d.coinsBase == '0');
+    }
+
+    function allKeys() {
+      return ['name', 'avatar', 'role', 'moneyBase', 'coinsBase', 'points', 'coinsEarned',
+              'totalCoinsEarned', 'badges', 'stats', 'createdAt', 'lastAward'];
+    }
+    function validName(n) { return n is string && n.size() >= 2 && n.size() <= 16 && n.matches('^[A-Za-z0-9 _.\\-]+$'); }
+    function shortStr(s) { return s is string && s.size() <= 16; }
+    function validAvatar(a) {
+      return a is map && a.keys().hasOnly(['skin', 'hair', 'style', 'shirt'])
+          && shortStr(a.get('skin', '')) && shortStr(a.get('hair', ''))
+          && shortStr(a.get('style', '')) && shortStr(a.get('shirt', ''));
+    }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // Only the player's own name and look may change freely.
+    function identityEdit() {
+      return changed().hasOnly(['name', 'avatar'])
+          && validName(request.resource.data.name) && validAvatar(request.resource.data.avatar);
+    }
+    // Role fields can only be copied from roles/{uid}, which players cannot write.
+    function roleSync(uid) {
+      return changed().hasOnly(['role', 'moneyBase', 'coinsBase']) && roleFieldsOk(uid, request.resource.data);
+    }
+    // Match rewards: bounded, never negative, and at most one reward every 20 seconds.
+    function award() {
+      let n = request.resource.data;
+      let o = resource.data;
+      return changed().hasOnly(['points', 'coinsEarned', 'totalCoinsEarned', 'badges', 'stats', 'lastAward'])
+          && n.points is int && n.points >= o.points && n.points - o.points <= 1000
+          && n.coinsEarned is int && n.coinsEarned >= o.coinsEarned && n.coinsEarned - o.coinsEarned <= 500
+          && n.totalCoinsEarned is int && n.totalCoinsEarned - o.totalCoinsEarned == n.coinsEarned - o.coinsEarned
+          && n.badges is list && n.badges.hasAll(o.badges) && n.badges.size() <= 64
+          && n.stats is map
+          && n.lastAward == request.time
+          && request.time > o.lastAward + duration.value(20, 's');
+    }
+
+    match /roles/{uid} {
+      allow read: if isSelf(uid);
+      allow write: if false;
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create: if isSelf(uid)
+        && request.resource.data.keys().hasOnly(allKeys())
+        && request.resource.data.keys().hasAll(allKeys())
+        && validName(request.resource.data.name)
+        && validAvatar(request.resource.data.avatar)
+        && roleFieldsOk(uid, request.resource.data)
+        && request.resource.data.points == 0
+        && request.resource.data.coinsEarned == 0
+        && request.resource.data.totalCoinsEarned == 0
+        && request.resource.data.badges == ['welcome']
+        && request.resource.data.stats == {}
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.lastAward == request.time;
+      allow update: if isSelf(uid)
+        && request.resource.data.keys().hasOnly(allKeys())
+        && (identityEdit() || roleSync(uid) || award());
+      allow delete: if false;
+    }
+  }
+}
