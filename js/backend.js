@@ -1,9 +1,11 @@
 // Persistence layer. Uses Firebase (Google sign-in + Firestore) when configured,
 // otherwise falls back to a local demo mode backed by localStorage.
 import { firebaseConfig } from './firebase-config.js';
-import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwnerName, gameStats, SIWEI_STATS } from './economy.js';
+import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwnerName, isSiweiName, gameStats, SIWEI_STATS } from './economy.js';
 
 const OWNER_NAME_SPELLINGS = ['trevor', 'Trevor', 'TREVOR', 'trevor ', 'Trevor '];
+// Spellings of Si Wei's name, so only the first account with that name can use it.
+const SIWEI_NAME_SPELLINGS = ['Si Wei', 'si wei', 'SI WEI', 'siwei', 'SiWei', 'SIWEI', 'Si Wei ', 'si wei '];
 
 const FB_VERSION = '10.12.2';
 // Add ?demo to the URL to force local demo mode (handy for offline testing).
@@ -92,13 +94,17 @@ class FirebaseBackend {
     return { ...PLAYER_ROLE };
   }
 
-  // Role bonuses for the signed-in player, from roles/{uid}. The owner gets
-  // all of them. Si Wei gets only his starting money and coins (the amounts
-  // in the code, so an old roles document can never under-pay him). Everyone
-  // else starts from zero.
-  bonusesFor(r) {
+  // Role bonuses for the signed-in player, from roles/{uid} - and from the
+  // player's own name. The owner gets all of them. Si Wei gets only his
+  // starting money and coins (the amounts in the code, so an old roles
+  // document can never under-pay him), whether his role comes from the
+  // roles document or from his name - so he gets the balance even when no
+  // roles document exists for him yet. Everyone else starts from zero.
+  // p is the player's own profile, already normalized, so its role already
+  // reflects the name.
+  bonusesFor(r, p) {
     if (r.role === 'owner') return r;
-    if (r.role === 'siwei') return { ...PLAYER_ROLE, role: 'siwei', moneyBase: SIWEI_STATS.moneyBase, coinsBase: SIWEI_STATS.coinsBase };
+    if (r.role === 'siwei' || p?.role === 'siwei') return { ...PLAYER_ROLE, role: 'siwei', moneyBase: SIWEI_STATS.moneyBase, coinsBase: SIWEI_STATS.coinsBase };
     return { ...PLAYER_ROLE };
   }
 
@@ -109,7 +115,7 @@ class FirebaseBackend {
     const r = await this.readRole();
     await this.syncRole({ ...PLAYER_ROLE, ...snap.data() }, r);
     // Show the role bonuses locally even if saving them to the profile was refused.
-    return mergeLocal(this.user.uid, { ...p, ...this.bonusesFor(r) });
+    return mergeLocal(this.user.uid, { ...p, ...this.bonusesFor(r, p) });
   }
   // Copies roles/{uid} into the player's profile so others see it on the leaderboard. Never blocks play.
   async syncRole(p, r) {
@@ -136,12 +142,14 @@ class FirebaseBackend {
     }
   }
 
-  // True when the name is the owner's and another account already uses it.
+  // True when the name is the owner's, or Si Wei's, and another account already uses it.
+  // Only the first account with that name can use it.
   async nameTaken(name) {
-    if (!isOwnerName(name)) return false;
+    const spellings = isOwnerName(name) ? OWNER_NAME_SPELLINGS : isSiweiName(name) ? SIWEI_NAME_SPELLINGS : null;
+    if (!spellings) return false;
     try {
       const { collection, query, where, getDocs } = this.F;
-      const snaps = await getDocs(query(collection(this.db, 'users'), where('name', 'in', OWNER_NAME_SPELLINGS)));
+      const snaps = await getDocs(query(collection(this.db, 'users'), where('name', 'in', spellings)));
       return snaps.docs.some(d => d.id !== this.user.uid);
     } catch (e) { console.warn('name check failed', e); return false; }
   }
@@ -178,7 +186,8 @@ class FirebaseBackend {
     // Starting over returns the player to their starting balance: Si Wei
     // gets his $700,000 and 10,000 coins back, like a brand-new Si Wei
     // player. Everyone else starts from zero.
-    return { ...normalizeProfile(snap.data()), ...this.bonusesFor(await this.readRole()) };
+    const prof = normalizeProfile(snap.data());
+    return { ...prof, ...this.bonusesFor(await this.readRole(), prof) };
   }
   async recordMatch(match) {
     const { runTransaction, serverTimestamp } = this.F;

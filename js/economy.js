@@ -80,6 +80,10 @@ export function itemsOwned(p) {
 
 export const OWNER_NAME = 'trevor';
 export const isOwnerName = name => String(name || '').trim().toLowerCase() === OWNER_NAME;
+// Uncle Si Wei, by name - like Trevor, he is recognized by his name, so
+// his starting balance shows even when no roles document exists for him.
+// Only the first account named Si Wei can use that name (nameTaken).
+export const isSiweiName = name => String(name || '').toLowerCase().replace(/\s/g, '') === 'siwei';
 
 export function emptyStats() {
   return {
@@ -150,13 +154,15 @@ export function normalizeProfile(p) {
   // numbers in a roles document for another role are ignored here, and the
   // role itself becomes a plain player. Every owner bonus is zeroed for
   // plain players, including level, owned items and per-game wins.
-  // The one exception is Uncle Si Wei (role "siwei" in roles/{uid}): he is
-  // not the owner, but he starts with $700,000 and 10,000 coins. Nothing
-  // else is special for him - no points, level, wins, win chance, badges
-  // or #1. The amounts come from SIWEI_STATS in the code, not from the
-  // roles document, so an old document can never under-pay him.
+  // The one exception is Uncle Si Wei (named "Si Wei", or role "siwei" in
+  // roles/{uid}): he is not the owner, but he starts with $700,000 and
+  // 10,000 coins. Nothing else is special for him - no points, level,
+  // wins, win chance, badges or #1. The amounts come from SIWEI_STATS in
+  // the code, not from the roles document, so an old document can never
+  // under-pay him - and the name alone is enough, so he gets the balance
+  // even when no roles document exists for him yet.
   if (p.role === 'owner' || isOwnerName(p.name)) p = { ...p, ...OWNER_STATS, role: 'owner' };
-  else if (p.role === 'siwei') p = { ...p, ...SIWEI_STATS, role: 'siwei' };
+  else if (p.role === 'siwei' || isSiweiName(p.name)) p = { ...p, ...SIWEI_STATS, role: 'siwei' };
   else p = { ...p, moneyBase: '0', coinsBase: '0', pointsBase: '0', playedBase: '0', winsBase: '0', winChance: '0', ownedBase: '0', levelBase: 0, gamesBase: {}, role: 'player' };
   // A plain player cannot keep things bought with money they never earned.
   // Lifetime spending (money + coins at $1 each) can never pass lifetime
