@@ -11,7 +11,7 @@ Live site: https://leelim81.github.io/robloc
 | Soccer: 3-a-side stadium match (striker, midfielder, goalkeeper) | Playable |
 | Pickleball: singles with serve, two-bounce, kitchen and side-out rules | Playable |
 | Baseball: bat and pitch through 1, 3 or 5 innings with balls, strikes, outs and base runners | Playable |
-| Shopping Mall: 5 floors with an elevator and 93,560 shops (Floor 1: 10,000 general shops, Floor 2: 68,000 food places, Floor 3: 10,000 drink shops, Floor 4: 2,780 clothes and shoe shops, Floor 5: 2,780 makeup shops), each selling 7 to 1,000 items at real prices plus 8% sales tax | Playable |
+| Shopping Mall: 6 floors with an elevator and 93,560 shops (Floor 1: 10,000 general shops, Floor 2: 68,000 food places, Floor 3: 10,000 drink shops, Floor 4: 2,780 clothes and shoe shops, Floor 5: 2,780 makeup shops) plus B1 with 120 car park bays, each shop selling 7 to 1,000 items at real prices plus 8% sales tax | Playable |
 | Guess the Price: game show with real mall items; pick the right price and beat the CPU contestant | Playable |
 | Prize Machine: claw machine with plush toys, toys, coin bags and a golden crown | Playable |
 | Transport Modes, Dream Store, Brick Builder Shop | Coming soon |
@@ -58,7 +58,7 @@ Google sign-in on localhost works only if `localhost` is in Firebase → Authent
 ## Firebase setup
 
 1. `js/firebase-config.js` holds the web app config for project `robloc-d500b`.
-2. Publish the security rules: Firebase console → Firestore Database → **Rules** → paste `firestore.rules` → **Publish**. Until this is done, saving and the leaderboard fail with `permission-denied`. The rules are kept simple, so new game features do not need them published again.
+2. Publish the security rules: Firebase console → Firestore Database → **Rules** → paste `firestore.rules` → **Publish**. Until this is done, saving and the leaderboard fail with `permission-denied`. The rules are kept simple; the one shared counter (boss earnings, see below) also lives in them, so publish again after pulling a rules change.
 
 ## Special roles (Trevor and Si Wei)
 
@@ -75,9 +75,11 @@ $73,573,649,729,729,638,637,737,872 money, 67,243,852,825,918 coins, 72,673,674,
 
 Uncle Si Wei (role `siwei`) gets $5,000 money and 100,000 coins, fixed in the code (`SIWEI_STATS` in `js/economy.js`), so changing them only needs a push. Give him the role in the console with `moneyBase` `5000` and `coinsBase` `100000` as **string** fields too, so his saved profile matches.
 
-Everyone else starts from zero: bonus numbers in a `roles` document for any other role are ignored by the code.
+Everyone else starts from zero: bonus numbers in a `roles` document for any other role are ignored by the code. New players start with no badges at all.
 
 The next time they open ROBLOC, their profile picks up the role, badge tag and starting balances. Players cannot write to `roles`, and nobody can write to anyone else's `users` document.
+
+Trevor, the boss, also earns money from the mall: the 8% sales tax on every purchase goes to him. It is counted in one shared document, `boss/earnings` (field `cents`), which any signed-in player can only add to, never take from — see `firestore.rules`. His total shows in the mall wallet bar and, for him only, on the hub top bar.
 
 ## Rewards
 

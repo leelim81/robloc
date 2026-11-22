@@ -1,5 +1,6 @@
-// ROBLOC Shopping Mall: walk a five-floor mall, enter shops and buy things at real-world prices.
+// ROBLOC Shopping Mall: walk a six-floor mall (five shop floors plus B1 car parks), enter shops and buy things at real-world prices.
 // Prices are in cents. Purchases are paid with money ($) first, or with coins at 1 coin = $1.
+// The 8% sales tax on every purchase goes to Trevor, the boss.
 import { drawHuman, shade, rrect, SKINS, HAIRS, HAIR_STYLES, SHIRTS } from '../art.js';
 import { drawBanner } from '../fx.js';
 import { payPlan as planFor, coinsOf, moneyCentsOf, formatShort } from '../economy.js';
@@ -7,16 +8,18 @@ import { payPlan as planFor, coinsOf, moneyCentsOf, formatShort } from '../econo
 import { SHOP_COUNT, SECTIONS, shopInfo, shopItems, withTax, fmtCents, TAX_RATE } from './shops.js';
 
 const SHOP_W = 470, X0 = 260, FLOOR = 540;
-// The mall has 5 floors: 1 = shops, 2 = food, 3 = drinks, 4 = clothes, 5 = makeup. Each floor is its own long hallway.
+// The mall has 6 floors: 1 = shops, 2 = food, 3 = drinks, 4 = clothes, 5 = makeup, B1 = car parks (no shops).
+const B1_FLOOR = 5, BAYS = 120, BAY_W = 230;
 const FLOORS = [
   { name: 'Shops', title: 'Floor 1 · Shops', icon: '🛍️', wall: ['#e0e7ff', '#f8fafc'], tile: ['#e7e5e4', '#d6d3d1'] },
   { name: 'Food', title: 'Floor 2 · Food Court', icon: '🍔', wall: ['#ffedd5', '#fff7ed'], tile: ['#fef3c7', '#fde68a'] },
   { name: 'Drinks', title: 'Floor 3 · Drinks', icon: '🧋', wall: ['#cffafe', '#f0fdfa'], tile: ['#ccfbf1', '#99f6e4'] },
   { name: 'Clothes', title: 'Floor 4 · Clothes & Shoes', icon: '👕', wall: ['#fce7f3', '#fdf2f8'], tile: ['#f5d0fe', '#e9d5ff'] },
   { name: 'Makeup', title: 'Floor 5 · Makeup', icon: '💄', wall: ['#fbcfe8', '#fff1f2'], tile: ['#f9a8d4', '#fda4af'] },
+  { name: 'Car Parks', title: 'B1 · Car Parks', icon: '🅿️', wall: ['#94a3b8', '#e2e8f0'], tile: ['#78716c', '#a8a29e'] },
 ];
 const floorOf = i => SECTIONS.findIndex(s => i >= s.from && i < s.to);
-const worldW = f => X0 * 2 + (SECTIONS[f].to - SECTIONS[f].from) * SHOP_W;
+const worldW = f => f === B1_FLOOR ? X0 * 2 + BAYS * BAY_W : X0 * 2 + (SECTIONS[f].to - SECTIONS[f].from) * SHOP_W;
 const ELEV_X = X0 - 130;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -62,29 +65,59 @@ function drawMall(ctx, view, camX, t, nearShop, floor = 0) {
     ctx.fillStyle = '#bae6fd'; ctx.fillRect(ex - 95, 190, 190, FLOOR - 190);
     ctx.fillStyle = '#0f172a'; ctx.font = "26px 'Lilita One'"; ctx.textAlign = 'center'; ctx.fillText('ROBLOC MALL', ex, 172);
   }
-  const first = clamp(Math.floor((vis0 - X0) / SHOP_W), 0, count - 1), last = clamp(Math.ceil((vis1 - X0) / SHOP_W), 0, count - 1);
-  for (let li = first; li <= last; li++) {
-    const i = from + li, x = X0 + li * SHOP_W;
-    const info = shopInfo(i), s = { ...info, items: shopItems(i).slice(0, 8) };
-    drawStore(ctx, s, x, t, nearShop === i);
-    // pillar + plant between stores
-    ctx.fillStyle = '#f1f5f9'; ctx.fillRect(x - 12, 122, 24, FLOOR - 122);
-    ctx.fillStyle = 'rgba(0,0,0,.06)'; ctx.fillRect(x + 4, 122, 8, FLOOR - 122);
-    if (i % 3 === 1) {
-      ctx.fillStyle = '#a16207'; rrect(ctx, x - 22, FLOOR - 10, 44, 34, 6); ctx.fill();
-      ctx.fillStyle = '#16a34a';
-      for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.ellipse(x + (k - 2) * 9, FLOOR - 26 - Math.abs(k - 2) * -4, 10, 22, (k - 2) * 0.35, 0, Math.PI * 2); ctx.fill(); }
+  if (floor === B1_FLOOR) drawBays(ctx, camX, x0, W);
+  else {
+    const first = clamp(Math.floor((vis0 - X0) / SHOP_W), 0, count - 1), last = clamp(Math.ceil((vis1 - X0) / SHOP_W), 0, count - 1);
+    for (let li = first; li <= last; li++) {
+      const i = from + li, x = X0 + li * SHOP_W;
+      const info = shopInfo(i), s = { ...info, items: shopItems(i).slice(0, 8) };
+      drawStore(ctx, s, x, t, nearShop === i);
+      // pillar + plant between stores
+      ctx.fillStyle = '#f1f5f9'; ctx.fillRect(x - 12, 122, 24, FLOOR - 122);
+      ctx.fillStyle = 'rgba(0,0,0,.06)'; ctx.fillRect(x + 4, 122, 8, FLOOR - 122);
+      if (i % 3 === 1) {
+        ctx.fillStyle = '#a16207'; rrect(ctx, x - 22, FLOOR - 10, 44, 34, 6); ctx.fill();
+        ctx.fillStyle = '#16a34a';
+        for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.ellipse(x + (k - 2) * 9, FLOOR - 26 - Math.abs(k - 2) * -4, 10, 22, (k - 2) * 0.35, 0, Math.PI * 2); ctx.fill(); }
+      }
+      // a fountain every few shops
+      if (li % 9 === 8) drawFountain(ctx, x + SHOP_W, t);
     }
-    // a fountain every few shops
-    if (li % 9 === 8) drawFountain(ctx, x + SHOP_W, t);
   }
   ctx.restore();
+}
+// B1 car park: numbered bays along the hallway, most with a parked car (same car in the same bay every time).
+function bayRand(i) { let s = (i * 2654435761 + 97) >>> 0; s ^= s >>> 15; s = (s * 2246822519) >>> 0; return ((s ^ (s >>> 13)) >>> 0) / 4294967296; }
+const CAR_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#64748b', '#eab308'];
+function drawCar(ctx, x, y, s, color) {
+  ctx.fillStyle = color; rrect(ctx, x, y - 46 * s, 120 * s, 34 * s, 10); ctx.fill();
+  ctx.fillStyle = shade(color, 0.25); rrect(ctx, x + 22 * s, y - 68 * s, 62 * s, 26 * s, 8); ctx.fill();
+  ctx.fillStyle = '#bae6fd'; rrect(ctx, x + 30 * s, y - 62 * s, 20 * s, 18 * s, 4); ctx.fill(); rrect(ctx, x + 56 * s, y - 62 * s, 20 * s, 18 * s, 4); ctx.fill();
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath(); ctx.arc(x + 28 * s, y - 8 * s, 13 * s, 0, Math.PI * 2); ctx.arc(x + 92 * s, y - 8 * s, 13 * s, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#94a3b8';
+  ctx.beginPath(); ctx.arc(x + 28 * s, y - 8 * s, 6 * s, 0, Math.PI * 2); ctx.arc(x + 92 * s, y - 8 * s, 6 * s, 0, Math.PI * 2); ctx.fill();
+}
+function drawBays(ctx, camX, x0, W) {
+  const first = clamp(Math.floor((camX + x0 - X0) / BAY_W), 0, BAYS - 1), last = clamp(Math.ceil((camX + x0 + W - X0) / BAY_W), 0, BAYS - 1);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let i = first; i <= last; i++) {
+    const x = X0 + i * BAY_W;
+    ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(x + 6, 250); ctx.lineTo(x + 6, 520); ctx.moveTo(x + BAY_W - 6, 250); ctx.lineTo(x + BAY_W - 6, 520); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = "900 26px 'Lilita One'";
+    ctx.fillText('B' + (i + 1), x + BAY_W / 2, 215);
+    if (bayRand(i) < 0.75) drawCar(ctx, x + (BAY_W - 120) / 2, 505, 1, CAR_COLORS[Math.floor(bayRand(i + 1000) * CAR_COLORS.length)]);
+    else { ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.font = '900 16px Nunito'; ctx.fillText('EMPTY', x + BAY_W / 2, 400); }
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(X0, 520); ctx.lineTo(X0 + BAYS * BAY_W, 520); ctx.stroke();
 }
 function drawElevator(ctx, x, floor, t, near) {
   ctx.fillStyle = '#475569'; ctx.fillRect(x - 115, 130, 230, FLOOR - 130);
   ctx.fillStyle = '#0f172a'; ctx.fillRect(x - 70, 144, 140, 44);
   ctx.fillStyle = '#f87171'; ctx.font = "30px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(`${['▲', '▲▼', '▲▼', '▲▼', '▼'][floor]} ${floor + 1}`, x, 168);
+  ctx.fillText(`${['▲▼', '▲▼', '▲▼', '▲▼', '▼', '▲'][floor]} ${['1', '2', '3', '4', '5', 'B1'][floor]}`, x, 168);
   const open = near ? 0.35 + Math.sin(t * 3) * 0.05 : 0;
   const dg = ctx.createLinearGradient(x - 90, 0, x + 90, 0);
   dg.addColorStop(0, '#cbd5e1'); dg.addColorStop(0.5, '#f1f5f9'); dg.addColorStop(1, '#94a3b8');
@@ -160,6 +193,9 @@ function create(env) {
   }));
   const S = { t: 0, mode: 'walk', shop: -1, sel: 0, navT: 0, navHeld: 0, lastNav: '', busy: false, receipt: null, receiptT: 0, error: null, mapSel: 0, labelKey: '', intro: 0 };
   let camX = 0;
+  // The boss's earnings: the 8% sales tax from every mall purchase, counted here and in the shared boss total.
+  let bossCents = 0;
+  if (shop.bossTotal) shop.bossTotal().then(v => { bossCents = v || 0; }).catch(() => {});
 
   const prof = () => shop.profile() || profile;
   const balances = () => ({ moneyC: moneyCentsOf(prof()), coins: coinsOf(prof()) });
@@ -184,6 +220,10 @@ function create(env) {
     try {
       const res = await shop.buy(item, total);
       S.receipt = { item, total, plan, deviceOnly: !!res?.deviceOnly }; S.receiptT = 0;
+      // The sales tax on this purchase goes to Trevor, the boss.
+      const tax = total - item.cents;
+      bossCents += tax;
+      if (shop.bossEarn) shop.bossEarn(tax).catch(() => {});
       audio.play('coin'); fx.confetti(640, 360, 40);
     } catch (e) {
       console.error(e);
@@ -216,7 +256,7 @@ function create(env) {
     }
   }
   const enterShop = i => { S.mode = 'shop'; S.shop = i; S.sel = 0; S.top = 0; S.walkTo = null; S.autoShop = -1; audio.play('select'); };
-  const openMap = () => { S.mode = 'map'; S.walkTo = null; S.autoShop = -1; const ns = nearShop(); S.mapSel = Math.max(0, ns >= 0 ? ns : clamp(SECTIONS[floor].from + Math.floor((me.x - X0) / SHOP_W), SECTIONS[floor].from, SECTIONS[floor].to - 1)); audio.play('select'); };
+  const openMap = () => { S.mode = 'map'; S.walkTo = null; S.autoShop = -1; const ns = nearShop(); const sec = SECTIONS[floor]; S.mapSel = Math.max(0, ns >= 0 ? ns : floor === B1_FLOOR ? SHOP_COUNT - 1 : clamp(sec.from + Math.floor((me.x - X0) / SHOP_W), sec.from, sec.to - 1)); audio.play('select'); };
   const goToShop = i => {
     if (floorOf(i) !== floor) { floor = floorOf(i); S.floorBanner = 0; for (const n of npcs) n.x = doorX(i) + rand(-1200, 1200); }
     me.x = doorX(i); me.y = FLOOR + 70; me.vx = 0; camX = clamp(me.x - 640, 0, WW() - 1280); S.mode = 'walk'; audio.play('whoosh'); fx.dust(640, FLOOR + 70, 8);
@@ -312,7 +352,7 @@ function create(env) {
       else if (ns >= 0) prompt(ctx, `${input.touchMode ? 'Tap the shop' : 'Press SPACE'} to go into ${shopInfo(ns).name}`, 1, '#fde68a');
       else prompt(ctx, input.touchMode ? 'Tap a shop to go in · MAP to jump to any shop' : 'Arrows to walk · SPACE enter a shop · SHIFT mall map · or click', 0.85);
       if (S.intro < 2) drawBanner(ctx, 'ROBLOC MALL', 640, 300, S.intro, { size: 96, color: '#fbcfe8', glow: '#db2777', sub: FLOORS[floor].title });
-      else if (S.floorBanner !== undefined && S.floorBanner < 1.8) drawBanner(ctx, `FLOOR ${floor + 1}`, 640, 300, S.floorBanner, { size: 96, color: '#a5f3fc', glow: '#0891b2', sub: `${FLOORS[floor].icon} ${FLOORS[floor].name}` });
+      else if (S.floorBanner !== undefined && S.floorBanner < 1.8) drawBanner(ctx, floor === B1_FLOOR ? 'B1' : `FLOOR ${floor + 1}`, 640, 300, S.floorBanner, { size: 96, color: '#a5f3fc', glow: '#0891b2', sub: `${FLOORS[floor].icon} ${FLOORS[floor].name}` });
     }
     if (S.mode === 'shop') drawShop(ctx);
     if (S.mode === 'map') drawMap(ctx);
@@ -333,7 +373,7 @@ function create(env) {
 
   function drawWallet(ctx) {
     const { moneyC, coins } = balances();
-    const text = `💵 ${fmtCents(moneyC)}   🪙 ${coins.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} coins`;
+    const text = `💵 ${fmtCents(moneyC)}   🪙 ${coins.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} coins` + (bossCents > 0 ? `   👑 Boss earned ${fmtCents(bossCents)}` : '');
     ctx.save(); ctx.font = '900 18px Nunito'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
     const w = Math.min(1100, ctx.measureText(text).width + 32);
     ctx.fillStyle = 'rgba(15,23,42,.88)'; rrect(ctx, 18, 14, w, 44, 14); ctx.fill();
@@ -435,11 +475,11 @@ function create(env) {
       hit(x, y, w, 46, () => goToShop(i));
     }
     closeButton(ctx, X + W - 52, Y + 13, () => { S.mode = 'walk'; audio.play('back'); });
-    // page buttons: jump to a section, or move 100 / 1 pages
+    // page buttons: jump to a section, or move 100 / 1 pages; B1 rides down to the car parks
     const pageTo = i => () => { S.mapSel = clamp(i, 0, SHOP_COUNT - 1); audio.play('tick'); };
-    const by = Y + 534, bw = 90, gap = 8, bx = X + (W - (9 * bw + 8 * gap)) / 2;
+    const by = Y + 534, bw = 82, gap = 6, bx = X + (W - (10 * bw + 9 * gap)) / 2;
     [['🛍️ Shops', pageTo(SECTIONS[0].from), '#0ea5e9'], ['◀◀ 100', pageTo(S.mapSel - MAP_PAGE * 100), '#334155'], ['◀', pageTo(S.mapSel - MAP_PAGE), '#334155'],
-      ['▶', pageTo(S.mapSel + MAP_PAGE), '#334155'], ['100 ▶▶', pageTo(S.mapSel + MAP_PAGE * 100), '#334155'], ['🍔 Food', pageTo(SECTIONS[1].from), '#ea580c'], ['🧋 Drinks', pageTo(SECTIONS[2].from), '#db2777'], ['👕 Clothes', pageTo(SECTIONS[3].from), '#7c3aed'], ['💄 Makeup', pageTo(SECTIONS[4].from), '#ec4899']]
+      ['▶', pageTo(S.mapSel + MAP_PAGE), '#334155'], ['100 ▶▶', pageTo(S.mapSel + MAP_PAGE * 100), '#334155'], ['🍔 Food', pageTo(SECTIONS[1].from), '#ea580c'], ['🧋 Drinks', pageTo(SECTIONS[2].from), '#db2777'], ['👕 Clothes', pageTo(SECTIONS[3].from), '#7c3aed'], ['💄 Makeup', pageTo(SECTIONS[4].from), '#ec4899'], ['🅿️ B1', () => ride(B1_FLOOR), '#475569']]
       .forEach(([label, fn, color], k) => button(ctx, bx + k * (bw + gap), by, bw, 40, label, color, fn));
     ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '800 13px Nunito';
     ctx.fillText(`Tap a shop to go there${input.touchMode ? '' : ' · or ▲▼ ◀▶ and SPACE'}`, X + W / 2, Y + H - 14);
@@ -449,17 +489,17 @@ function create(env) {
     const X = 390, Y = 50, W = 500, H = 620;
     panel(ctx, X, Y, W, H, '🛗 Elevator', '#0f766e');
     closeButton(ctx, X + W - 52, Y + 13, () => { S.mode = 'walk'; audio.play('back'); });
-    [4, 3, 2, 1, 0].forEach((f, k) => {
-      const y = Y + 80 + k * 104, sel = S.liftSel === f, here = f === floor, sec = SECTIONS[f];
-      ctx.fillStyle = sel ? '#14b8a6' : '#1e293b'; rrect(ctx, X + 30, y, W - 60, 96, 18); ctx.fill();
-      if (sel) { ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4; rrect(ctx, X + 30, y, W - 60, 96, 18); ctx.stroke(); }
-      ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(X + 90, y + 48, 32, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fde68a'; ctx.font = "36px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(f + 1), X + 90, y + 50);
-      ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = "28px 'Lilita One'"; ctx.fillText(`${FLOORS[f].icon} ${FLOORS[f].name}`, X + 146, y + 36);
-      ctx.font = '800 14px Nunito'; ctx.fillStyle = '#cbd5e1';
-      ctx.fillText(`Shops ${(sec.from + 1).toLocaleString()}–${sec.to.toLocaleString()} · ${(sec.to - sec.from).toLocaleString()} shops`, X + 146, y + 64);
-      if (here) { ctx.fillStyle = '#facc15'; ctx.font = '900 13px Nunito'; ctx.fillText('YOU ARE HERE', X + 146, y + 86); }
-      hit(X + 30, y, W - 60, 96, () => ride(f));
+    [5, 4, 3, 2, 1, 0].forEach((f, k) => {
+      const y = Y + 80 + k * 88, sel = S.liftSel === f, here = f === floor, sec = SECTIONS[f];
+      ctx.fillStyle = sel ? '#14b8a6' : '#1e293b'; rrect(ctx, X + 30, y, W - 60, 84, 18); ctx.fill();
+      if (sel) { ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4; rrect(ctx, X + 30, y, W - 60, 84, 18); ctx.stroke(); }
+      ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(X + 90, y + 42, 30, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fde68a'; ctx.font = "30px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(f === B1_FLOOR ? 'B1' : String(f + 1), X + 90, y + 44);
+      ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = "26px 'Lilita One'"; ctx.fillText(`${FLOORS[f].icon} ${FLOORS[f].name}`, X + 146, y + 32);
+      ctx.font = '800 13px Nunito'; ctx.fillStyle = '#cbd5e1';
+      ctx.fillText(f === B1_FLOOR ? 'B1 · 120 parking bays' : `Shops ${(sec.from + 1).toLocaleString()}–${sec.to.toLocaleString()} · ${(sec.to - sec.from).toLocaleString()} shops`, X + 146, y + 58);
+      if (here) { ctx.fillStyle = '#facc15'; ctx.font = '900 12px Nunito'; ctx.fillText('YOU ARE HERE', X + 146, y + 76); }
+      hit(X + 30, y, W - 60, 84, () => ride(f));
     });
   }
 
@@ -515,19 +555,19 @@ function drawThumb(ctx, w, h, t, view) {
 export default {
   id: 'mall',
   title: 'Shopping Mall',
-  tagline: '5 floors: shops, food, drinks, clothes, makeup',
-  desc: 'Walk the ROBLOC Mall: 10,000 shops (toys, pets, phones, cars, houses, jets…), 68,000 food places, 10,000 drink shops, 2,780 clothes and shoe shops and 2,780 makeup shops on 5 floors, with real prices and sales tax.',
+  tagline: '6 floors: shops, food, drinks, clothes, makeup, B1 car parks',
+  desc: 'Walk the ROBLOC Mall: 10,000 shops (toys, pets, phones, cars, houses, jets…), 68,000 food places, 10,000 drink shops, 2,780 clothes and shoe shops and 2,780 makeup shops on 5 floors, plus 120 car park bays on B1, with real prices and sales tax.',
   music: 'mall',
   noDifficulty: true,
   playLabel: 'ENTER MALL',
   labels: { a: 'ENTER', b: 'MAP' },
   options: [],
   howto: `<ul>
-    <li>The mall has <b>5 floors</b>: Floor 1 shops, Floor 2 food court, Floor 3 drinks, Floor 4 clothes &amp; shoes, Floor 5 makeup. Ride the 🛗 elevator at the start of each floor, or tap the floor button at the top.</li>
+    <li>The mall has <b>6 floors</b>: Floor 1 shops, Floor 2 food court, Floor 3 drinks, Floor 4 clothes &amp; shoes, Floor 5 makeup, and <b>B1 car parks</b> with 120 parking bays. Ride the 🛗 elevator at the start of each floor, or tap the floor button at the top.</li>
     <li><b>Walk</b> by tapping where you want to go, or with the arrows. Tap a shop (or press <b>ENTER</b> / <kbd>Space</kbd> at its door) to go in.</li>
-    <li><b>MAP</b> (<kbd>Shift</kbd>) opens the directory of all 93,560 shops: 1–10,000 sell all kinds of things, 10,001–78,000 are food, 78,001–88,000 are drinks, 88,001–90,780 are clothes and shoes and 90,781–93,560 are makeup. Flip pages left and right (hold to go faster) and jump to any shop.</li>
+    <li><b>MAP</b> (<kbd>Shift</kbd>) opens the directory of all 93,560 shops: 1–10,000 sell all kinds of things, 10,001–78,000 are food, 78,001–88,000 are drinks, 88,001–90,780 are clothes and shoes and 90,781–93,560 are makeup. Flip pages left and right (hold to go faster) and jump to any shop. The 🅿️ B1 button takes you down to the car parks.</li>
     <li>Every shop sells 7 to 1,000 things. Hold up or down in a shop to scroll faster.</li>
-    <li>In a shop, pick an item and press <b>BUY</b>. Prices are real and ${Math.round(TAX_RATE * 100)}% sales tax is added at checkout.</li>
+    <li>In a shop, pick an item and press <b>BUY</b>. Prices are real and ${Math.round(TAX_RATE * 100)}% sales tax is added at checkout. The tax goes to Trevor, the boss.</li>
     <li>You pay with your money ($) first. If you don't have enough money, you can pay with coins: 1 coin = $1.</li>
     <li>Everything you buy is saved to your account. Earn more coins by playing the other games.</li>
   </ul>`,

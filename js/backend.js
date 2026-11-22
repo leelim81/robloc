@@ -185,6 +185,26 @@ class FirebaseBackend {
     return { profile: { ...cur, inventory: inv, moneySpentCents: String(BigInt(cur.moneySpentCents) + BigInt(plan.money)), coinsSpent: cur.coinsSpent + plan.coins } };
   }
 
+  // The boss's cut: the sales tax from a mall purchase goes to Trevor.
+  // One shared counter in boss/earnings (cents). It only ever goes up, and
+  // adding to it never blocks or fails a purchase: callers catch errors.
+  async bossEarn(cutCents) {
+    const { doc, runTransaction } = this.F;
+    const ref = doc(this.db, 'boss', 'earnings');
+    await runTransaction(this.db, async tx => {
+      const snap = await tx.get(ref);
+      const now = snap.exists() ? (snap.data().cents || 0) : 0;
+      tx.set(ref, { cents: now + Math.round(cutCents) });
+    });
+  }
+  async bossTotal() {
+    const { doc, getDoc } = this.F;
+    try {
+      const snap = await getDoc(doc(this.db, 'boss', 'earnings'));
+      return snap.exists() ? (snap.data().cents || 0) : 0;
+    } catch { return 0; }
+  }
+
   async leaderboard(kind) {
     const { collection, query, orderBy, limit, getDocs, where } = this.F;
     const field = LB_FIELD[kind];
@@ -275,6 +295,13 @@ class DemoBackend {
     const profile = { ...p, ...spend(p, itemId, cents) };
     this.write(profile);
     return { profile };
+  }
+  // Demo mode: the boss's cut lives on this device only.
+  async bossEarn(cutCents) {
+    try { localStorage.setItem('robloc_demo_boss_cents', String(Number(localStorage.getItem('robloc_demo_boss_cents') || '0') + Math.round(cutCents))); } catch {}
+  }
+  async bossTotal() {
+    try { return Number(localStorage.getItem('robloc_demo_boss_cents') || '0'); } catch { return 0; }
   }
   async leaderboard(kind) {
     const p = this.read();

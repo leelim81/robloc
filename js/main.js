@@ -158,6 +158,8 @@ function enterHub() {
   renderTopbar(false);
   renderGames();
   switchView(state.view);
+  // The boss's earnings total (sales tax from every mall purchase), shown on Trevor's top bar.
+  if (backend.bossTotal) backend.bossTotal().then(v => { state.bossCents = v || 0; renderTopbar(false); }).catch(() => {});
 }
 
 let shown = { points: 0n, coins: 0n };
@@ -185,6 +187,11 @@ function renderTopbar(animate = true) {
   $('#hub-money').textContent = money < 100000n ? formatBig(money) + '.' + String(cents % 100n).padStart(2, '0') : formatShort(money);
   $('#money-wrap').title = '$' + formatBig(money) + '.' + String(cents % 100n).padStart(2, '0');
   $('#badge-count').textContent = p.badges.length;
+  // The boss's earnings (sales tax from mall purchases): only Trevor sees this, and only once someone has bought something.
+  const boss = state.bossCents || 0, bossDollars = BigInt(Math.floor(boss)) / 100n, bossRem = BigInt(Math.floor(boss)) % 100n;
+  $('#boss-wrap').classList.toggle('hidden', p.role !== 'owner' || boss <= 0);
+  $('#hub-boss').textContent = bossDollars < 100000n ? formatBig(bossDollars) + '.' + String(bossRem).padStart(2, '0') : formatShort(bossDollars);
+  $('#boss-wrap').title = 'Boss earnings: sales tax from every mall purchase';
   const c = careerOf(p);
   $('#career').innerHTML = `<span title="${formatBig(c.played)}">🎮 <b>${formatShort(c.played)}</b> played</span><span title="${formatBig(c.wins)}">🏆 <b>${formatShort(c.wins)}</b> won</span>`;
 }
@@ -474,6 +481,9 @@ const host = {
         state.profile = normalizeProfile(res.profile);
         return res;
       },
+      // The sales tax from a mall purchase goes to Trevor, the boss. Never blocks buying.
+      bossEarn: async cut => { try { await backend.bossEarn(cut); } catch {} },
+      bossTotal: () => backend.bossTotal(),
     };
     this.inst = this.game.create({ input, audio, fx: this.fx, options: { ...options, boost }, profile: state.profile, shop, end: r => this.finish(r), toast });
     audio.music(this.game.music);

@@ -12,6 +12,9 @@ rules_version = '2';
 // Data model
 //   users/{uid}  one document per Google account
 //   roles/{uid}  role, moneyBase, coinsBase, pointsBase, playedBase, winsBase, winChance (all strings)
+//   boss/earnings  one shared counter (cents): the sales tax from every mall purchase, Trevor's cut.
+//     Anyone signed in can add to it (it only ever goes up); the document is created
+//     automatically by the first purchase, so publish these rules before it can be counted.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -40,6 +43,13 @@ service cloud.firestore {
     match /roles/{uid} {
       allow read: if isSelf(uid);
       allow write: if false;
+    }
+
+    match /boss/earnings {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.cents is int && request.resource.data.cents >= 0;
+      allow update: if signedIn() && request.resource.data.cents is int && request.resource.data.cents > resource.data.cents;
+      allow delete: if false;
     }
 
     match /users/{uid} {
