@@ -330,6 +330,12 @@ async function renderLeaderboard() {
   if (overall) ({ top, rest } = buildOverall(rows));
   else {
     // Wins tabs: top 30, then your own row at the bottom if you're not in it.
+    // Trevor is always #1 here too: if his row is missing, put him in at #1
+    // from his fixed per-game wins and push everyone else one rank down.
+    if (!rows.some(r => r.role === 'owner')) {
+      rows = [{ uid: 'owner', name: 'Trevor', avatar: { ...DEFAULT_AVATAR }, role: 'owner', value: OWNER_STATS.gamesBase[state.lbKind].wins, points: OWNER_POINTS_FALLBACK, level: OWNER_STATS.levelBase }, ...rows];
+      rows.sort(cmpBig);
+    }
     rows.forEach((r, i) => { r.rank = i + 1; });
     top = rows.slice(0, 30);
     if (state.user && state.profile && !top.some(r => r.uid === state.user.uid)) {
