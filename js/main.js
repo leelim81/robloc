@@ -320,7 +320,16 @@ async function renderLeaderboard() {
   const overall = state.lbKind === 'points';
   let top = rows, rest = [];
   if (overall) ({ top, rest } = buildOverall(rows));
-  else rows.forEach((r, i) => { r.rank = i + 1; });
+  else {
+    // Wins tabs: top 30, then your own row at the bottom if you're not in it.
+    rows.forEach((r, i) => { r.rank = i + 1; });
+    top = rows.slice(0, 30);
+    if (state.user && state.profile && !top.some(r => r.uid === state.user.uid)) {
+      const mine = rows.find(r => r.uid === state.user.uid);
+      const p = state.profile, wins = p.stats?.[state.lbKind]?.wins || 0;
+      rest = [mine || { uid: state.user.uid, name: p.name, avatar: p.avatar, role: p.role, value: wins, points: totalPoints(p), level: playerLevel(p).level, rank: rows.length + 1 }];
+    }
+  }
   const unit = overall ? 'pts' : 'wins';
   const roleTag = r => r.role === 'owner' ? '<span class="role-tag owner">👑</span>' : r.role === 'siwei' ? '<span class="role-tag siwei">✨</span>' : r.bot ? '<span class="role-tag allstar">★</span>' : '';
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -343,13 +352,13 @@ async function renderLeaderboard() {
   };
   top.forEach(addRow);
   if (rest.length) {
-    const gap = document.createElement('li'); gap.className = 'lb-gap'; gap.textContent = '• • •'; list.appendChild(gap);
+    if (top.length) { const gap = document.createElement('li'); gap.className = 'lb-gap'; gap.textContent = '• • •'; list.appendChild(gap); }
     rest.forEach((r, i) => addRow(r, top.length + i));
   }
   if (!top.length) note.textContent = 'No rankings yet. Finish a match to get on the board!';
   else if (overall) note.textContent = `${formatBig(WORLD_PLAYERS)} players worldwide · ★ ROBLOC All-Stars are computer players.`;
   else if (backend.mode === 'demo') note.textContent = 'Demo mode shows only this device. Sign in online to compete with everyone.';
-  else note.textContent = 'Top 50 players.';
+  else note.textContent = 'Top 30 players.';
 }
 
 function renderBadges() {
