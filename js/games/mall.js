@@ -203,7 +203,7 @@ function create(env) {
     look: { skin: SKINS[(Math.random() * SKINS.length) | 0], hair: HAIRS[(Math.random() * 7) | 0], style: HAIR_STYLES[(Math.random() * 5) | 0], shirt: SHIRTS[(Math.random() * SHIRTS.length) | 0] },
     bag: Math.random() < 0.6 ? shopInfo((Math.random() * 60) | 0).color : null, pause: 0,
   }));
-  const S = { t: 0, mode: 'walk', shop: -1, sel: 0, navT: 0, navHeld: 0, lastNav: '', busy: false, receipt: null, receiptT: 0, error: null, mapSel: 0, labelKey: '', intro: 0 };
+  const S = { t: 0, mode: 'walk', shop: -1, sel: 0, navT: 0, navHeld: 0, lastNav: '', busy: false, receipt: null, receiptT: 0, error: null, mapSel: 0, labelKey: '', intro: 0, searchQ: '', searchList: [], searchCount: 0, searchQPrev: null, keysDown: null };
   let camX = 0;
   const prof = () => shop.profile() || profile;
   const balances = () => ({ moneyC: moneyCentsOf(prof()), coins: coinsOf(prof()) });
@@ -265,6 +265,26 @@ function create(env) {
     if (floorOf(i) !== floor) { floor = floorOf(i); S.floorBanner = 0; for (const n of npcs) n.x = doorX(i) + rand(-1200, 1200); }
     me.x = doorX(i); me.y = FLOOR + 70; me.vx = 0; camX = clamp(me.x - 640, 0, WW() - 1280); S.mode = 'walk'; audio.play('whoosh'); fx.dust(640, FLOOR + 70, 8);
   };
+  // Shop search: tap the letters and every shop with those letters shows up.
+  const openSearch = () => { S.mode = 'search'; S.searchQ = ''; S.searchList = []; S.searchCount = 0; S.searchQPrev = null; audio.play('select'); };
+  const searchKey = ch => {
+    if (ch === '⌫') S.searchQ = S.searchQ.slice(0, -1);
+    else if (ch === '✕') S.searchQ = '';
+    else if (ch === ' ') { if (S.searchQ && !S.searchQ.endsWith(' ') && S.searchQ.length < 20) S.searchQ += ' '; }
+    else if (S.searchQ.length < 20) S.searchQ += ch;
+    audio.play('tick');
+  };
+  // Find every shop whose name has the typed letters (only when the text changed).
+  const runSearch = () => {
+    if (S.searchQ === S.searchQPrev) return;
+    S.searchQPrev = S.searchQ;
+    S.searchList = []; S.searchCount = 0;
+    const q = S.searchQ.trim().toLowerCase();
+    if (!q) return;
+    for (let i = 0; i < SHOP_COUNT; i++) {
+      if (shopInfo(i).name.toLowerCase().includes(q)) { S.searchCount++; if (S.searchList.length < 6) S.searchList.push(i); }
+    }
+  };
 
   function update(dt) {
     handleTaps();
@@ -275,7 +295,7 @@ function create(env) {
     const labelKey = S.mode;
     if (labelKey !== S.labelKey) {
       S.labelKey = labelKey;
-      const L = { walk: ['ENTER', 'MAP'], shop: ['BUY', 'LEAVE'], map: ['GO', 'CLOSE'], elevator: ['GO', 'CLOSE'] }[labelKey];
+      const L = { walk: ['ENTER', 'MAP'], shop: ['BUY', 'LEAVE'], map: ['GO', 'CLOSE'], elevator: ['GO', 'CLOSE'], search: ['OPEN', 'CLOSE'] }[labelKey];
       input.setLabels(L[0], L[1]);
     }
     // shoppers
@@ -323,6 +343,20 @@ function create(env) {
       nav((dx, dy, mult) => { S.mapSel = clamp(S.mapSel + dy * mult + dx * MAP_PAGE * mult, 0, SHOP_COUNT - 1); });
       if (input.a.pressed) goToShop(S.mapSel);
       if (input.b.pressed) { S.mode = 'walk'; audio.play('back'); }
+    } else if (S.mode === 'search') {
+      // physical keyboard too: tap the on-screen letters, or type them
+      if (!S.keysDown) S.keysDown = new Set();
+      const now = input.keys || new Set();
+      for (const code of now) {
+        if (S.keysDown.has(code)) continue;
+        if (/^Key[A-Z]$/.test(code)) searchKey(code.slice(3));
+        else if (code === 'Backspace') searchKey('⌫');
+        else if (code === 'Space') searchKey(' ');
+      }
+      S.keysDown = new Set(now);
+      runSearch();
+      if (input.a.pressed && S.searchList.length) { const i = S.searchList[0]; goToShop(i); enterShop(i); }
+      if (input.b.pressed) { S.mode = 'walk'; audio.play('back'); }
     }
     camX += (clamp(me.x - 640, ELEV_X - 260, WW() - 1280) - camX) * Math.min(1, dt * 6);
     if (S.floorBanner !== undefined) S.floorBanner += dt;
@@ -352,6 +386,7 @@ function create(env) {
     if (S.mode === 'walk') {
       button(ctx, 18, 68, 130, 44, '🗺️ MAP', '#7c3aed', openMap);
       button(ctx, 158, 68, 250, 44, `🛗 ${FLOORS[floor].title}`, '#0f766e', openElevator);
+      button(ctx, 418, 68, 150, 44, '🔍 SEARCH', '#0ea5e9', openSearch);
       if (ns < 0 && nearElevator()) prompt(ctx, `${input.touchMode ? 'Tap the elevator' : 'Press SPACE'} to change floors`, 1, '#fde68a');
       else if (ns >= 0) prompt(ctx, `${input.touchMode ? 'Tap the shop' : 'Press SPACE'} to go into ${shopInfo(ns).name}`, 1, '#fde68a');
       else prompt(ctx, input.touchMode ? 'Tap a shop to go in · MAP to jump to any shop' : 'Arrows to walk · SPACE enter a shop · SHIFT mall map · or click', 0.85);
@@ -360,6 +395,7 @@ function create(env) {
     }
     if (S.mode === 'shop') drawShop(ctx);
     if (S.mode === 'map') drawMap(ctx);
+    if (S.mode === 'search') drawSearch(ctx);
     if (S.mode === 'elevator') drawLift(ctx);
     if (S.receipt) drawReceipt(ctx);
     if (S.error) toastBar(ctx, S.error, '#fecaca');
@@ -487,6 +523,53 @@ function create(env) {
       .forEach(([label, fn, color], k) => button(ctx, bx + k * (bw + gap), by, bw, 40, label, color, fn));
     ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '800 13px Nunito';
     ctx.fillText(`Tap a shop to go there${input.touchMode ? '' : ' · or ▲▼ ◀▶ and SPACE'}`, X + W / 2, Y + H - 14);
+  }
+
+  // Shop search: tap the letters, every shop with those letters shows up, tap one to open it.
+  function drawSearch(ctx) {
+    const X = 190, Y = 30, W = 900, H = 660;
+    runSearch();
+    panel(ctx, X, Y, W, H, '🔍 Search shops', '#0ea5e9');
+    closeButton(ctx, X + W - 52, Y + 13, () => { S.mode = 'walk'; audio.play('back'); });
+    // what was typed so far
+    ctx.fillStyle = '#1e293b'; rrect(ctx, X + 30, Y + 86, W - 60, 46, 12); ctx.fill();
+    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 3; rrect(ctx, X + 30, Y + 86, W - 60, 46, 12); ctx.stroke();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = S.searchQ ? '#fff' : '#64748b'; ctx.font = "900 26px Nunito";
+    ctx.fillText(S.searchQ ? S.searchQ + '▌' : 'Tap letters…', X + 48, Y + 110);
+    // how many shops match
+    ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '800 15px Nunito';
+    if (S.searchQ) ctx.fillText(S.searchCount ? `${S.searchCount.toLocaleString()} shops found — showing ${S.searchList.length}` : 'No shops with those letters — try fewer letters', X + W / 2, Y + 152);
+    // letter keys (tap them, or type on a keyboard)
+    const key = (label, x, y, w, fn) => button(ctx, x, y, w, 50, label, '#334155', fn);
+    const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+    rows.forEach((row, r) => {
+      const n = r === 2 ? row.length + 1 : row.length, w = 76, gap = 8, total = n * w + (n - 1) * gap;
+      let x = X + (W - total) / 2;
+      const y = Y + 170 + r * 58;
+      for (const ch of row) { key(ch, x, y, w, () => searchKey(ch)); x += w + gap; }
+      if (r === 2) key('⌫', x, y, w, () => searchKey('⌫'));
+    });
+    const y4 = Y + 170 + 3 * 58;
+    key('SPACE', X + (W - 458) / 2, y4, 300, () => searchKey(' '));
+    key('✕ CLEAR', X + (W - 458) / 2 + 308, y4, 150, () => searchKey('✕'));
+    // matching shops: tap one and the shop opens
+    if (!S.searchQ) {
+      ctx.fillStyle = '#94a3b8'; ctx.font = '800 16px Nunito'; ctx.textAlign = 'center';
+      ctx.fillText('Tap the letters, then tap a shop to open it', X + W / 2, Y + 500);
+    } else {
+      S.searchList.forEach((i, k) => {
+        const s = shopInfo(i), x = X + 30, y = Y + 406 + k * 40, w = W - 60;
+        ctx.fillStyle = '#1e293b'; rrect(ctx, x, y, w, 36, 10); ctx.fill();
+        ctx.textAlign = 'left'; ctx.fillStyle = '#94a3b8'; ctx.font = '800 12px Nunito';
+        ctx.fillText('#' + s.number.toLocaleString(), x + 12, y + 19);
+        ctx.fillStyle = '#fff'; ctx.font = '900 17px Nunito';
+        fitTextLeft(ctx, `${s.icon} ${s.name}`, x + 90, y + 19, w - 260);
+        ctx.textAlign = 'right'; ctx.font = '800 12px Nunito'; ctx.fillStyle = '#94a3b8';
+        ctx.fillText(`${s.section} · ${s.count.toLocaleString()} items`, x + w - 12, y + 19);
+        hit(x, y, w, 36, () => { goToShop(i); enterShop(i); });
+      });
+    }
   }
 
   function drawLift(ctx) {
