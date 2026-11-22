@@ -45,13 +45,15 @@ function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 10139
 class AudioEngine {
   constructor() {
     this.ctx = null;
-    // Music is OFF by default: it never starts on its own. The Music slider
-    // in Settings is the switch - 0 is off, anything above 0 turns it on
-    // (and remembers that choice). An old saved music volume never turns it
-    // back on: only an explicit musicOn choice does.
-    this.vol = { music: 0, sfx: 0.85, musicOn: false };
+    // ALL sound is OFF by default: no music, no sound effects, no crowd
+    // noise - nothing plays on its own when the game opens or in any game.
+    // The two sliders in Settings are the switches: 0 is off, anything
+    // above 0 turns that sound on (and remembers the choice). An old saved
+    // volume never turns sound back on: only an explicit on-choice does.
+    this.vol = { music: 0, sfx: 0, musicOn: false, sfxOn: false };
     try { const v = JSON.parse(localStorage.getItem('robloc_vol') || 'null'); if (v) this.vol = { ...this.vol, ...v }; } catch {}
     if (!this.vol.musicOn) this.vol.music = 0;
+    if (!this.vol.sfxOn) this.vol.sfx = 0;
     this.track = null; this.wanted = null;
   }
 
@@ -90,6 +92,14 @@ class AudioEngine {
       this.vol.musicOn = v > 0;
       if (v > 0) { if (this.wanted && !this.track) this.music(this.wanted); }
       else this.stopMusic();
+    }
+    if (kind === 'sfx') {
+      // The Sound slider is the on/off switch for every sound effect and
+      // for the crowd noise. Turning it to 0 silences the crowd at once;
+      // turning it up brings the crowd back to where the game set it.
+      this.vol.sfxOn = v > 0;
+      if (v > 0) { if (this.crowdLevel) this.setCrowd(this.crowdLevel); }
+      else this.setCrowd(0);
     }
     this.applyVolumes();
     try { localStorage.setItem('robloc_vol', JSON.stringify(this.vol)); } catch {}
@@ -138,6 +148,9 @@ class AudioEngine {
 
   // ---------- SFX ----------
   play(name, o = {}) {
+    // Sound effects never play on their own: only when the player turned
+    // the Sound slider above 0 in Settings.
+    if (!this.vol.sfxOn) return;
     if (!this.ctx || this.ctx.state !== 'running') return;
     const t = this.ctx.currentTime + 0.005;
     const p = o.power ?? 1;
@@ -227,9 +240,14 @@ class AudioEngine {
   setCrowd(level, time = 0.8) {
     if (!this.ctx) return;
     this.crowdLevel = level;
-    this.crowdGain.gain.setTargetAtTime(level * 0.08, this.ctx.currentTime, time / 3);
+    // The crowd is a sound effect too: silent unless sound is on.
+    const target = this.vol.sfxOn ? level * 0.08 : 0;
+    this.crowdGain.gain.setTargetAtTime(target, this.ctx.currentTime, time / 3);
   }
   cheer(amount = 1) {
+    // Cheers are sound effects: silent unless sound is on. Games call this
+    // directly, not through play(), so it needs its own check.
+    if (!this.vol.sfxOn) return;
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     this.noiseHit(t, { dur: 2.6 * amount + 0.6, gain: 0.2 * amount, f: 1100, q: 0.4, attack: 0.25, rev: 0.4 });
@@ -240,6 +258,7 @@ class AudioEngine {
     }
   }
   aww() {
+    if (!this.vol.sfxOn) return;
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     this.noiseHit(t, { dur: 1.4, gain: 0.14, type: 'lowpass', f: 1400, f2: 400, attack: 0.15 });
