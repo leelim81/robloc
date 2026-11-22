@@ -259,7 +259,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 }
 .touch-controls { position: absolute; inset: 0; pointer-events: none; z-index: 4; display: none; }
 .touch-controls.on { display: block; }
-.touch-controls.tap-mode .joy-zone { display: none; }
+.touch-controls.tap-mode .joy-zone, .touch-controls.tap-mode .action-zone { display: none; }
 #game-canvas { touch-action: none; }
 .joy-zone { position: absolute; left: 0; bottom: 0; width: 50%; height: 70%; pointer-events: auto; }
 .joy-base {

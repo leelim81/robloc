@@ -222,7 +222,7 @@ function renderGames() {
       <span class="play-badge">PLAY</span>
       <div class="card-body"><h3 class="card-title">${g.title}</h3><p class="card-sub">${g.tagline}</p>
       <div class="card-meta">${g.id === 'mall'
-        ? `<span class="meta-pill best" title="${formatBig(itemsOwned(p))}">🛍️ ${formatShort(itemsOwned(p))} items owned</span>`
+        ? (itemsOwned(p) > 0n ? `<span class="meta-pill best" title="${formatBig(itemsOwned(p))}">🛍️ ${formatShort(itemsOwned(p))} items owned</span>` : '')
         : `<span class="meta-pill" title="${formatBig(st.played)}">${formatShort(st.played)} played</span><span class="meta-pill best" title="${formatBig(st.wins)}">🏆 ${formatShort(st.wins)} wins</span>`}</div></div>`;
     card.addEventListener('click', () => openPregame(g));
     grid.appendChild(card);

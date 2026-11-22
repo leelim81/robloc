@@ -213,7 +213,7 @@ function create(env) {
       }
     }
   }
-  const enterShop = i => { S.mode = 'shop'; S.shop = i; S.sel = 0; S.walkTo = null; S.autoShop = -1; audio.play('select'); };
+  const enterShop = i => { S.mode = 'shop'; S.shop = i; S.sel = 0; S.top = 0; S.walkTo = null; S.autoShop = -1; audio.play('select'); };
   const openMap = () => { S.mode = 'map'; S.walkTo = null; S.autoShop = -1; const ns = nearShop(); S.mapSel = Math.max(0, ns >= 0 ? ns : clamp(SECTIONS[floor].from + Math.floor((me.x - X0) / SHOP_W), SECTIONS[floor].from, SECTIONS[floor].to - 1)); audio.play('select'); };
   const goToShop = i => {
     if (floorOf(i) !== floor) { floor = floorOf(i); S.floorBanner = 0; for (const n of npcs) n.x = doorX(i) + rand(-1200, 1200); }
@@ -307,7 +307,7 @@ function create(env) {
       button(ctx, 18, 68, 130, 44, '🗺️ MAP', '#7c3aed', openMap);
       button(ctx, 158, 68, 250, 44, `🛗 ${FLOORS[floor].title}`, '#0f766e', openElevator);
       if (ns < 0 && nearElevator()) prompt(ctx, `${input.touchMode ? 'Tap the elevator' : 'Press SPACE'} to change floors`, 1, '#fde68a');
-      else if (ns >= 0) prompt(ctx, `${input.touchMode ? 'Tap ENTER' : 'Press SPACE'} to go into ${shopInfo(ns).name}`, 1, '#fde68a');
+      else if (ns >= 0) prompt(ctx, `${input.touchMode ? 'Tap the shop' : 'Press SPACE'} to go into ${shopInfo(ns).name}`, 1, '#fde68a');
       else prompt(ctx, input.touchMode ? 'Tap a shop to go in · MAP to jump to any shop' : 'Arrows to walk · SPACE enter a shop · SHIFT mall map · or click', 0.85);
       if (S.intro < 2) drawBanner(ctx, 'ROBLOC MALL', 640, 300, S.intro, { size: 96, color: '#fbcfe8', glow: '#db2777', sub: FLOORS[floor].title });
       else if (S.floorBanner !== undefined && S.floorBanner < 1.8) drawBanner(ctx, `FLOOR ${floor + 1}`, 640, 300, S.floorBanner, { size: 96, color: '#a5f3fc', glow: '#0891b2', sub: `${FLOORS[floor].icon} ${FLOORS[floor].name}` });
@@ -363,7 +363,11 @@ function create(env) {
     button(ctx, sx, oy + 276, 56, 82, '⏬', '#334155', step(cols * rows * 25));
     // show 3 rows at a time, scrolling with the selection
     const totalRows = Math.ceil(items.length / cols), selRow = Math.floor(S.sel / cols);
-    const top = clamp(selRow - 1, 0, Math.max(0, totalRows - rows));
+    // only scroll when the chosen item is off screen, so tapped items stay under your finger
+    if (selRow < S.top) S.top = selRow;
+    if (selRow >= S.top + rows) S.top = selRow - rows + 1;
+    S.top = clamp(S.top, 0, Math.max(0, totalRows - rows));
+    const top = S.top;
     ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = '900 15px Nunito';
     ctx.fillText(`Item ${(S.sel + 1).toLocaleString()} of ${items.length.toLocaleString()}`, X + W - 68, Y + 34);
     items.slice(top * cols, (top + rows) * cols).forEach((it, k) => {
@@ -438,7 +442,7 @@ function create(env) {
       .forEach(([label, fn, color], k) => button(ctx, bx + k * (bw + gap), by, bw, 40, label, color, fn));
     const owned = itemsOwned(prof());
     ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '800 13px Nunito';
-    ctx.fillText(`🛍️ You own ${formatBig(owned)} item${owned === 1n ? '' : 's'} · tap a shop to go there${input.touchMode ? '' : ' · or ▲▼ ◀▶ and SPACE'}`, X + W / 2, Y + H - 14);
+    ctx.fillText(`${owned > 0n ? `🛍️ You own ${formatBig(owned)} item${owned === 1n ? '' : 's'} · ` : ''}Tap a shop to go there${input.touchMode ? '' : ' · or ▲▼ ◀▶ and SPACE'}`, X + W / 2, Y + H - 14);
   }
 
   function drawLift(ctx) {
