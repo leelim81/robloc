@@ -137,7 +137,14 @@ function create(env) {
     });
   }
 
+  let hits = [];
   function update(dt) {
+    input.setTapMode(true);
+    // tap an answer to lock it in
+    if (S.phase === 'ask' && S.t > 0.3) for (const t of input.taps) {
+      const i = hits.findIndex(h => t.x >= h.x && t.x <= h.x + OPT_W && t.y >= h.y && t.y <= h.y + OPT_H);
+      if (i >= 0) { S.sel = i; S.q.mine = i; S.q.myTime = S.t; audio.play('click'); reveal(); break; }
+    }
     S.t += dt;
     if (S.labelKey !== 'pick') { S.labelKey = 'pick'; input.setLabels('PICK', 'PICK'); }
     if (S.phase === 'intro') { if (S.t > 1.6) nextRound(); return; }
@@ -177,6 +184,7 @@ function create(env) {
       ctx.font = '800 16px Nunito'; ctx.fillStyle = '#c4b5fd';
       fit(ctx, `from ${q.shop.icon} ${q.shop.name} · ${q.shop.section === 'Shops' ? 'shop' : q.shop.section.toLowerCase()} #${q.shop.number.toLocaleString()}`, 640, 428, 680);
       // answer buttons
+      hits = OPT.map(([x, y]) => ({ x, y }));
       q.choices.forEach((c, i) => {
         const [x, y] = OPT[i], sel = S.phase === 'ask' && i === S.sel;
         let bg = '#1e293b';
@@ -203,7 +211,7 @@ function create(env) {
     ctx.fillText(`ROUND ${Math.max(1, S.round)} OF ${rounds}${S.streak >= 2 ? ` · 🔥 ${S.streak} streak` : ''}`, 640, 104);
     fx.draw(ctx);
     if (S.phase === 'ask' && S.round === 1 && S.t < 4)
-      prompt(ctx, input.touchMode ? 'Joystick to choose a price · PICK to lock it in' : 'Arrows to choose a price · SPACE to lock it in');
+      prompt(ctx, input.touchMode ? 'Tap the price you think is right' : 'Click a price, or use the arrows and SPACE');
     if (S.msg && S.phase === 'reveal') drawBanner(ctx, S.msg, 640, 160, S.t, { size: 64, sub: S.msgSub, color: S.msgColor, glow: S.msgColor === '#a3e635' ? '#16a34a' : '#f59e0b' });
     if (S.phase === 'end') drawBanner(ctx, S.msg, 640, 260, S.t, { size: 110, sub: S.msgSub, color: S.msgColor, glow: '#f59e0b' });
     if (S.phase === 'intro') drawBanner(ctx, 'COME ON DOWN!', 640, 260, S.t, { size: 96, color: '#fbcfe8', glow: '#db2777' });

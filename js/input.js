@@ -12,6 +12,7 @@ export class Input {
     this.a = btnState(); this.b = btnState();
     this.joy = { active: false, id: null, cx: 0, cy: 0, dx: 0, dy: 0 };
     this.pausePressed = false;
+    this.taps = [];          // taps/clicks on the game canvas this frame, in game coordinates
     this.touchMode = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
     this.enabled = false;
     this.bind();
@@ -108,7 +109,10 @@ export class Input {
     if (this.a.down) this.a.heldFor += dt;
     if (this.b.down) this.b.heldFor += dt;
   }
+  // Games with tap menus hide the joystick so taps anywhere reach the game.
+  setTapMode(on) { document.getElementById('touch-controls').classList.toggle('tap-mode', !!on); }
   endFrame() {
+    this.taps.length = 0;
     this.a.pressed = this.a.released = false;
     this.b.pressed = this.b.released = false;
     this.pausePressed = false;

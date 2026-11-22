@@ -259,6 +259,8 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 }
 .touch-controls { position: absolute; inset: 0; pointer-events: none; z-index: 4; display: none; }
 .touch-controls.on { display: block; }
+.touch-controls.tap-mode .joy-zone { display: none; }
+#game-canvas { touch-action: none; }
 .joy-zone { position: absolute; left: 0; bottom: 0; width: 50%; height: 70%; pointer-events: auto; }
 .joy-base {
   position: absolute; left: calc(40px + env(safe-area-inset-left, 0px)); bottom: calc(36px + var(--safe-b)); width: 150px; height: 150px; border-radius: 50%;
@@ -270,7 +272,8 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   position: absolute; left: 50%; top: 50%; width: 66px; height: 66px; margin: -33px 0 0 -33px; border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #fff, #c7d2fe 40%, #6366f1 100%); box-shadow: 0 6px 16px rgba(0,0,0,.45);
 }
-.action-zone { position: absolute; right: calc(24px + env(safe-area-inset-right, 0px)); bottom: calc(30px + var(--safe-b)); width: 230px; height: 200px; pointer-events: auto; }
+.action-zone { position: absolute; right: calc(24px + env(safe-area-inset-right, 0px)); bottom: calc(30px + var(--safe-b)); width: 230px; height: 200px; pointer-events: none; }
+.action-zone .act-btn { pointer-events: auto; }
 .act-btn {
   position: absolute; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); letter-spacing: 1px; color: #fff;
   text-shadow: 0 2px 0 rgba(0,0,0,.35); border: 3px solid rgba(255,255,255,.55); transition: transform .08s;

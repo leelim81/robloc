@@ -450,7 +450,7 @@ const host = {
     $('#pregame').classList.add('hidden'); $('#results').classList.add('hidden'); $('#pause-menu').classList.add('hidden');
     $('#game-layer').classList.add('playing');
     $('#touch-controls').classList.toggle('on', input.touchMode);
-    input.enabled = true; input.reset(); input.setLabels(this.game.labels.a, this.game.labels.b);
+    input.enabled = true; input.reset(); input.setTapMode(false); input.setLabels(this.game.labels.a, this.game.labels.b);
     this.fx = new FX();
     this.paused = false; this.ended = false;
     // Players with a win chance (set in roles/{uid}) get a weakened opponent in that share of matches.
@@ -493,7 +493,7 @@ const host = {
   },
   resume() { this.paused = false; $('#pause-menu').classList.add('hidden'); input.reset(); },
   close() {
-    cancelAnimationFrame(this.raf); this.inst = null; input.enabled = false; audio.setCrowd(0);
+    cancelAnimationFrame(this.raf); this.inst = null; input.enabled = false; input.setTapMode(false); audio.setCrowd(0);
     $('#game-layer').classList.add('hidden'); $('#game-layer').classList.remove('playing');
     enterHub();
   },
@@ -541,6 +541,12 @@ function countUp(sel, to, coin) {
   requestAnimationFrame(step);
 }
 addEventListener('resize', () => { if (!$('#game-layer').classList.contains('hidden')) host.resize(); });
+// Taps and clicks on the game canvas go to the game in its 1280×720 coordinates.
+host.canvas.addEventListener('pointerdown', e => {
+  if (!host.inst || host.paused || host.ended) return;
+  const r = host.canvas.getBoundingClientRect(), v = host.view;
+  input.taps.push({ x: (e.clientX - r.left) / v.scale - v.ox, y: (e.clientY - r.top) / v.scale - v.oy });
+});
 document.addEventListener('visibilitychange', () => { if (document.hidden && host.inst && !host.ended) host.pause(); });
 
 function openPregame(g) {

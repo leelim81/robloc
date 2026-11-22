@@ -88,7 +88,7 @@ class FirebaseBackend {
     const r = await this.readRole();
     await this.syncRole({ ...PLAYER_ROLE, ...snap.data() }, r);
     // Show the role bonuses locally even if saving them to the profile was refused.
-    return normalizeProfile({ ...p, ...r });
+    return mergeLocal(this.user.uid, { ...p, ...r });
   }
   // Copies roles/{uid} into the player's profile so others see it on the leaderboard. Never blocks play.
   async syncRole(p, r) {
@@ -152,21 +152,38 @@ class FirebaseBackend {
       const p = normalizeProfile(snap.data());
       const { next, reward, newBadges } = applyMatch(p, match);
       tx.update(this.userRef(), { ...next, lastAward: serverTimestamp() });
-      return { profile: { ...p, ...next }, reward, newBadges };
+      return { profile: mergeLocal(this.user.uid, { ...p, ...next }), reward, newBadges };
     }));
   }
 
   // Buys one shop item for `cents` (tax included). Throws { code: 'not-enough' } when it can't be afforded.
   async purchase(itemId, cents) {
     const { runTransaction } = this.F;
-    return this.withRepair(() => runTransaction(this.db, async tx => {
-      const snap = await tx.get(this.userRef());
-      if (!snap.exists()) throw new Error('Profile missing');
-      const p = normalizeProfile(snap.data());
-      const next = spend(p, itemId, cents);
-      tx.update(this.userRef(), next);
-      return { profile: { ...p, ...next } };
-    }));
+    const uid = this.user.uid;
+    try {
+      return await this.withRepair(() => runTransaction(this.db, async tx => {
+        const snap = await tx.get(this.userRef());
+        if (!snap.exists()) throw new Error('Profile missing');
+        const p = mergeLocal(uid, snap.data());
+        spend(p, itemId, cents);   // checks the player can afford it, including device-only purchases
+        const raw = normalizeProfile(snap.data()), next = spend(raw, itemId, cents, true);
+        tx.update(this.userRef(), next);
+        return { profile: mergeLocal(uid, { ...raw, ...next }) };
+      }));
+    } catch (e) {
+      if (e.code !== 'permission-denied') throw e;
+      // Firebase refused: keep the purchase on this device instead.
+      const snap = await this.F.getDoc(this.userRef());
+      const p = mergeLocal(uid, snap.exists() ? snap.data() : {});
+      const plan = payPlan(p, cents);
+      if (!plan) { const err = new Error('Not enough money or coins'); err.code = 'not-enough'; throw err; }
+      const l = readLocal(uid);
+      l.inventory[itemId] = (l.inventory[itemId] || 0) + 1;
+      l.moneySpentCents = String(BigInt(l.moneySpentCents || '0') + BigInt(plan.money));
+      l.coinsSpent = (l.coinsSpent || 0) + plan.coins;
+      writeLocal(uid, l);
+      return { profile: mergeLocal(uid, snap.exists() ? snap.data() : {}), deviceOnly: true };
+    }
   }
 
   async leaderboard(kind) {
@@ -190,8 +207,27 @@ class FirebaseBackend {
   }
 }
 
-function spend(p, itemId, cents) {
-  const plan = payPlan(p, cents);
+// Purchases Firebase refused (usually because new rules weren't published yet) are kept on this device
+// so shopping still works; they're added to the profile whenever it loads.
+const localKey = uid => 'robloc_local_shop_' + uid;
+function readLocal(uid) {
+  try { return JSON.parse(localStorage.getItem(localKey(uid)) || 'null') || { inventory: {}, moneySpentCents: '0', coinsSpent: 0 }; }
+  catch { return { inventory: {}, moneySpentCents: '0', coinsSpent: 0 }; }
+}
+function writeLocal(uid, l) { try { localStorage.setItem(localKey(uid), JSON.stringify(l)); } catch {} }
+function mergeLocal(uid, p) {
+  const l = readLocal(uid), inv = { ...(p.inventory || {}) };
+  for (const [k, n] of Object.entries(l.inventory)) inv[k] = (inv[k] || 0) + n;
+  return normalizeProfile({
+    ...p, inventory: inv,
+    moneySpentCents: String(BigInt(p.moneySpentCents || '0') + BigInt(l.moneySpentCents || '0')),
+    coinsSpent: (p.coinsSpent || 0) + (l.coinsSpent || 0),
+  });
+}
+
+function spend(p, itemId, cents, skipCheck = false) {
+  // skipCheck: affordability was already checked including device-only purchases; pay with money if it covers it
+  const plan = payPlan(p, cents) || (skipCheck ? { money: 0, coins: Math.ceil(cents / 100) } : null);
   if (!plan) { const e = new Error('Not enough money or coins'); e.code = 'not-enough'; throw e; }
   return {
     inventory: { ...p.inventory, [itemId]: (p.inventory[itemId] || 0) + 1 },

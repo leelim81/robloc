@@ -2,9 +2,9 @@
 // Prices are in cents. Purchases are paid with money ($) first, or with coins at 1 coin = $1.
 import { drawHuman, shade, rrect, SKINS, HAIRS, HAIR_STYLES, SHIRTS } from '../art.js';
 import { drawBanner } from '../fx.js';
-import { payPlan as planFor, coinsOf, moneyCentsOf, itemsOwned, formatBig } from '../economy.js';
+import { payPlan as planFor, coinsOf, moneyCentsOf, itemsOwned, formatBig, formatShort } from '../economy.js';
 
-import { SHOP_COUNT, shopInfo, shopItems, withTax, fmtCents, TAX_RATE } from './shops.js';
+import { SHOP_COUNT, SECTIONS, shopInfo, shopItems, withTax, fmtCents, TAX_RATE } from './shops.js';
 
 const SHOP_W = 470, X0 = 260, FLOOR = 540;
 const WORLD_W = X0 * 2 + SHOP_COUNT * SHOP_W;
@@ -153,8 +153,8 @@ function create(env) {
     if (!plan) { S.error = 'Not enough money or coins for this.'; S.errorT = 0; audio.play('fault'); return; }
     S.busy = true;
     try {
-      await shop.buy(item, total);
-      S.receipt = { item, total, plan }; S.receiptT = 0;
+      const res = await shop.buy(item, total);
+      S.receipt = { item, total, plan, deviceOnly: !!res?.deviceOnly }; S.receiptT = 0;
       audio.play('coin'); fx.confetti(640, 360, 40);
     } catch (e) {
       console.error(e);
@@ -169,7 +169,24 @@ function create(env) {
     return i >= 0 && i < SHOP_COUNT && Math.abs(me.x - doorX(i)) < SHOP_W / 2 - 12 ? i : -1;
   }
 
+  // Tap targets are recorded while drawing and checked on the next update (last one drawn wins).
+  let hits = [];
+  const hit = (x, y, w, h, fn) => hits.push({ x, y, w, h, fn });
+  function handleTaps() {
+    for (const t of input.taps) {
+      for (let k = hits.length - 1; k >= 0; k--) {
+        const h = hits[k];
+        if (t.x >= h.x && t.x <= h.x + h.w && t.y >= h.y && t.y <= h.y + h.h) { h.fn(t); break; }
+      }
+    }
+  }
+  const enterShop = i => { S.mode = 'shop'; S.shop = i; S.sel = 0; S.walkTo = null; S.autoShop = -1; audio.play('select'); };
+  const openMap = () => { S.mode = 'map'; S.walkTo = null; S.autoShop = -1; const ns = nearShop(); S.mapSel = Math.max(0, ns >= 0 ? ns : clamp(Math.floor((me.x - X0) / SHOP_W), 0, SHOP_COUNT - 1)); audio.play('select'); };
+  const goToShop = i => { me.x = doorX(i); me.y = FLOOR + 70; me.vx = 0; camX = clamp(me.x - 640, 0, WORLD_W - 1280); S.mode = 'walk'; audio.play('whoosh'); fx.dust(640, FLOOR + 70, 8); };
+
   function update(dt) {
+    handleTaps();
+    input.setTapMode(S.mode !== 'walk');
     S.t += dt; S.intro += dt; S.navT -= dt; S.navHeld += dt; S.receiptT += dt; if (S.errorT !== undefined) S.errorT += dt;
     if (S.receipt && S.receiptT > 2.6) S.receipt = null;
     if (S.error && S.errorT > 2.6) S.error = null;
@@ -189,31 +206,46 @@ function create(env) {
     }
     if (S.mode === 'walk') {
       const sp = 430;
-      me.vx += (input.mx * sp - me.vx) * Math.min(1, dt * 10);
+      let mx = input.mx;
+      if (mx || input.my) { S.walkTo = null; S.autoShop = -1; }
+      else if (S.walkTo !== null && S.walkTo !== undefined) {
+        // walking to where the player tapped; enter the shop if they tapped one
+        const d = S.walkTo - me.x;
+        if (Math.abs(d) < 18) { S.walkTo = null; if (S.autoShop >= 0) { const i = S.autoShop; S.autoShop = -1; enterShop(i); return; } }
+        else mx = clamp(d / 120, -1, 1);
+      }
+      me.vx += (mx * sp - me.vx) * Math.min(1, dt * 10);
       me.x = clamp(me.x + me.vx * dt, X0 - 120, WORLD_W - X0 + 120);
       me.y = clamp(me.y + input.my * 160 * dt, FLOOR + 30, FLOOR + 160);
       if (Math.abs(me.vx) > 10) me.flip = me.vx < 0;
       me.phase += Math.abs(me.vx) * dt * 0.035 + Math.abs(input.my) * dt * 5;
       const ns = nearShop();
-      if (input.a.pressed && ns >= 0) { S.mode = 'shop'; S.shop = ns; S.sel = 0; audio.play('select'); }
-      else if (input.b.pressed) { S.mode = 'map'; S.mapSel = Math.max(0, ns >= 0 ? ns : clamp(Math.floor((me.x - X0) / SHOP_W), 0, SHOP_COUNT - 1)); audio.play('select'); }
+      if (input.a.pressed && ns >= 0) enterShop(ns);
+      else if (input.b.pressed) openMap();
     } else if (S.mode === 'shop') {
       const items = shopItems(S.shop), cols = 4;
       nav((dx, dy, mult) => { S.sel = clamp(S.sel + dx + dy * cols * mult, 0, items.length - 1); });
       if (input.a.pressed) buy(items[S.sel]);
-      if (input.b.pressed && !S.busy) { S.mode = 'walk'; audio.play('back'); }
+      if (input.b.pressed) leaveShop();
     } else if (S.mode === 'map') {
       // up/down pick a shop, left/right flip pages of 16 (hold to fly through thousands)
       nav((dx, dy, mult) => { S.mapSel = clamp(S.mapSel + dy * mult + dx * MAP_PAGE * mult, 0, SHOP_COUNT - 1); });
-      if (input.a.pressed) { me.x = doorX(S.mapSel); me.y = FLOOR + 70; me.vx = 0; camX = clamp(me.x - 640, 0, WORLD_W - 1280); S.mode = 'walk'; audio.play('whoosh'); fx.dust(640, FLOOR + 70, 8); }
+      if (input.a.pressed) goToShop(S.mapSel);
       if (input.b.pressed) { S.mode = 'walk'; audio.play('back'); }
     }
     camX += (clamp(me.x - 640, 0, WORLD_W - 1280) - camX) * Math.min(1, dt * 6);
   }
 
   function draw(ctx, view) {
+    hits = [];
     const ns = S.mode === 'walk' ? nearShop() : -1;
     drawMall(ctx, view, camX, S.t, ns);
+    if (S.mode === 'walk') {
+      // tap the floor to walk there, or a shop front to walk in
+      hit(-view.ox, -view.oy, view.W, view.H, t => { S.walkTo = clamp(t.x + camX, X0 - 120, WORLD_W - X0 + 120); S.autoShop = -1; });
+      const first = Math.max(0, Math.floor((camX - view.ox - X0) / SHOP_W)), last = Math.min(SHOP_COUNT - 1, Math.ceil((camX - view.ox + view.W - X0) / SHOP_W));
+      for (let i = first; i <= last; i++) hit(X0 + i * SHOP_W + 12 - camX, 122, SHOP_W - 24, FLOOR - 122, () => { S.walkTo = doorX(i); S.autoShop = i; audio.play('tick'); });
+    }
     // people, back to front
     const people = npcs.map(n => ({ y: n.y, d: () => drawPerson(ctx, n.x - camX, n.y, n.look, n.phase, n.pause > 0 ? 0 : 1, n.dir < 0, n.bag) }));
     people.push({ y: me.y, d: () => {
@@ -224,8 +256,9 @@ function create(env) {
     fx.draw(ctx);
     drawWallet(ctx);
     if (S.mode === 'walk') {
+      button(ctx, 18, 68, 130, 44, '🗺️ MAP', '#7c3aed', openMap);
       if (ns >= 0) prompt(ctx, `${input.touchMode ? 'Tap ENTER' : 'Press SPACE'} to go into ${shopInfo(ns).name}`, 1, '#fde68a');
-      else prompt(ctx, input.touchMode ? 'Walk to a shop door · MAP to jump to any shop' : 'Arrows to walk · SPACE enter a shop · SHIFT mall map', 0.85);
+      else prompt(ctx, input.touchMode ? 'Tap a shop to go in · MAP to jump to any shop' : 'Arrows to walk · SPACE enter a shop · SHIFT mall map · or click', 0.85);
       if (S.intro < 2) drawBanner(ctx, 'ROBLOC MALL', 640, 300, S.intro, { size: 96, color: '#fbcfe8', glow: '#db2777' });
     }
     if (S.mode === 'shop') drawShop(ctx);
@@ -267,27 +300,32 @@ function create(env) {
     const s = shopInfo(S.shop), items = shopItems(S.shop), cols = 4, rows = 3;
     const X = 90, Y = 70, W = 1100, H = 580;
     panel(ctx, X, Y, W, H, s.icon + ' ' + s.name, s.color);
-    const cw = 252, ch = 132, gx = 16, gy = 14, ox = X + (W - (cols * cw + (cols - 1) * gx)) / 2, oy = Y + 84;
+    const cw = 236, ch = 112, gx = 14, gy = 12, ox = X + 20, oy = Y + 80;
+    closeButton(ctx, X + W - 52, Y + 13, () => leaveShop());
+    // scroll buttons: one page or 25 pages up/down
+    const step = n => () => { S.sel = clamp(S.sel + n, 0, items.length - 1); audio.play('tick'); };
+    const sx = X + W - 72;
+    button(ctx, sx, oy, 56, 82, '⏫', '#334155', step(-cols * rows * 25));
+    button(ctx, sx, oy + 92, 56, 82, '▲', '#334155', step(-cols * rows));
+    button(ctx, sx, oy + 184, 56, 82, '▼', '#334155', step(cols * rows));
+    button(ctx, sx, oy + 276, 56, 82, '⏬', '#334155', step(cols * rows * 25));
     // show 3 rows at a time, scrolling with the selection
     const totalRows = Math.ceil(items.length / cols), selRow = Math.floor(S.sel / cols);
     const top = clamp(selRow - 1, 0, Math.max(0, totalRows - rows));
     ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = '900 15px Nunito';
-    ctx.fillText(`Item ${(S.sel + 1).toLocaleString()} of ${items.length.toLocaleString()}`, X + W - 28, Y + 34);
-    if (totalRows > rows) {
-      const bh = 3 * (ch + gy) - gy, th = Math.max(30, bh * rows / totalRows), ty = oy + (bh - th) * (top / Math.max(1, totalRows - rows));
-      ctx.fillStyle = 'rgba(255,255,255,.1)'; rrect(ctx, X + W - 18, oy, 6, bh, 3); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,.5)'; rrect(ctx, X + W - 18, ty, 6, th, 3); ctx.fill();
-    }
+    ctx.fillText(`Item ${(S.sel + 1).toLocaleString()} of ${items.length.toLocaleString()}`, X + W - 68, Y + 34);
     items.slice(top * cols, (top + rows) * cols).forEach((it, k) => {
       const i = top * cols + k;
       const cx = ox + (k % cols) * (cw + gx), cy = oy + Math.floor(k / cols) * (ch + gy);
       const sel = i === S.sel, owned = (prof().inventory || {})[it.id] || 0;
       ctx.fillStyle = sel ? shade(s.color, -0.2) : '#1e293b'; rrect(ctx, cx, cy, cw, ch, 16); ctx.fill();
       if (sel) { ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4; rrect(ctx, cx, cy, cw, ch, 16); ctx.stroke(); }
-      ctx.font = '52px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(it.icon, cx + 50, cy + 66);
-      ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = '900 18px Nunito'; fitTextLeft(ctx, it.name, cx + 96, cy + 42, cw - 106);
-      ctx.fillStyle = '#facc15'; ctx.font = "24px 'Lilita One'"; fitTextLeft(ctx, fmtCents(it.cents), cx + 96, cy + 76, cw - 106);
-      if (owned) { ctx.fillStyle = '#86efac'; ctx.font = '800 13px Nunito'; ctx.fillText(`You own ${owned}`, cx + 96, cy + 106); }
+      ctx.font = '48px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(it.icon, cx + 46, cy + 56);
+      ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = '900 17px Nunito'; fitTextLeft(ctx, it.name, cx + 88, cy + 32, cw - 98);
+      ctx.fillStyle = '#facc15'; ctx.font = "23px 'Lilita One'"; fitTextLeft(ctx, fmtCents(it.cents), cx + 88, cy + 62, cw - 98);
+      if (owned) { ctx.fillStyle = '#86efac'; ctx.font = '800 13px Nunito'; ctx.fillText(`You own ${owned}`, cx + 88, cy + 90); }
+      // tap once to choose, tap again to buy
+      hit(cx, cy, cw, ch, () => { if (S.sel === i) buy(it); else { S.sel = i; audio.play('tick'); } });
     });
     // checkout bar
     const it = items[S.sel], total = withTax(it.cents), tax = total - it.cents, plan = payPlan(total);
@@ -298,9 +336,19 @@ function create(env) {
     ctx.font = '800 15px Nunito';
     ctx.fillStyle = plan ? '#86efac' : '#fca5a5';
     ctx.fillText(plan ? (plan.money ? `Pay ${fmtCents(plan.money)} from your money` : `Pay ${plan.coins.toLocaleString()} coins (1 coin = $1)`) : 'Not enough money or coins', X + 44, by + 58);
-    ctx.textAlign = 'right'; ctx.fillStyle = '#cbd5e1'; ctx.font = '900 16px Nunito';
-    ctx.fillText(S.busy ? 'Paying…' : input.touchMode ? 'BUY to pay · LEAVE to exit' : 'SPACE buy · SHIFT leave', X + W - 44, by + 42);
+    button(ctx, X + W - 224, by + 12, 180, 56, S.busy ? 'PAYING…' : plan ? `BUY ${fmtShortCents(total)}` : 'CAN\'T AFFORD', plan ? '#16a34a' : '#475569', () => buy(it));
   }
+  function fmtShortCents(c) { return c >= 100000000 ? '$' + formatShort(BigInt(c) / 100n) : fmtCents(c); }
+  function leaveShop() { if (!S.busy) { S.mode = 'walk'; audio.play('back'); } }
+  // A rounded button drawn on the canvas that also responds to taps.
+  function button(ctx, x, y, w, h, label, color, fn) {
+    ctx.fillStyle = color; rrect(ctx, x, y, w, h, 14); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.18)'; rrect(ctx, x, y, w, h / 2, 14); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = "22px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    fitText(ctx, label, x + w / 2, y + h / 2 + 1, w - 16);
+    hit(x, y, w, h, fn);
+  }
+  function closeButton(ctx, x, y, fn) { button(ctx, x, y, 40, 40, '✕', 'rgba(15,23,42,.6)', fn); }
   function fitTextLeft(ctx, text, x, y, maxW) {
     const w = ctx.measureText(text).width;
     if (w > maxW) { ctx.save(); ctx.translate(x, y); ctx.scale(maxW / w, 1); ctx.fillText(text, 0, 0); ctx.restore(); }
@@ -327,10 +375,18 @@ function create(env) {
       fitTextLeft(ctx, `${s.icon} ${s.name}`, x + 70, y + 24, w - 170);
       ctx.textAlign = 'right'; ctx.font = '800 12px Nunito'; ctx.fillStyle = sel ? '#fff' : '#94a3b8';
       ctx.fillText(s.count.toLocaleString() + ' items', x + w - 12, y + 24);
+      hit(x, y, w, 46, () => goToShop(i));
     }
+    closeButton(ctx, X + W - 52, Y + 13, () => { S.mode = 'walk'; audio.play('back'); });
+    // page buttons: jump to a section, or move 100 / 1 pages
+    const pageTo = i => () => { S.mapSel = clamp(i, 0, SHOP_COUNT - 1); audio.play('tick'); };
+    const by = Y + 534, bw = 112, gap = 9, bx = X + (W - (7 * bw + 6 * gap)) / 2;
+    [['🛍️ Shops', pageTo(SECTIONS[0].from), '#0ea5e9'], ['◀◀ 100', pageTo(S.mapSel - MAP_PAGE * 100), '#334155'], ['◀', pageTo(S.mapSel - MAP_PAGE), '#334155'],
+      ['▶', pageTo(S.mapSel + MAP_PAGE), '#334155'], ['100 ▶▶', pageTo(S.mapSel + MAP_PAGE * 100), '#334155'], ['🍔 Food', pageTo(SECTIONS[1].from), '#ea580c'], ['🧋 Drinks', pageTo(SECTIONS[2].from), '#db2777']]
+      .forEach(([label, fn, color], k) => button(ctx, bx + k * (bw + gap), by, bw, 40, label, color, fn));
     const owned = itemsOwned(prof());
-    ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '800 14px Nunito';
-    ctx.fillText(`🛍️ You own ${formatBig(owned)} item${owned === 1n ? '' : 's'} · ▲▼ pick · ◀▶ page (hold to go faster) · ${input.touchMode ? 'GO / CLOSE' : 'SPACE go · SHIFT close'}`, X + W / 2, Y + H - 22);
+    ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '800 13px Nunito';
+    ctx.fillText(`🛍️ You own ${formatBig(owned)} item${owned === 1n ? '' : 's'} · tap a shop to go there${input.touchMode ? '' : ' · or ▲▼ ◀▶ and SPACE'}`, X + W / 2, Y + H - 14);
   }
 
   function drawReceipt(ctx) {
@@ -345,6 +401,7 @@ function create(env) {
     ctx.fillText(`Price ${fmtCents(r.item.cents)} · Tax ${fmtCents(r.total - r.item.cents)}`, 0, 44);
     ctx.fillStyle = '#16a34a'; ctx.font = "22px 'Lilita One'";
     ctx.fillText(r.plan.money ? `PAID ${fmtCents(r.plan.money)}` : `PAID ${r.plan.coins.toLocaleString()} COINS`, 0, 84);
+    if (r.deviceOnly) { ctx.fillStyle = '#b45309'; ctx.font = '800 12px Nunito'; ctx.fillText('Saved on this device (Firebase rules not published yet)', 0, 112); }
     ctx.restore();
   }
   function toastBar(ctx, text, color) {
