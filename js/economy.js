@@ -55,6 +55,9 @@ export function normalizeProfile(p) {
     playedBase: p.playedBase || '0',
     winsBase: p.winsBase || '0',
     winChance: p.winChance || '0',
+    inventory: p.inventory && typeof p.inventory === 'object' ? p.inventory : {},
+    moneySpentCents: p.moneySpentCents || '0',
+    coinsSpent: p.coinsSpent || 0,
     role: p.role || 'player',
     // The owner (Trevor) has every badge unlocked.
     badges: p.role === 'owner' ? [...new Set([...(Array.isArray(p.badges) ? p.badges : []), ...BADGES.map(b => b.id)])]
@@ -68,8 +71,16 @@ export function normalizeProfile(p) {
   };
 }
 
-export function coinsOf(p) { return BigInt(p.coinsBase || '0') + BigInt(p.coinsEarned || 0); }
-export function moneyOf(p) { return BigInt(p.moneyBase || '0'); }
+export function coinsOf(p) { return BigInt(p.coinsBase || '0') + BigInt(p.coinsEarned || 0) - BigInt(p.coinsSpent || 0); }
+export function moneyCentsOf(p) { return BigInt(p.moneyBase || '0') * 100n - BigInt(p.moneySpentCents || '0'); }
+export function moneyOf(p) { const c = moneyCentsOf(p); return c > 0n ? c / 100n : 0n; }
+// How a shop purchase (in cents) is paid: money first, otherwise coins at 1 coin = $1. Null when it can't be afforded.
+export function payPlan(p, cents) {
+  if (moneyCentsOf(p) >= BigInt(cents)) return { money: cents, coins: 0 };
+  const need = Math.ceil(cents / 100);
+  if (coinsOf(p) >= BigInt(need)) return { money: 0, coins: need };
+  return null;
+}
 // Points shown in the hub and the Overall leaderboard: earned points plus any role bonus.
 export function totalPoints(p) { return BigInt(p.pointsBase || '0') + BigInt(p.points || 0); }
 // Career totals across every game, plus any role bonus.

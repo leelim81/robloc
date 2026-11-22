@@ -7,16 +7,16 @@ import { SKINS, HAIRS, SHIRTS, HAIR_STYLES, HAIR_STYLE_LABELS, DEFAULT_AVATAR, d
 import soccer from './games/soccer.js';
 import pickleball from './games/pickleball.js';
 import baseball from './games/baseball.js';
+import mall from './games/mall.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const GAMES = [soccer, pickleball, baseball];
+const GAMES = [soccer, pickleball, baseball, mall];
 const COMING = [
   ['Guess the Price', '🏷️', 'Set a secret price and outsmart your friends.'],
   ['Transport Modes', '✈️', 'Fly planes, drive buses and run trains.'],
   ['Dream Store', '🌙', 'Explore a dreamy shop full of wonders.'],
   ['Prize Machine', '🧸', 'Win teddy bears, toys and coin prizes.'],
-  ['Shopping Mall', '🛍️', 'Walk the mall and furnish your space.'],
   ['Brick Builder Shop', '🧱', 'Shop for building sets and create.'],
 ];
 
@@ -216,7 +216,9 @@ function renderGames() {
     card.innerHTML = `<canvas data-thumb="${g.id}" width="520" height="325"></canvas>
       <span class="play-badge">PLAY</span>
       <div class="card-body"><h3 class="card-title">${g.title}</h3><p class="card-sub">${g.tagline}</p>
-      <div class="card-meta"><span class="meta-pill">${st.played || 0} played</span><span class="meta-pill best">🏆 ${st.wins || 0} wins</span></div></div>`;
+      <div class="card-meta">${g.id === 'mall'
+        ? `<span class="meta-pill best">🛍️ ${Object.values(p.inventory || {}).reduce((x, y) => x + y, 0)} items owned</span>`
+        : `<span class="meta-pill">${st.played || 0} played</span><span class="meta-pill best">🏆 ${st.wins || 0} wins</span>`}</div></div>`;
     card.addEventListener('click', () => openPregame(g));
     grid.appendChild(card);
   });
@@ -435,7 +437,15 @@ const host = {
     // Players with a win chance (set in roles/{uid}) get a weakened opponent in that share of matches.
     const chance = Number(state.profile?.winChance || 0);
     const boost = chance > 0 && Math.random() * 100 < chance;
-    this.inst = this.game.create({ input, audio, fx: this.fx, options: { ...options, boost }, profile: state.profile, end: r => this.finish(r), toast });
+    const shop = {
+      profile: () => state.profile,
+      buy: async (item, cents) => {
+        const res = await backend.purchase(item.id, cents);
+        state.profile = normalizeProfile(res.profile);
+        return res;
+      },
+    };
+    this.inst = this.game.create({ input, audio, fx: this.fx, options: { ...options, boost }, profile: state.profile, shop, end: r => this.finish(r), toast });
     audio.music(this.game.music);
     cancelAnimationFrame(this.raf);
     this.last = performance.now();
@@ -518,6 +528,8 @@ function openPregame(g) {
   $('#pregame-title').textContent = g.title;
   $('#pregame-desc').textContent = g.desc;
   $('#pregame-howto').innerHTML = g.howto;
+  $('#diff-seg').parentElement.classList.toggle('hidden', !!g.noDifficulty);
+  $('#btn-play').textContent = g.playLabel || 'PLAY';
   $$('#diff-seg button').forEach(b => b.classList.toggle('active', b.dataset.v === (host.lastDiff || 'rookie')));
   const extra = $('#extra-opt'); extra.innerHTML = '';
   (g.options || []).forEach(opt => {

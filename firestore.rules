@@ -31,7 +31,8 @@ service cloud.firestore {
 
     function allKeys() {
       return ['name', 'avatar', 'role', 'moneyBase', 'coinsBase', 'pointsBase', 'playedBase', 'winsBase', 'winChance',
-              'points', 'coinsEarned', 'totalCoinsEarned', 'badges', 'stats', 'createdAt', 'lastAward'];
+              'points', 'coinsEarned', 'totalCoinsEarned', 'badges', 'stats', 'createdAt', 'lastAward',
+              'inventory', 'moneySpentCents', 'coinsSpent'];
     }
     function validName(n) { return n is string && n.size() >= 2 && n.size() <= 16 && n.matches('^[A-Za-z0-9 _.\\-]+$'); }
     function shortStr(s) { return s is string && s.size() <= 16; }
@@ -66,6 +67,17 @@ service cloud.firestore {
           && request.time > o.lastAward + duration.value(20, 's');
     }
 
+    // Shopping Mall purchases: items can only be added and spending can only go up.
+    function purchase() {
+      let n = request.resource.data;
+      let o = resource.data;
+      return changed().hasOnly(['inventory', 'moneySpentCents', 'coinsSpent'])
+          && n.inventory is map && n.inventory.size() <= 300
+          && n.inventory.keys().hasAll(o.get('inventory', {}).keys())
+          && n.moneySpentCents is string && n.moneySpentCents.size() <= 40 && n.moneySpentCents.matches('^[0-9]+$')
+          && n.coinsSpent is int && n.coinsSpent >= o.get('coinsSpent', 0);
+    }
+
     match /roles/{uid} {
       allow read: if isSelf(uid);
       allow write: if false;
@@ -84,11 +96,14 @@ service cloud.firestore {
         && request.resource.data.totalCoinsEarned == 0
         && request.resource.data.badges == ['welcome']
         && request.resource.data.stats == {}
+        && request.resource.data.inventory == {}
+        && request.resource.data.moneySpentCents == '0'
+        && request.resource.data.coinsSpent == 0
         && request.resource.data.createdAt == request.time
         && request.resource.data.lastAward == request.time;
       allow update: if isSelf(uid)
         && request.resource.data.keys().hasOnly(allKeys())
-        && (identityEdit() || roleSync(uid) || award());
+        && (identityEdit() || roleSync(uid) || award() || purchase());
       allow delete: if false;
     }
   }

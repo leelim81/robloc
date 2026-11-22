@@ -1,7 +1,7 @@
 // Persistence layer. Uses Firebase (Google sign-in + Firestore) when configured,
 // otherwise falls back to a local demo mode backed by localStorage.
 import { firebaseConfig } from './firebase-config.js';
-import { applyMatch, normalizeProfile, totalPoints } from './economy.js';
+import { applyMatch, normalizeProfile, totalPoints, payPlan } from './economy.js';
 
 const FB_VERSION = '10.12.2';
 // Add ?demo to the URL to force local demo mode (handy for offline testing).
@@ -94,6 +94,7 @@ class FirebaseBackend {
       name, avatar, ...r,
       points: 0, coinsEarned: 0, totalCoinsEarned: 0,
       badges: ['welcome'], stats: {},
+      inventory: {}, moneySpentCents: '0', coinsSpent: 0,
       createdAt: serverTimestamp(), lastAward: serverTimestamp(),
     };
     await setDoc(this.userRef(), data);
@@ -116,6 +117,19 @@ class FirebaseBackend {
     });
   }
 
+  // Buys one shop item for `cents` (tax included). Throws { code: 'not-enough' } when it can't be afforded.
+  async purchase(itemId, cents) {
+    const { runTransaction } = this.F;
+    return runTransaction(this.db, async tx => {
+      const snap = await tx.get(this.userRef());
+      if (!snap.exists()) throw new Error('Profile missing');
+      const p = normalizeProfile(snap.data());
+      const next = spend(p, itemId, cents);
+      tx.update(this.userRef(), next);
+      return { profile: { ...p, ...next } };
+    });
+  }
+
   async leaderboard(kind) {
     const { collection, query, orderBy, limit, getDocs, where } = this.F;
     const field = LB_FIELD[kind];
@@ -133,6 +147,16 @@ class FirebaseBackend {
     }
     return [...byId.values()].sort((a, b) => (BigInt(b.value) > BigInt(a.value) ? 1 : BigInt(b.value) < BigInt(a.value) ? -1 : 0)).slice(0, 50);
   }
+}
+
+function spend(p, itemId, cents) {
+  const plan = payPlan(p, cents);
+  if (!plan) { const e = new Error('Not enough money or coins'); e.code = 'not-enough'; throw e; }
+  return {
+    inventory: { ...p.inventory, [itemId]: (p.inventory[itemId] || 0) + 1 },
+    moneySpentCents: String(BigInt(p.moneySpentCents || '0') + BigInt(plan.money)),
+    coinsSpent: (p.coinsSpent || 0) + plan.coins,
+  };
 }
 
 class DemoBackend {
@@ -168,6 +192,12 @@ class DemoBackend {
     const profile = { ...p, ...next };
     this.write(profile);
     return { profile, reward, newBadges };
+  }
+  async purchase(itemId, cents) {
+    const p = normalizeProfile(this.read());
+    const profile = { ...p, ...spend(p, itemId, cents) };
+    this.write(profile);
+    return { profile };
   }
   async leaderboard(kind) {
     const p = this.read();

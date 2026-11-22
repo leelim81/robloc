@@ -26,6 +26,12 @@ const TRACKS = {
     drums: { k: 'x.....x.x.......', s: '....x.......x...', h: 'x.x.x.x.x.x.x.x.', c: '............x.x.' },
     bass: 'r...5...r.r.5...', arp: '0.1.2.1.0.1.2.3.', arpInst: 'marimba', lead: 'x.x.x...x...x.x.', leadOct: 72,
   },
+  mall: {
+    bpm: 96,
+    chords: [[41, 'maj7'], [38, 'min7'], [43, 'min7'], [36, 'dom7']],
+    drums: { k: 'x.....x...x.....', s: '....x.......x...', h: 'x.x.x.x.x.x.x.x.', c: '' },
+    bass: 'r..5..r.r..5..8.', arp: '0.2.1.3.2.0.3.1.', arpInst: 'marimba', lead: 'x...x.x.x...x...', leadOct: 72,
+  },
   pickleball: {
     bpm: 112,
     chords: [[48, 'maj7'], [45, 'min7'], [50, 'min7'], [43, 'dom7']],
