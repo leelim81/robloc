@@ -77,7 +77,7 @@ Everyone else starts from the beginning, like real games — including Uncle Si 
 
 The next time they open ROBLOC, their profile picks up the role, badge tag and starting balances. Players cannot write to `roles`, and nobody can write to anyone else's `users` document.
 
-Trevor, the boss, also earns money from the mall: the 8% sales tax on every purchase goes to him. Each purchase saves the tax it paid on the buyer's own save (`bossPaidCents`), and his total is the sum of everyone's — so it works with the rules as they are, no extra step needed. His total shows in the mall wallet bar and, for him only, on the hub top bar.
+Trevor, the boss, also earns money from the mall: the 8% sales tax on every purchase goes to him. Each purchase saves the tax it paid on the buyer's own save (`bossPaidCents`), and his total is the sum of everyone's — so it works with the rules as they are, no extra step needed. The total is no longer shown anywhere: Trevor asked for the 👑 "Boss earned" display to be removed from the hub top bar and the mall wallet bar (2026-11-22). The tax is still saved on every purchase, so the display can come back any time.
 
 ## Rewards
 

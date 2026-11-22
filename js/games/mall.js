@@ -194,10 +194,6 @@ function create(env) {
   }));
   const S = { t: 0, mode: 'walk', shop: -1, sel: 0, navT: 0, navHeld: 0, lastNav: '', busy: false, receipt: null, receiptT: 0, error: null, mapSel: 0, labelKey: '', intro: 0 };
   let camX = 0;
-  // The boss's earnings: the 8% sales tax from every mall purchase, counted here and in the shared boss total.
-  let bossCents = 0;
-  if (shop.bossTotal) shop.bossTotal().then(v => { bossCents = v || 0; }).catch(() => {});
-
   const prof = () => shop.profile() || profile;
   const balances = () => ({ moneyC: moneyCentsOf(prof()), coins: coinsOf(prof()) });
   const payPlan = total => planFor(prof(), total);
@@ -221,8 +217,6 @@ function create(env) {
     try {
       const res = await shop.buy(item, total, total - item.cents);
       S.receipt = { item, total, plan, deviceOnly: !!res?.deviceOnly }; S.receiptT = 0;
-      // The sales tax on this purchase goes to Trevor, the boss.
-      bossCents += total - item.cents;
       audio.play('coin'); fx.confetti(640, 360, 40);
     } catch (e) {
       console.error(e);
@@ -372,8 +366,7 @@ function create(env) {
 
   function drawWallet(ctx) {
     const { moneyC, coins } = balances();
-    // The boss's earnings show in the wallet too; Trevor always sees them, even at $0, so he can watch them grow.
-    const text = `💵 ${fmtCents(moneyC)}   🪙 ${coins.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} coins` + (bossCents > 0 || prof().role === 'owner' ? `   👑 Boss earned ${fmtCents(bossCents)}` : '');
+    const text = `💵 ${fmtCents(moneyC)}   🪙 ${coins.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} coins`;
     ctx.save(); ctx.font = '900 18px Nunito'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
     const w = Math.min(1100, ctx.measureText(text).width + 32);
     ctx.fillStyle = 'rgba(15,23,42,.88)'; rrect(ctx, 18, 14, w, 44, 14); ctx.fill();
