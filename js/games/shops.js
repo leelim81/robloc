@@ -151,7 +151,7 @@ function mulberry(seed) {
   return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 // Real-looking prices: $x.99 under $100, $x9.99 under $1,000, whole tens or hundreds above.
-function realPrice(d) {
+export function realPrice(d) {
   if (d < 1) return Math.max(29, Math.round(d * 100 / 10) * 10 - 1);
   if (d < 100) return Math.round(Math.max(1, Math.floor(d)) * 100 + 99);
   if (d < 1000) return (Math.floor(d / 10) * 10 + 9) * 100 + 99;
@@ -171,6 +171,11 @@ const DRINK_V2 = [['', 1], ['Small', 0.8], ['Medium', 1], ['Large', 1.25], ['Ext
   ['2-Pack', 1.85], ['6-Pack', 4.5], ['Party Jug', 6], ['Sparkling', 1.1]];
 const OWNERS = ["Rosa's", "Kenji's", "Mama Lu's", "Big Tony's", "Aunt May's", "Chef Ravi's", "Grandma Joy's", "Uncle Sam's", "Mia's", "Leo's",
   "Priya's", "Carlos's", "Hana's", "Omar's", "Nina's", "Jojo's", "Marco's", "Lily's", "Kai's", "Ana's", "Zara's", "Benny's", "Sofia's", "Ming's"];
+// Food and drink kinds among the general shops use flavors and sizes instead of colors ("Honey Pie", not "Green Pie").
+for (const k of KINDS) {
+  if (['bakery', 'market', 'pizza', 'candy'].includes(k.key)) { k.v1 = FOOD_V1; k.v2 = FOOD_V2; }
+  if (['icecream', 'coffee'].includes(k.key)) { k.v1 = DRINK_V1; k.v2 = FOOD_V2; }
+}
 const food = (key, words, icon, color, t) => ({ key, words, icon, color, t, v1: FOOD_V1, v2: FOOD_V2 });
 const drink = (key, words, icon, color, t) => ({ key, words, icon, color, t, v1: DRINK_V1, v2: DRINK_V2 });
 const FOOD_KINDS = [

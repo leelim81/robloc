@@ -8,12 +8,12 @@ import soccer from './games/soccer.js';
 import pickleball from './games/pickleball.js';
 import baseball from './games/baseball.js';
 import mall from './games/mall.js';
+import guessprice from './games/guessprice.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const GAMES = [soccer, pickleball, baseball, mall];
+const GAMES = [soccer, pickleball, baseball, guessprice, mall];
 const COMING = [
-  ['Guess the Price', '🏷️', 'Set a secret price and outsmart your friends.'],
   ['Transport Modes', '✈️', 'Fly planes, drive buses and run trains.'],
   ['Dream Store', '🌙', 'Explore a dreamy shop full of wonders.'],
   ['Prize Machine', '🧸', 'Win teddy bears, toys and coin prizes.'],

@@ -23,6 +23,9 @@ export const BADGES = [
   { id: 'bb_win',          name: 'Diamond Champ',      desc: 'Win a Baseball game.',                       icon: '💎', color: '#0284c7' },
   { id: 'bb_k',            name: 'Strikeout Artist',   desc: 'Strike out 3 batters in one Baseball game.', icon: '🔥', color: '#be123c' },
   { id: 'bb_legend',       name: 'Hall of Famer',      desc: 'Beat Legend difficulty in Baseball.',        icon: '🏛️', color: '#854d0e' },
+  { id: 'gp_win',          name: 'Bargain Hunter',     desc: 'Win a Guess the Price game.',                icon: '🏷️', color: '#7c3aed' },
+  { id: 'gp_perfect',      name: 'Sharp Shopper',      desc: 'Get every price right in a game of 5+ rounds.', icon: '🎯', color: '#c026d3' },
+  { id: 'gp_legend',       name: 'Price Legend',       desc: 'Beat Legend difficulty in Guess the Price.', icon: '💸', color: '#0f766e' },
   { id: 'all_rounder',     name: 'All-Rounder',        desc: 'Win at least once in Soccer and Pickleball.', icon: '🌟', color: '#db2777' },
   { id: 'coins_250',       name: 'Coin Collector',     desc: 'Earn 250 coins in total.',                   icon: '🪙', color: '#d97706' },
   { id: 'coins_2000',      name: 'Treasure Hunter',    desc: 'Earn 2,000 coins in total.',                 icon: '💰', color: '#b45309' },
@@ -43,9 +46,10 @@ export const OWNER_STATS = {
   levelBase: 653763,                      // level 653,763 (set directly, not from points)
   // Per-game totals (they add up to playedBase and winsBase above).
   gamesBase: {
-    soccer: { played: 31482617903, wins: 27106394218 },
-    pickleball: { played: 29375846120, wins: 25019672481 },
-    baseball: { played: 27105381372, wins: 23249218873 },
+    soccer: { played: 23935259487, wins: 20642466634 },
+    pickleball: { played: 22375846120, wins: 19219672481 },
+    baseball: { played: 21105381372, wins: 18049218873 },
+    price: { played: 20547358416, wins: 17463927584 },
   },
   ownedBase: '4826371592047',             // 4,826,371,592,047 mall items owned
 };
@@ -68,6 +72,7 @@ export function emptyStats() {
     soccer: { played: 0, wins: 0, goals: 0, legendWins: 0 },
     pickleball: { played: 0, wins: 0, pointsWon: 0, longestRally: 0, aces: 0, legendWins: 0 },
     baseball: { played: 0, wins: 0, runs: 0, hits: 0, homers: 0, strikeouts: 0, legendWins: 0 },
+    price: { played: 0, wins: 0, correct: 0, bestStreak: 0, legendWins: 0 },
     matches: 0,
   };
 }
@@ -100,6 +105,7 @@ export function normalizeProfile(p) {
       soccer: { ...s.soccer, ...(st.soccer || {}) },
       pickleball: { ...s.pickleball, ...(st.pickleball || {}) },
       baseball: { ...s.baseball, ...(st.baseball || {}) },
+      price: { ...s.price, ...(st.price || {}) },
       matches: st.matches || 0,
     },
   };
@@ -121,7 +127,7 @@ export function totalPoints(p) { return BigInt(p.pointsBase || '0') + BigInt(p.p
 export function careerOf(p) {
   const s = p.stats || emptyStats();
   const played = BigInt(p.playedBase || '0') + BigInt(s.matches || 0);
-  const wins = BigInt(p.winsBase || '0') + BigInt((s.soccer?.wins || 0) + (s.pickleball?.wins || 0) + (s.baseball?.wins || 0));
+  const wins = BigInt(p.winsBase || '0') + BigInt((s.soccer?.wins || 0) + (s.pickleball?.wins || 0) + (s.baseball?.wins || 0) + (s.price?.wins || 0));
   const chance = Number(p.winChance || 0);
   const rate = chance > 0 ? chance : played > 0n ? Number(wins * 100n / played) : 0;
   return { played, wins, rate };
@@ -173,6 +179,9 @@ export function computeRewards(match) {
   } else if (match.game === 'pickleball') {
     pts = 50 + (match.won ? 130 : 0) + match.scoreFor * 6 + Math.min(match.longestRally, 30) * 2;
     coins = 10 + (match.won ? 40 : 0) + match.scoreFor * 2 + match.aces * 3;
+  } else if (match.game === 'price') {
+    pts = 50 + (match.won ? 130 : match.draw ? 50 : 0) + match.correct * 15 + match.bestStreak * 5;
+    coins = 10 + (match.won ? 40 : match.draw ? 12 : 0) + match.correct * 3;
   } else if (match.game === 'baseball') {
     pts = 50 + (match.won ? 130 : match.draw ? 50 : 0) + match.runsFor * 18 + match.homers * 30 + match.strikeouts * 8;
     coins = 10 + (match.won ? 40 : match.draw ? 12 : 0) + match.runsFor * 4 + match.homers * 8;
@@ -191,6 +200,11 @@ export function applyMatch(profile, match) {
   if (match.game === 'soccer') {
     const s = stats.soccer;
     s.played++; s.goals += match.goalsFor;
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'price') {
+    const s = stats.price;
+    s.played++; s.correct += match.correct; s.bestStreak = Math.max(s.bestStreak, match.bestStreak);
     if (match.won) s.wins++;
     if (match.won && match.difficulty === 'legend') s.legendWins++;
   } else if (match.game === 'baseball') {
@@ -222,6 +236,10 @@ export function applyMatch(profile, match) {
     give('soccer_hattrick', match.playerGoals >= 3);
     give('soccer_clean', match.won && match.goalsAgainst === 0);
     give('soccer_legend', match.won && match.difficulty === 'legend');
+  } else if (match.game === 'price') {
+    give('gp_win', match.won);
+    give('gp_perfect', match.rounds >= 5 && match.correct === match.rounds);
+    give('gp_legend', match.won && match.difficulty === 'legend');
   } else if (match.game === 'baseball') {
     give('bb_hit', (match.hits || 0) > 0);
     give('bb_homer', match.homers > 0);
