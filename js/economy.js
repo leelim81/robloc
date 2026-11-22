@@ -56,7 +56,9 @@ export function normalizeProfile(p) {
     winsBase: p.winsBase || '0',
     winChance: p.winChance || '0',
     role: p.role || 'player',
-    badges: Array.isArray(p.badges) ? p.badges : [],
+    // The owner (Trevor) has every badge unlocked.
+    badges: p.role === 'owner' ? [...new Set([...(Array.isArray(p.badges) ? p.badges : []), ...BADGES.map(b => b.id)])]
+      : Array.isArray(p.badges) ? p.badges : [],
     stats: {
       soccer: { ...s.soccer, ...(st.soccer || {}) },
       pickleball: { ...s.pickleball, ...(st.pickleball || {}) },

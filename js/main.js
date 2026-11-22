@@ -245,6 +245,55 @@ function startThumbs() {
 }
 function stopThumbs() { cancelAnimationFrame(thumbRAF); }
 
+// ---------------- leaderboard ----------------
+// The Overall board mixes real players with ROBLOC All-Stars (computer players). The owner always stays #1:
+// every All-Star's points are a fixed share of the owner's points.
+const OWNER_POINTS_FALLBACK = 29166657820300n;   // Trevor's bonus points (level 763,763) if his profile is not loaded
+const WORLD_PLAYERS = 187_000_000;               // size of the pretend world used to estimate ranks
+const BOT_NAMES = ['NovaStriker', 'PixelPanda', 'TurboTaco', 'SkyDasher', 'CosmicKai', 'BlazeRunner', 'MangoMaverick', 'ZoomZara',
+  'FrostByte', 'LuckyLlama', 'RocketRae', 'ShadowFox', 'BubbleBoss', 'ThunderTom', 'JellyJet', 'NinjaNoodle', 'SunnySpark',
+  'MegaMilo', 'CrystalCat', 'DinoDash', 'ViperVee', 'GalaxyGus', 'PopcornPete', 'StormySam', 'WaffleWiz', 'AquaAce',
+  'BerryBlitz', 'CometCody', 'DizzyDuck', 'EchoEmi'];
+function seeded(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+const BOTS = BOT_NAMES.map((name, i) => {
+  const r = seeded(i * 7919 + 11);
+  const pick = a => a[(r() * a.length) | 0];
+  return {
+    uid: 'allstar-' + i, name, bot: true, role: 'player',
+    avatar: { skin: pick(SKINS), hair: pick(HAIRS), style: pick(HAIR_STYLES), shirt: pick(SHIRTS) },
+    share: 0.72 * Math.pow(0.9, i) * (1 - r() * 0.03),   // #2 has about 72% of the owner's points, then about 10% less each place
+  };
+});
+function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+function estimateRank(points, anchor, floor) {
+  const p = Number(points), top = Math.max(10, Number(anchor));
+  const exp = 1 - Math.log10(p + 1) / Math.log10(top + 1);
+  return Math.max(floor, Math.round(Math.pow(WORLD_PLAYERS, clamp01(exp)) * (1 + (p % 97) / 1000)));
+}
+const cmpBig = (a, b) => (BigInt(b.value) > BigInt(a.value) ? 1 : BigInt(b.value) < BigInt(a.value) ? -1 : 0);
+
+function buildOverall(rows) {
+  const owner = rows.find(r => r.role === 'owner');
+  const anchor = owner ? BigInt(owner.value) : OWNER_POINTS_FALLBACK;
+  const bots = BOTS.map(b => {
+    const value = anchor * BigInt(Math.round(b.share * 1e6)) / 1000000n;
+    return { ...b, value, points: value };
+  });
+  const lowestBot = bots[bots.length - 1].value;
+  const top = [...rows.filter(r => BigInt(r.value) > lowestBot), ...bots].sort(cmpBig);
+  top.forEach((r, i) => { r.rank = i + 1; });
+  const rest = rows.filter(r => BigInt(r.value) <= lowestBot);
+  // the signed-in player always appears, even before they score
+  if (state.user && state.profile && ![...top, ...rest].some(r => r.uid === state.user.uid)) {
+    const p = state.profile;
+    rest.push({ uid: state.user.uid, name: p.name, avatar: p.avatar, role: p.role, value: totalPoints(p), points: totalPoints(p) });
+  }
+  rest.sort(cmpBig);
+  let last = top.length;
+  rest.forEach(r => { r.rank = Math.max(last + 1, estimateRank(r.value, anchor, top.length + 1)); last = r.rank; });
+  return { top, rest };
+}
+
 $$('#lb-tabs .chip').forEach(c => c.addEventListener('click', () => {
   state.lbKind = c.dataset.kind;
   $$('#lb-tabs .chip').forEach(x => x.classList.toggle('active', x === c));
@@ -257,26 +306,37 @@ async function renderLeaderboard() {
   try { rows = await backend.leaderboard(state.lbKind); }
   catch (e) { console.error(e); list.innerHTML = ''; note.textContent = 'Could not load the leaderboard: ' + (e.code || e.message); return; }
   list.innerHTML = '';
-  const unit = state.lbKind === 'points' ? 'pts' : 'wins';
-  const roleTag = r => r.role === 'owner' ? '<span class="role-tag owner">👑</span>' : r.role === 'siwei' ? '<span class="role-tag siwei">✨</span>' : '';
+  const overall = state.lbKind === 'points';
+  let top = rows, rest = [];
+  if (overall) ({ top, rest } = buildOverall(rows));
+  else rows.forEach((r, i) => { r.rank = i + 1; });
+  const unit = overall ? 'pts' : 'wins';
+  const roleTag = r => r.role === 'owner' ? '<span class="role-tag owner">👑</span>' : r.role === 'siwei' ? '<span class="role-tag siwei">✨</span>' : r.bot ? '<span class="role-tag allstar">★</span>' : '';
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  rows.slice(0, 3).forEach((r, i) => {
+  top.slice(0, 3).forEach((r, i) => {
     const d = document.createElement('div');
     d.className = `pod p${i + 1}`; d.style.animationDelay = (0.1 + (2 - i) * 0.12) + 's';
     d.innerHTML = `<canvas width="168" height="168"></canvas><div class="pod-name">${esc(r.name)} ${roleTag(r)}</div><div class="pod-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</div><div class="pod-block">${i + 1}</div>`;
     drawPortrait(d.querySelector('canvas'), r.avatar, { bg: false });
     pod.appendChild(d);
   });
-  rows.forEach((r, i) => {
+  const addRow = (r, i) => {
     const li = document.createElement('li');
     li.className = 'lb-row' + (r.uid === state.user?.uid ? ' me' : ''); li.style.animationDelay = Math.min(i, 15) * 0.03 + 's';
-    li.innerHTML = `<span class="lb-rank">${i + 1}</span><canvas width="88" height="88"></canvas>
-      <span class="lb-name">${esc(r.name)} ${roleTag(r)} ${state.lbKind !== 'points' ? `<small>Lv ${formatShort(levelInfo(r.points).level)}</small>` : ''}</span>
+    const rank = formatBig(r.rank);
+    li.innerHTML = `<span class="lb-rank${rank.length > 3 ? ' long' : ''}">${rank}</span><canvas width="88" height="88"></canvas>
+      <span class="lb-name">${esc(r.name)} ${roleTag(r)} ${!overall ? `<small>Lv ${formatShort(levelInfo(r.points).level)}</small>` : ''}</span>
       <span class="lb-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</span>`;
     drawPortrait(li.querySelector('canvas'), r.avatar);
     list.appendChild(li);
-  });
-  if (!rows.length) note.textContent = 'No rankings yet. Finish a match to get on the board!';
+  };
+  top.forEach(addRow);
+  if (rest.length) {
+    const gap = document.createElement('li'); gap.className = 'lb-gap'; gap.textContent = '• • •'; list.appendChild(gap);
+    rest.forEach((r, i) => addRow(r, top.length + i));
+  }
+  if (!top.length) note.textContent = 'No rankings yet. Finish a match to get on the board!';
+  else if (overall) note.textContent = `${formatBig(WORLD_PLAYERS)} players worldwide · ★ ROBLOC All-Stars are computer players.`;
   else if (backend.mode === 'demo') note.textContent = 'Demo mode shows only this device. Sign in online to compete with everyone.';
   else note.textContent = 'Top 50 players.';
 }
