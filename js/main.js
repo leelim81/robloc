@@ -286,6 +286,11 @@ function buildOverall(rows) {
     const p = state.profile;
     rows = [...rows.filter(r => r.uid !== state.user.uid), { uid: state.user.uid, name: p.name, avatar: p.avatar, role: 'owner', value: totalPoints(p), points: totalPoints(p) }];
   }
+  // If the owner's row is not in the list at all (his online player was not
+  // found), put him in at #1 himself and push everyone else one rank down.
+  if (!rows.some(r => r.role === 'owner')) {
+    rows = [...rows, { uid: 'owner', name: 'Trevor', avatar: { ...DEFAULT_AVATAR }, role: 'owner', value: OWNER_POINTS_FALLBACK, points: OWNER_POINTS_FALLBACK, level: OWNER_STATS.levelBase }];
+  }
   const owner = rows.find(r => r.role === 'owner');
   const anchor = owner ? BigInt(owner.value) : OWNER_POINTS_FALLBACK;
   const bots = BOTS.map(b => {
