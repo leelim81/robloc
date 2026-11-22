@@ -18,11 +18,12 @@ export function validateName(raw) {
   return { ok: true, name };
 }
 
-const LB_FIELD = { points: 'points', soccer: 'stats.soccer.wins', pickleball: 'stats.pickleball.wins' };
+const LB_FIELD = { points: 'points', soccer: 'stats.soccer.wins', pickleball: 'stats.pickleball.wins', baseball: 'stats.baseball.wins' };
 
 function lbValue(p, kind) {
   if (kind === 'soccer') return p.stats?.soccer?.wins || 0;
   if (kind === 'pickleball') return p.stats?.pickleball?.wins || 0;
+  if (kind === 'baseball') return p.stats?.baseball?.wins || 0;
   return totalPoints(p);
 }
 const ROLE_FIELDS = ['role', 'moneyBase', 'coinsBase', 'pointsBase', 'playedBase', 'winsBase', 'winChance'];

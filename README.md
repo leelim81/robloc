@@ -10,7 +10,8 @@ Live site: https://leelim81.github.io/robloc
 | --- | --- |
 | Soccer: 3-a-side stadium match (striker, midfielder, goalkeeper) | Playable |
 | Pickleball: singles with serve, two-bounce, kitchen and side-out rules | Playable |
-| Baseball, Guess the Price, Transport Modes, Dream Store, Prize Machine, Shopping Mall, Brick Builder Shop | Coming soon |
+| Baseball: bat and pitch through 1, 3 or 5 innings with balls, strikes, outs and base runners | Playable |
+| Guess the Price, Transport Modes, Dream Store, Prize Machine, Shopping Mall, Brick Builder Shop | Coming soon |
 
 Everything is drawn and synthesized in the browser: characters, stadiums, music and sound effects. There are no image or audio files to license.
 
@@ -34,6 +35,7 @@ js/input.js           keyboard, on-screen joystick and buttons
 js/fx.js              particles, banners, screen shake
 js/games/soccer.js    Soccer
 js/games/pickleball.js Pickleball
+js/games/baseball.js  Baseball
 firestore.rules       security rules to publish in the Firebase console
 ```
 

@@ -6,12 +6,12 @@ import { BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, formatBig
 import { SKINS, HAIRS, SHIRTS, HAIR_STYLES, HAIR_STYLE_LABELS, DEFAULT_AVATAR, drawPortrait, drawAvatarFull } from './art.js';
 import soccer from './games/soccer.js';
 import pickleball from './games/pickleball.js';
+import baseball from './games/baseball.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const GAMES = [soccer, pickleball];
+const GAMES = [soccer, pickleball, baseball];
 const COMING = [
-  ['Baseball', '⚾', 'Step up to the plate and swing for the fences.'],
   ['Guess the Price', '🏷️', 'Set a secret price and outsmart your friends.'],
   ['Transport Modes', '✈️', 'Fly planes, drive buses and run trains.'],
   ['Dream Store', '🌙', 'Explore a dreamy shop full of wonders.'],

@@ -20,6 +20,12 @@ const TRACKS = {
     drums: { k: 'x...x...x...x...', s: '....x.......x...', h: '..x...x...x...x.', c: '....x.......x..x' },
     bass: '..r...r...r.8.r.', arp: '0123012301230123', arpInst: 'pluck', lead: 'x.x...x.x.x...x.', leadOct: 72,
   },
+  baseball: {
+    bpm: 118,
+    chords: [[43, 'maj'], [48, 'maj'], [45, 'min7'], [50, 'dom7']],
+    drums: { k: 'x.....x.x.......', s: '....x.......x...', h: 'x.x.x.x.x.x.x.x.', c: '............x.x.' },
+    bass: 'r...5...r.r.5...', arp: '0.1.2.1.0.1.2.3.', arpInst: 'marimba', lead: 'x.x.x...x...x.x.', leadOct: 72,
+  },
   pickleball: {
     bpm: 112,
     chords: [[48, 'maj7'], [45, 'min7'], [50, 'min7'], [43, 'dom7']],
@@ -154,6 +160,7 @@ class AudioEngine {
         this.tone(t, { f: 210, dur: 0.06, gain: 0.2 });
         break;
       case 'pbBounce': this.tone(t, { type: 'triangle', f: 520, f2: 330, dur: 0.06, gain: 0.22 * p }); this.noiseHit(t, { dur: 0.03, gain: 0.12 * p, f: 1500, q: 2 }); break;
+      case 'bat': this.noiseHit(t, { dur: 0.05, gain: 0.5, f: 2600, q: 1.5 }); this.tone(t, { type: 'triangle', f: 900, f2: 500, dur: 0.08, gain: 0.3 }); this.tone(t, { f: 180, f2: 90, dur: 0.12, gain: 0.25 }); break;
       case 'swoosh': this.noiseHit(t, { dur: 0.16, gain: 0.12, f: 600, f2: 2600, q: 2 }); break;
       case 'coin': this.tone(t, { type: 'square', f: 988, dur: 0.08, gain: 0.08 }); this.tone(t + 0.07, { type: 'square', f: 1319, dur: 0.3, gain: 0.08, rev: 0.3 }); break;
       case 'tick': this.tone(t, { type: 'square', f: 1800 + Math.random() * 300, dur: 0.025, gain: 0.03 }); break;
