@@ -79,8 +79,9 @@ The next time they open ROBLOC, their profile picks up the role, badge tag and s
 
 ## Rewards
 
-- Each finished match gives points and coins based on the result, goals or points scored, and difficulty (Rookie ×1, Pro ×1.5, Legend ×2).
+- Each finished match gives points, coins and dollars based on the result, goals or points scored, and difficulty (Rookie ×1, Pro ×1.5, Legend ×2).
 - Per-match caps: 600 points and 250 coins.
+- Dollars: 75¢ for every coin earned, plus $5 for a win ($2 for a draw). Spend them in the Shopping Mall.
 - Quitting a match from the pause menu gives no rewards.
 - Level *n* starts at 50·n·(n−1) points.
 

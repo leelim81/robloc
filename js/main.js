@@ -2,7 +2,7 @@ import { backend, validateName } from './backend.js';
 import { audio } from './audio.js';
 import { Input } from './input.js';
 import { FX } from './fx.js';
-import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned } from './economy.js';
+import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, moneyCentsOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned } from './economy.js';
 import { SKINS, HAIRS, SHIRTS, HAIR_STYLES, HAIR_STYLE_LABELS, DEFAULT_AVATAR, drawPortrait, drawAvatarFull } from './art.js';
 import soccer from './games/soccer.js';
 import pickleball from './games/pickleball.js';
@@ -180,10 +180,11 @@ function renderTopbar(animate = true) {
   rollNumber('#hub-coins', shown.coins, coins, animate, v => formatShort(v));
   $('#hub-coins').parentElement.title = formatBig(coins) + ' coins';
   shown = { points: pts, coins };
-  const money = moneyOf(p);
-  $('#money-wrap').classList.toggle('hidden', money === 0n);
-  $('#hub-money').textContent = formatShort(money);
-  $('#money-wrap').title = '$' + formatBig(money);
+  const money = moneyOf(p), cents = moneyCentsOf(p);
+  $('#money-wrap').classList.toggle('hidden', cents <= 0n);
+  // show dollars and cents for small amounts, short form for big ones
+  $('#hub-money').textContent = money < 100000n ? formatBig(money) + '.' + String(cents % 100n).padStart(2, '0') : formatShort(money);
+  $('#money-wrap').title = '$' + formatBig(money) + '.' + String(cents % 100n).padStart(2, '0');
   $('#badge-count').textContent = p.badges.length;
   const c = careerOf(p);
   $('#career').innerHTML = `<span title="${formatBig(c.played)}">🎮 <b>${formatShort(c.played)}</b> played</span><span title="${formatBig(c.wins)}">🏆 <b>${formatShort(c.wins)}</b> won</span>`;
@@ -505,7 +506,7 @@ const host = {
     banner.className = 'results-banner' + (result.outcome === 'win' ? '' : ' lose');
     $('#results-score').textContent = result.scoreline;
     $('#results-stats').innerHTML = result.stats.join(' · ');
-    $('#rw-points').textContent = '+0'; $('#rw-coins').textContent = '+0';
+    $('#rw-points').textContent = '+0'; $('#rw-coins').textContent = '+0'; $('#rw-money').textContent = '+$0.00';
     $('#results-badges').innerHTML = '';
     $('#results-save').textContent = 'Saving your rewards…';
     setTimeout(() => $('#results').classList.remove('hidden'), 900);
@@ -515,6 +516,7 @@ const host = {
       state.profile = normalizeProfile(res.profile);
       setTimeout(() => {
         countUp('#rw-points', res.reward.points); countUp('#rw-coins', res.reward.coins, true);
+        countUp('#rw-money', res.reward.cents || 0, false, c => '+$' + (c / 100).toFixed(2));
         res.newBadges.forEach((id, i) => {
           const b = BADGE_MAP[id]; if (!b) return;
           const d = document.createElement('div'); d.className = 'mini-badge'; d.style.animationDelay = (0.8 + i * 0.25) + 's';
@@ -531,11 +533,11 @@ const host = {
     }
   },
 };
-function countUp(sel, to, coin) {
+function countUp(sel, to, coin, fmt = v => '+' + v) {
   const el = $(sel), t0 = performance.now(), dur = 1100;
   const step = now => {
     const k = Math.min(1, (now - t0) / dur);
-    el.textContent = '+' + Math.round(to * (1 - Math.pow(1 - k, 3)));
+    el.textContent = fmt(Math.round(to * (1 - Math.pow(1 - k, 3))));
     if (k < 1) { if (Math.random() < 0.4) audio.play('tick'); requestAnimationFrame(step); } else if (coin) audio.play('coin');
   };
   requestAnimationFrame(step);

@@ -102,6 +102,7 @@ export function normalizeProfile(p) {
     inventory: p.inventory && typeof p.inventory === 'object' ? p.inventory : {},
     moneySpentCents: p.moneySpentCents || '0',
     coinsSpent: p.coinsSpent || 0,
+    moneyEarnedCents: p.moneyEarnedCents || '0',
     role: p.role || 'player',
     // The owner (Trevor) has every badge unlocked.
     badges: p.role === 'owner' ? [...new Set([...(Array.isArray(p.badges) ? p.badges : []), ...BADGES.map(b => b.id)])]
@@ -118,7 +119,7 @@ export function normalizeProfile(p) {
 }
 
 export function coinsOf(p) { return BigInt(p.coinsBase || '0') + BigInt(p.coinsEarned || 0) - BigInt(p.coinsSpent || 0); }
-export function moneyCentsOf(p) { return BigInt(p.moneyBase || '0') * 100n - BigInt(p.moneySpentCents || '0'); }
+export function moneyCentsOf(p) { return BigInt(p.moneyBase || '0') * 100n + BigInt(p.moneyEarnedCents || '0') - BigInt(p.moneySpentCents || '0'); }
 export function moneyOf(p) { const c = moneyCentsOf(p); return c > 0n ? c / 100n : 0n; }
 // How a shop purchase (in cents) is paid: money first, otherwise coins at 1 coin = $1. Null when it can't be afforded.
 export function payPlan(p, cents) {
@@ -197,7 +198,9 @@ export function computeRewards(match) {
   }
   pts = Math.min(MAX_POINTS_PER_MATCH, Math.round(pts * m));
   coins = Math.min(MAX_COINS_PER_MATCH, Math.round(coins * m));
-  return { points: pts, coins };
+  // Dollars: 75¢ for every coin, plus $5 for a win (or $2 for a draw), with a few random cents like a real paycheck.
+  const cents = coins * 75 + (match.won ? 500 : match.draw ? 200 : 0) + Math.floor(Math.random() * 100);
+  return { points: pts, coins, cents };
 }
 
 // Returns the new profile fields after a match, plus which badges were unlocked.
@@ -237,6 +240,7 @@ export function applyMatch(profile, match) {
     points: p.points + reward.points,
     coinsEarned: p.coinsEarned + reward.coins,
     totalCoinsEarned: p.totalCoinsEarned + reward.coins,
+    moneyEarnedCents: String(BigInt(p.moneyEarnedCents || '0') + BigInt(reward.cents)),
     stats,
   };
   const has = new Set(p.badges);

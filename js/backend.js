@@ -132,7 +132,7 @@ class FirebaseBackend {
       name, avatar, ...PLAYER_ROLE,
       points: 0, coinsEarned: 0, totalCoinsEarned: 0,
       badges: ['welcome'], stats: {},
-      inventory: {}, moneySpentCents: '0', coinsSpent: 0,
+      inventory: {}, moneySpentCents: '0', coinsSpent: 0, moneyEarnedCents: '0',
       createdAt: serverTimestamp(), lastAward: serverTimestamp(),
     };
     await setDoc(this.userRef(), data);
