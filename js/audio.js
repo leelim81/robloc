@@ -45,8 +45,13 @@ function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 10139
 class AudioEngine {
   constructor() {
     this.ctx = null;
-    this.vol = { music: 0.6, sfx: 0.85 };
+    // Music is OFF by default: it never starts on its own. The Music slider
+    // in Settings is the switch - 0 is off, anything above 0 turns it on
+    // (and remembers that choice). An old saved music volume never turns it
+    // back on: only an explicit musicOn choice does.
+    this.vol = { music: 0, sfx: 0.85, musicOn: false };
     try { const v = JSON.parse(localStorage.getItem('robloc_vol') || 'null'); if (v) this.vol = { ...this.vol, ...v }; } catch {}
+    if (!this.vol.musicOn) this.vol.music = 0;
     this.track = null; this.wanted = null;
   }
 
@@ -79,7 +84,14 @@ class AudioEngine {
     this.sfxBus.gain.setTargetAtTime(this.vol.sfx, t, 0.05);
   }
   setVolume(kind, v) {
-    this.vol[kind] = v; this.applyVolumes();
+    this.vol[kind] = v;
+    if (kind === 'music') {
+      // The Music slider is the on/off switch.
+      this.vol.musicOn = v > 0;
+      if (v > 0) { if (this.wanted && !this.track) this.music(this.wanted); }
+      else this.stopMusic();
+    }
+    this.applyVolumes();
     try { localStorage.setItem('robloc_vol', JSON.stringify(this.vol)); } catch {}
   }
 
@@ -236,6 +248,9 @@ class AudioEngine {
   // ---------- music sequencer ----------
   music(name) {
     this.wanted = name;
+    // Music never starts on its own: it only plays when the player turned
+    // the Music slider above 0 in Settings.
+    if (!this.vol.musicOn) return;
     if (!this.ctx || this.ctx.state !== 'running') return;
     if (this.track && this.track.name === name) return;
     this.stopMusic(true);
