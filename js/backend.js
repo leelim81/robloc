@@ -157,44 +157,32 @@ class FirebaseBackend {
   }
 
   // Buys one shop item for `cents` (tax included). Throws { code: 'not-enough' } when it can't be afforded.
+  // Buying is instant: the item is saved on this device right away, then saved to Firebase in the
+  // background. When Firebase confirms, the device copy is removed (Firebase has it now).
   // current: the profile the player sees now (already including device-only purchases).
   async purchase(itemId, cents, current) {
     const { runTransaction } = this.F;
     const uid = this.user.uid;
-    // the player must be able to afford it, counting everything they see
-    const plan = payPlan(normalizeProfile(current || {}), cents);
+    const cur = normalizeProfile(current || {});
+    const plan = payPlan(cur, cents);
     if (!plan) { const err = new Error('Not enough money or coins'); err.code = 'not-enough'; throw err; }
-    const online = this.withRepair(() => runTransaction(this.db, async tx => {
+    const local = sign => {
+      const l = readLocal(uid);
+      l.inventory[itemId] = (l.inventory[itemId] || 0) + sign;
+      if (l.inventory[itemId] <= 0) delete l.inventory[itemId];
+      l.moneySpentCents = String(BigInt(l.moneySpentCents || '0') + BigInt(sign * plan.money));
+      l.coinsSpent = (l.coinsSpent || 0) + sign * plan.coins;
+      writeLocal(uid, l);
+    };
+    local(1);
+    this.withRepair(() => runTransaction(this.db, async tx => {
       const snap = await tx.get(this.userRef());
       if (!snap.exists()) throw new Error('Profile missing');
-      const raw = normalizeProfile(snap.data()), next = spend(raw, itemId, cents, true);
-      tx.update(this.userRef(), next);
-      return { profile: mergeLocal(uid, { ...raw, ...next }) };
-    }));
-    try {
-      // never leave the player stuck on "Paying…": give Firebase 8 seconds
-      return await withTimeout(online, 8000);
-    } catch (e) {
-      if (e.code === 'not-enough') throw e;
-      console.warn('Online purchase failed, saving on this device', e);
-      const l = readLocal(uid);
-      const add = (sign) => {
-        l.inventory[itemId] = (l.inventory[itemId] || 0) + sign;
-        if (l.inventory[itemId] <= 0) delete l.inventory[itemId];
-        l.moneySpentCents = String(BigInt(l.moneySpentCents || '0') + BigInt(sign * plan.money));
-        l.coinsSpent = (l.coinsSpent || 0) + sign * plan.coins;
-        writeLocal(uid, l);
-      };
-      add(1);
-      // if the slow online purchase finishes after all, remove the device copy so it isn't bought twice
-      if (e.code === 'timeout') online.then(() => add(-1)).catch(() => {});
-      const cur = normalizeProfile(current || {});
-      const inv = { ...cur.inventory, [itemId]: (cur.inventory[itemId] || 0) + 1 };
-      return {
-        profile: { ...cur, inventory: inv, moneySpentCents: String(BigInt(cur.moneySpentCents) + BigInt(plan.money)), coinsSpent: cur.coinsSpent + plan.coins },
-        deviceOnly: true,
-      };
-    }
+      const raw = normalizeProfile(snap.data());
+      tx.update(this.userRef(), spend(raw, itemId, cents, true));
+    })).then(() => local(-1)).catch(e => console.warn('Purchase kept on this device only', e));
+    const inv = { ...cur.inventory, [itemId]: (cur.inventory[itemId] || 0) + 1 };
+    return { profile: { ...cur, inventory: inv, moneySpentCents: String(BigInt(cur.moneySpentCents) + BigInt(plan.money)), coinsSpent: cur.coinsSpent + plan.coins } };
   }
 
   async leaderboard(kind) {
@@ -234,10 +222,6 @@ function mergeLocal(uid, p) {
     moneySpentCents: String(BigInt(p.moneySpentCents || '0') + BigInt(l.moneySpentCents || '0')),
     coinsSpent: (p.coinsSpent || 0) + (l.coinsSpent || 0),
   });
-}
-
-function withTimeout(promise, ms) {
-  return Promise.race([promise, new Promise((_, reject) => setTimeout(() => { const e = new Error('Firebase did not answer'); e.code = 'timeout'; reject(e); }, ms))]);
 }
 
 function spend(p, itemId, cents, skipCheck = false) {

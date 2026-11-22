@@ -2,6 +2,7 @@
 
 ## Workflow (owner's standing instruction)
 - Test changes yourself, then commit and push straight to `main` (the live GitHub Pages site). No need to ask first.
+- Before every commit run `python3 tools/stamp.py` so browsers load the new code instead of an old cached copy.
 - Still tell the owner what changed and anything they must do by hand (for example, publishing `firestore.rules` in the Firebase console).
 
 ## Testing
