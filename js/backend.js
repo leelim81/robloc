@@ -131,7 +131,7 @@ class FirebaseBackend {
     const data = {
       name, avatar, ...PLAYER_ROLE,
       points: 0, coinsEarned: 0, totalCoinsEarned: 0,
-      badges: ['welcome'], stats: {},
+      badges: [], stats: {},
       inventory: {}, moneySpentCents: '0', coinsSpent: 0, moneyEarnedCents: '0',
       createdAt: serverTimestamp(), lastAward: serverTimestamp(),
     };
@@ -259,7 +259,7 @@ class DemoBackend {
   async loadProfile() { const p = this.read(); return p ? normalizeProfile(p) : null; }
   async nameTaken() { return false; }
   async createProfile({ name, avatar }) {
-    const p = normalizeProfile({ name, avatar, ...PLAYER_ROLE, badges: ['welcome'] });
+    const p = normalizeProfile({ name, avatar, ...PLAYER_ROLE, badges: [] });
     this.write(p); return p;
   }
   async updateIdentity({ name, avatar }) { const p = this.read(); this.write({ ...p, name, avatar }); }

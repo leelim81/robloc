@@ -120,9 +120,10 @@ export function normalizeProfile(p) {
     coinsSpent: p.coinsSpent || 0,
     moneyEarnedCents: p.moneyEarnedCents || '0',
     role: p.role || 'player',
-    // The owner (Trevor) has every badge unlocked.
+    // The owner (Trevor) has every badge unlocked. Everyone else starts with
+    // no badges at all, and the old Welcome badge is not kept for them.
     badges: p.role === 'owner' ? [...new Set([...(Array.isArray(p.badges) ? p.badges : []), ...BADGES.map(b => b.id)])]
-      : Array.isArray(p.badges) ? p.badges : [],
+      : (Array.isArray(p.badges) ? p.badges : []).filter(b => b !== 'welcome'),
     stats: {
       soccer: { ...s.soccer, ...(st.soccer || {}) },
       pickleball: { ...s.pickleball, ...(st.pickleball || {}) },
@@ -262,7 +263,6 @@ export function applyMatch(profile, match) {
   const has = new Set(p.badges);
   const earn = [];
   const give = (id, cond) => { if (cond && !has.has(id)) { has.add(id); earn.push(id); } };
-  give('welcome', true);
   give('first_match', true);
   if (match.game === 'soccer') {
     give('soccer_goal', match.goalsFor > 0);

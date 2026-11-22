@@ -141,7 +141,6 @@ $('#btn-setup-done').addEventListener('click', async () => {
       state.profile = normalizeProfile({ ...state.profile, name: v.name, avatar: { ...state.avatar } });
     } else {
       state.profile = await backend.createProfile({ name: v.name, avatar: { ...state.avatar } });
-      setTimeout(() => badgeToast(BADGE_MAP.welcome), 900);
     }
     enterHub();
   } catch (e) {
