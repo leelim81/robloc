@@ -32,6 +32,17 @@ export const BADGES = [
 ];
 export const BADGE_MAP = Object.fromEntries(BADGES.map(b => [b.id, b]));
 
+// Trevor's (the owner's) stats. These override whatever roles/{uid} says, so changing them only needs a code push.
+export const OWNER_STATS = {
+  moneyBase: '634735251526437352826',     // $634,735,251,526,437,352,826
+  coinsBase: '67243852825918',            // 67,243,852,825,918 coins
+  pointsBase: '65375276637635180',        // 65,375,276,637,635,180 points
+  playedBase: '87963845395',              // 87,963,845,395 games played
+  winsBase: '75375285572',                // 75,375,285,572 games won
+  winChance: '90',                        // wins about 90% of matches
+  levelBase: 652853,                      // level 652,853 (set directly, not from points)
+};
+
 export function emptyStats() {
   return {
     soccer: { played: 0, wins: 0, goals: 0, legendWins: 0 },
@@ -44,8 +55,10 @@ export function emptyStats() {
 export function normalizeProfile(p) {
   const s = emptyStats();
   const st = p.stats || {};
+  if (p.role === 'owner') p = { ...p, ...OWNER_STATS };
   return {
     ...p,
+    levelBase: p.levelBase || 0,
     points: p.points || 0,
     coinsEarned: p.coinsEarned || 0,
     totalCoinsEarned: p.totalCoinsEarned || 0,
@@ -109,6 +122,15 @@ export function formatShort(v) {
   const head = s.slice(0, s.length - groups * 3);
   const dec = s.slice(head.length, head.length + 1);
   return `${head}${dec !== '0' && head.length < 3 ? '.' + dec : ''}${units[groups - 1]}`;
+}
+
+// A player's level: from total points, or the owner's fixed level plus levels earned by playing.
+export function playerLevel(p) {
+  if (p.levelBase) {
+    const li = levelInfo(p.points || 0);
+    return { ...li, level: p.levelBase + li.level - 1 };
+  }
+  return levelInfo(totalPoints(p));
 }
 
 // Level curve: level n starts at 50·n·(n−1) points.

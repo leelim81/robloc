@@ -2,7 +2,7 @@ import { backend, validateName } from './backend.js';
 import { audio } from './audio.js';
 import { Input } from './input.js';
 import { FX } from './fx.js';
-import { BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, formatBig, formatShort, levelInfo, normalizeProfile, totalPoints, careerOf } from './economy.js';
+import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf } from './economy.js';
 import { SKINS, HAIRS, SHIRTS, HAIR_STYLES, HAIR_STYLE_LABELS, DEFAULT_AVATAR, drawPortrait, drawAvatarFull } from './art.js';
 import soccer from './games/soccer.js';
 import pickleball from './games/pickleball.js';
@@ -168,7 +168,7 @@ function renderTopbar(animate = true) {
   tag.className = 'role-tag' + (p.role === 'owner' ? ' owner' : p.role === 'siwei' ? ' siwei' : ' hidden');
   tag.textContent = p.role === 'owner' ? '👑 OWNER' : p.role === 'siwei' ? '✨ VIP' : '';
   const total = totalPoints(p);
-  const li = levelInfo(total);
+  const li = playerLevel(p);
   $('#hub-level').textContent = 'Lv ' + formatShort(li.level);
   $('#hub-xp').style.width = (li.progress * 100).toFixed(1) + '%';
   $('#hub-level').title = `Level ${formatBig(li.level)} · ${formatBig(li.toNext)} points to level ${formatBig(li.level + 1)}`;
@@ -253,7 +253,7 @@ function stopThumbs() { cancelAnimationFrame(thumbRAF); }
 // ---------------- leaderboard ----------------
 // The Overall board mixes real players with ROBLOC All-Stars (computer players). The owner always stays #1:
 // every All-Star's points are a fixed share of the owner's points.
-const OWNER_POINTS_FALLBACK = 29166657820300n;   // Trevor's bonus points (level 763,763) if his profile is not loaded
+const OWNER_POINTS_FALLBACK = BigInt(OWNER_STATS.pointsBase);   // Trevor's points if his profile is not loaded
 const WORLD_PLAYERS = 187_000_000;               // size of the pretend world used to estimate ranks
 const BOT_NAMES = ['NovaStriker', 'PixelPanda', 'TurboTaco', 'SkyDasher', 'CosmicKai', 'BlazeRunner', 'MangoMaverick', 'ZoomZara',
   'FrostByte', 'LuckyLlama', 'RocketRae', 'ShadowFox', 'BubbleBoss', 'ThunderTom', 'JellyJet', 'NinjaNoodle', 'SunnySpark',
@@ -278,6 +278,11 @@ function estimateRank(points, anchor, floor) {
 const cmpBig = (a, b) => (BigInt(b.value) > BigInt(a.value) ? 1 : BigInt(b.value) < BigInt(a.value) ? -1 : 0);
 
 function buildOverall(rows) {
+  // If the signed-in player is the owner, use their own profile so they always show at #1.
+  if (state.user && state.profile?.role === 'owner') {
+    const p = state.profile;
+    rows = [...rows.filter(r => r.uid !== state.user.uid), { uid: state.user.uid, name: p.name, avatar: p.avatar, role: 'owner', value: totalPoints(p), points: totalPoints(p) }];
+  }
   const owner = rows.find(r => r.role === 'owner');
   const anchor = owner ? BigInt(owner.value) : OWNER_POINTS_FALLBACK;
   const bots = BOTS.map(b => {
@@ -331,7 +336,7 @@ async function renderLeaderboard() {
     li.className = 'lb-row' + (r.uid === state.user?.uid ? ' me' : ''); li.style.animationDelay = Math.min(i, 15) * 0.03 + 's';
     const rank = formatBig(r.rank);
     li.innerHTML = `<span class="lb-rank${rank.length > 3 ? ' long' : ''}">${rank}</span><canvas width="88" height="88"></canvas>
-      <span class="lb-name">${esc(r.name)} ${roleTag(r)} ${!overall ? `<small>Lv ${formatShort(levelInfo(r.points).level)}</small>` : ''}</span>
+      <span class="lb-name">${esc(r.name)} ${roleTag(r)} ${!overall ? `<small>Lv ${formatShort(r.level ?? levelInfo(r.points).level)}</small>` : ''}</span>
       <span class="lb-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</span>`;
     drawPortrait(li.querySelector('canvas'), r.avatar);
     list.appendChild(li);

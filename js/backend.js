@@ -1,7 +1,7 @@
 // Persistence layer. Uses Firebase (Google sign-in + Firestore) when configured,
 // otherwise falls back to a local demo mode backed by localStorage.
 import { firebaseConfig } from './firebase-config.js';
-import { applyMatch, normalizeProfile, totalPoints, payPlan } from './economy.js';
+import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel } from './economy.js';
 
 const FB_VERSION = '10.12.2';
 // Add ?demo to the URL to force local demo mode (handy for offline testing).
@@ -88,7 +88,7 @@ class FirebaseBackend {
     const r = await this.readRole();
     await this.syncRole(p, r);
     // Show the role bonuses locally even if saving them to the profile was refused.
-    return { ...p, ...r, badges: normalizeProfile({ ...p, ...r }).badges };
+    return normalizeProfile({ ...p, ...r });
   }
   // Copies roles/{uid} into the player's profile so others see it on the leaderboard. Never blocks play.
   async syncRole(p, r) {
@@ -156,7 +156,7 @@ class FirebaseBackend {
     for (const d of [...snaps.docs, ...(special ? special.docs : [])]) {
       const p = normalizeProfile(d.data());
       const value = lbValue(p, kind);
-      if (value > 0) byId.set(d.id, { uid: d.id, name: p.name, avatar: p.avatar, role: p.role, value, points: totalPoints(p) });
+      if (value > 0) byId.set(d.id, { uid: d.id, name: p.name, avatar: p.avatar, role: p.role, value, points: totalPoints(p), level: playerLevel(p).level });
     }
     return [...byId.values()].sort((a, b) => (BigInt(b.value) > BigInt(a.value) ? 1 : BigInt(b.value) < BigInt(a.value) ? -1 : 0)).slice(0, 50);
   }
@@ -217,7 +217,7 @@ class DemoBackend {
     if (!p) return [];
     const np = normalizeProfile(p);
     const v = lbValue(np, kind);
-    return v > 0 ? [{ uid: 'demo-player', name: np.name, avatar: np.avatar, role: np.role, value: v, points: totalPoints(np) }] : [];
+    return v > 0 ? [{ uid: 'demo-player', name: np.name, avatar: np.avatar, role: np.role, value: v, points: totalPoints(np), level: playerLevel(np).level }] : [];
   }
 }
 

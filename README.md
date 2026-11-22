@@ -60,19 +60,13 @@ Google sign-in on localhost works only if `localhost` is in Firebase → Authent
 Roles are never granted by typing a name. After the person signs in and creates a player once:
 
 1. Firebase console → Firestore Database → `users` collection → find the document whose `name` is theirs. The document ID is their user ID.
-2. Create a collection `roles` and add a document with **that same ID**. Add these fields, all of type **string** (big numbers lose digits if stored as numbers):
+2. Create a collection `roles` and add a document with **that same ID** and a string field `role`: `owner` for Trevor, `siwei` for Si Wei.
 
-| Field | Trevor | Si Wei | Meaning |
-| --- | --- | --- | --- |
-| `role` | `owner` | `siwei` | Badge tag shown next to the name |
-| `moneyBase` | `92773773673673773798178` | `3000000` | Money ($) |
-| `coinsBase` | `82763863863664` | `500000` | Starting coins |
-| `pointsBase` | `29166657820300` | | Bonus points (29,166,657,820,300 = level 763,763) |
-| `playedBase` | `87366466647` | | Matches played (added to real matches) |
-| `winsBase` | `76356355479` | | Matches won (added to real wins) |
-| `winChance` | `90` | | % of matches where the opponent plays very weakly |
+Trevor's numbers live in the code (`OWNER_STATS` in `js/economy.js`), so changing them only needs a push:
+$634,735,251,526,437,352,826 money, 67,243,852,825,918 coins, 65,375,276,637,635,180 points, level 652,853,
+87,963,845,395 games played, 75,375,285,572 won, 90% win chance, and every badge.
 
-Leave out a field to use `0`. Level *n* needs `50·n·(n−1)` points.
+Other roles can still set `moneyBase`, `coinsBase`, `pointsBase`, `playedBase`, `winsBase` and `winChance` as **string** fields in their `roles` document.
 
 The next time they open ROBLOC, their profile picks up the role, badge tag and starting balances. Players cannot write to `roles`, and nobody can write to anyone else's `users` document.
 
