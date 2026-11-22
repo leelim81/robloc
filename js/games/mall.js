@@ -93,7 +93,7 @@ function drawStore(ctx, s, x, t, near) {
   ctx.fillStyle = '#fff'; fitText(ctx, s.icon + ' ' + s.name, x + SHOP_W / 2, 167, SHOP_W - 110);
   ctx.shadowBlur = 0;
   ctx.font = '800 12px Nunito'; ctx.fillStyle = 'rgba(255,255,255,.6)';
-  ctx.fillText(`SHOP #${s.number.toLocaleString()} · ${s.count.toLocaleString()} ITEMS`, x + SHOP_W / 2, 193);
+  ctx.fillText(`${s.section === 'Shops' ? 'SHOP' : s.section.toUpperCase()} #${s.number.toLocaleString()} · ${s.count.toLocaleString()} ITEMS`, x + SHOP_W / 2, 193);
   // windows with displays
   const win = (wx, items) => {
     ctx.fillStyle = 'rgba(224,242,254,.85)'; ctx.fillRect(wx, 230, 140, 220);
@@ -142,8 +142,8 @@ function create(env) {
     const key = dx + ',' + dy;
     if (key === '0,0') { S.lastNav = key; S.navHeld = 0; return; }
     if (key !== S.lastNav) S.navHeld = 0;
-    // holding a direction speeds up: 1, 5, 25, then 100 steps at a time
-    const mult = S.navHeld > 4 ? 100 : S.navHeld > 2.5 ? 25 : S.navHeld > 1.2 ? 5 : 1;
+    // holding a direction speeds up: 1, 5, 25, 100, then 500 steps at a time
+    const mult = S.navHeld > 5 ? 500 : S.navHeld > 4 ? 100 : S.navHeld > 2.5 ? 25 : S.navHeld > 1.2 ? 5 : 1;
     if (key !== S.lastNav || S.navT <= 0) { onMove(dx, dy, mult); S.navT = key !== S.lastNav ? 0.35 : 0.1; S.lastNav = key; audio.play('tick'); }
   }
 
@@ -313,7 +313,8 @@ function create(env) {
     panel(ctx, X, Y, W, H, '🗺️ Mall Directory', '#7c3aed');
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#cbd5e1'; ctx.font = '900 15px Nunito';
     const from = page * MAP_PAGE, to = Math.min(SHOP_COUNT, from + MAP_PAGE);
-    ctx.fillText(`Shops ${(from + 1).toLocaleString()}–${to.toLocaleString()} of ${SHOP_COUNT.toLocaleString()} · page ${page + 1} of ${pages}`, X + W / 2, Y + 84);
+    const sec = shopInfo(from).section, icon = { Shops: '🛍️', Food: '🍔', Drinks: '🧋' }[sec];
+    ctx.fillText(`${icon} ${sec} · shops ${(from + 1).toLocaleString()}–${to.toLocaleString()} of ${SHOP_COUNT.toLocaleString()} · page ${(page + 1).toLocaleString()} of ${pages.toLocaleString()}`, X + W / 2, Y + 84);
     for (let i = from; i < to; i++) {
       const k = i - from, col = k >= MAP_PAGE / 2 ? 1 : 0, row = k - col * MAP_PAGE / 2;
       const x = X + 30 + col * (W / 2 - 15), y = Y + 104 + row * 54, w = W / 2 - 45;
@@ -383,8 +384,8 @@ function drawThumb(ctx, w, h, t, view) {
 export default {
   id: 'mall',
   title: 'Shopping Mall',
-  tagline: '10,000 shops with real prices',
-  desc: 'Walk the ROBLOC Mall: 10,000 shops selling toys, food, pets, phones, cars, houses and even jets, with real prices and sales tax.',
+  tagline: '88,000 shops, food and drinks',
+  desc: 'Walk the ROBLOC Mall: 10,000 shops (toys, pets, phones, cars, houses, jets…), 68,000 food places and 10,000 drink shops, with real prices and sales tax.',
   music: 'mall',
   noDifficulty: true,
   playLabel: 'ENTER MALL',
@@ -392,7 +393,7 @@ export default {
   options: [],
   howto: `<ul>
     <li><b>Walk</b> with the joystick or arrows. Stand at a shop door and press <b>ENTER</b> (<kbd>Space</kbd>).</li>
-    <li><b>MAP</b> (<kbd>Shift</kbd>) opens the directory of all 10,000 shops. Flip pages left and right (hold to go faster) and jump to any shop.</li>
+    <li><b>MAP</b> (<kbd>Shift</kbd>) opens the directory of all 88,000 shops: shops 1–10,000 sell all kinds of things, 10,001–78,000 are food and 78,001–88,000 are drinks. Flip pages left and right (hold to go faster) and jump to any shop.</li>
     <li>Every shop sells 7 to 1,000 things. Hold up or down in a shop to scroll faster.</li>
     <li>In a shop, pick an item and press <b>BUY</b>. Prices are real and ${Math.round(TAX_RATE * 100)}% sales tax is added at checkout.</li>
     <li>You pay with your money ($) first. If you don't have enough money, you can pay with coins: 1 coin = $1.</li>

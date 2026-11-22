@@ -1,4 +1,5 @@
-// ROBLOC shop catalog: 10,000 shops. The first 18 are hand-made; the rest are generated from shop types.
+// ROBLOC shop catalog: 88,000 shops. 1-10,000 sell all kinds of things (the first 18 are hand-made),
+// 10,001-78,000 sell food and 78,001-88,000 sell drinks.
 // Prices are in cents.
 
 export const TAX_RATE = 0.08;
@@ -63,7 +64,7 @@ export function fmtCents(c) {
 // ---------- generated shops ----------
 // Shops 19 to 10,000 are generated from shop types below. The same shop number always gives the same
 // name, items and prices, so nothing needs storing. Each shop sells 7 to 1,000 items.
-export const SHOP_COUNT = 10000;
+export const SHOP_COUNT = 88000;
 
 // [item, emoji, lowest price, highest price] in dollars
 const KINDS = [
@@ -158,6 +159,65 @@ function realPrice(d) {
   return Math.round(d / 1000) * 1000 * 100;
 }
 
+
+// ---------- food and drink shops ----------
+// Shops 10,001 to 78,000 sell food; 78,001 to 88,000 sell drinks (no alcohol: it's a kids' game).
+const FOOD_V1 = ['', 'Classic', 'Spicy', 'Cheesy', 'Veggie', 'BBQ', 'Honey', 'Garlic', 'Crispy', 'Grilled', 'Smoky', 'Sweet', 'Lemon', 'Herb', 'Teriyaki', 'Chili'];
+const FOOD_V2 = [['', 1], ['Small', 0.75], ['Large', 1.35], ['Kids', 0.65], ['Combo', 1.6], ['Double', 1.7], ['Family Size', 3.2], ['Party Pack', 5.5],
+  ['Deluxe', 1.5], ['Mini', 0.5], ['Super', 1.9], ['Chef\'s Special', 2.2]];
+const DRINK_V1 = ['', 'Strawberry', 'Mango', 'Peach', 'Lemon', 'Lime', 'Blueberry', 'Cherry', 'Watermelon', 'Pineapple', 'Coconut', 'Vanilla',
+  'Chocolate', 'Caramel', 'Matcha', 'Honey', 'Raspberry', 'Passion Fruit', 'Banana', 'Mint', 'Orange', 'Grape', 'Kiwi', 'Lychee'];
+const DRINK_V2 = [['', 1], ['Small', 0.8], ['Medium', 1], ['Large', 1.25], ['Extra Large', 1.5], ['Kids', 0.7], ['Iced', 1.05], ['Frozen', 1.15],
+  ['2-Pack', 1.85], ['6-Pack', 4.5], ['Party Jug', 6], ['Sparkling', 1.1]];
+const OWNERS = ["Rosa's", "Kenji's", "Mama Lu's", "Big Tony's", "Aunt May's", "Chef Ravi's", "Grandma Joy's", "Uncle Sam's", "Mia's", "Leo's",
+  "Priya's", "Carlos's", "Hana's", "Omar's", "Nina's", "Jojo's", "Marco's", "Lily's", "Kai's", "Ana's", "Zara's", "Benny's", "Sofia's", "Ming's"];
+const food = (key, words, icon, color, t) => ({ key, words, icon, color, t, v1: FOOD_V1, v2: FOOD_V2 });
+const drink = (key, words, icon, color, t) => ({ key, words, icon, color, t, v1: DRINK_V1, v2: DRINK_V2 });
+const FOOD_KINDS = [
+  food('burger', ['Burgers', 'Burger Joint', 'Burger Bar', 'Grill'], '🍔', '#b45309', [['Burger', '🍔', 6, 14], ['Cheeseburger', '🍔', 7, 15], ['Fries', '🍟', 2.5, 6], ['Chicken Burger', '🍔', 7, 14], ['Onion Rings', '🧅', 3, 7], ['Hot Dog', '🌭', 3, 8]]),
+  food('sushi', ['Sushi', 'Sushi Bar', 'Sushi House'], '🍣', '#e11d48', [['Sushi Roll', '🍣', 6, 18], ['Salmon Nigiri', '🍣', 4, 10], ['Miso Soup', '🥣', 2.5, 6], ['Bento Box', '🍱', 10, 25], ['Rice Ball', '🍙', 2, 5], ['Shrimp Tempura', '🍤', 7, 16]]),
+  food('tacos', ['Tacos', 'Taqueria', 'Cantina', 'Taco Stand'], '🌮', '#ea580c', [['Taco', '🌮', 2.5, 6], ['Burrito', '🌯', 7, 14], ['Nachos', '🧀', 5, 12], ['Quesadilla', '🫓', 6, 12], ['Tamale', '🫔', 3, 7], ['Chips & Salsa', '🌶️', 3, 7]]),
+  food('noodles', ['Noodles', 'Noodle House', 'Ramen', 'Noodle Bar'], '🍜', '#dc2626', [['Ramen', '🍜', 9, 18], ['Pho', '🍜', 9, 16], ['Fried Noodles', '🍝', 8, 15], ['Udon', '🍜', 9, 16], ['Spring Rolls', '🥟', 4, 9], ['Dumplings', '🥟', 5, 12]]),
+  food('bbq', ['BBQ', 'Smokehouse', 'Barbecue', 'Pit'], '🍖', '#7c2d12', [['Ribs', '🍖', 14, 32], ['Brisket', '🥩', 13, 28], ['Pulled Pork', '🥪', 9, 16], ['Corn on the Cob', '🌽', 2.5, 6], ['Mac & Cheese', '🧀', 4, 9], ['Chicken Wings', '🍗', 8, 18]]),
+  food('chicken', ['Fried Chicken', 'Chicken Shack', 'Wings', 'Cluckers'], '🍗', '#f59e0b', [['Chicken Bucket', '🍗', 15, 35], ['Chicken Strips', '🍗', 6, 12], ['Wings', '🍗', 8, 18], ['Chicken Sandwich', '🥪', 6, 12], ['Coleslaw', '🥗', 2.5, 5], ['Biscuit', '🍞', 1.5, 4]]),
+  food('salad', ['Salads', 'Green Bowl', 'Fresh Greens'], '🥗', '#16a34a', [['Garden Salad', '🥗', 7, 13], ['Caesar Salad', '🥗', 8, 14], ['Grain Bowl', '🥙', 9, 15], ['Fruit Cup', '🍓', 4, 8], ['Avocado Toast', '🥑', 7, 13], ['Wrap', '🌯', 8, 13]]),
+  food('sandwich', ['Sandwiches', 'Deli', 'Sub Shop', 'Sandwich Co.'], '🥪', '#ca8a04', [['Sub Sandwich', '🥪', 7, 14], ['Grilled Cheese', '🧀', 5, 9], ['Club Sandwich', '🥪', 8, 14], ['Bagel Sandwich', '🥯', 5, 10], ['Soup', '🥣', 4, 8], ['Pickle', '🥒', 1, 3]]),
+  food('pasta', ['Pasta', 'Trattoria', 'Italian Kitchen'], '🍝', '#b91c1c', [['Spaghetti', '🍝', 10, 20], ['Lasagna', '🍝', 12, 22], ['Ravioli', '🍝', 11, 20], ['Garlic Bread', '🥖', 4, 8], ['Meatballs', '🧆', 7, 13], ['Tiramisu', '🍰', 6, 10]]),
+  food('curry', ['Curry House', 'Spice Kitchen', 'Curry'], '🍛', '#d97706', [['Chicken Curry', '🍛', 11, 19], ['Veggie Curry', '🍛', 9, 16], ['Naan', '🫓', 2.5, 5], ['Samosa', '🥟', 2, 5], ['Rice', '🍚', 2.5, 5], ['Mango Pudding', '🍮', 4, 7]]),
+  food('dimsum', ['Dim Sum', 'Dumpling House', 'Tea Garden'], '🥟', '#be123c', [['Dumplings', '🥟', 5, 11], ['Bao Bun', '🥟', 3, 7], ['Fried Rice', '🍚', 8, 14], ['Egg Tart', '🥧', 2.5, 5], ['Spring Roll', '🥢', 3, 6], ['Fortune Cookie', '🥠', 0.5, 2]]),
+  food('steak', ['Steakhouse', 'Grill House', 'Chophouse'], '🥩', '#7f1d1d', [['Steak', '🥩', 22, 65], ['Baked Potato', '🥔', 4, 9], ['Grilled Chicken', '🍗', 15, 28], ['Salad', '🥗', 6, 12], ['Corn', '🌽', 3, 6], ['Chocolate Cake', '🍰', 7, 12]]),
+  food('seafood', ['Seafood', 'Fish Shack', 'Oyster Bar', 'Crab House'], '🦞', '#0369a1', [['Fish & Chips', '🐟', 11, 20], ['Shrimp Basket', '🍤', 12, 22], ['Lobster', '🦞', 30, 75], ['Crab Legs', '🦀', 25, 60], ['Clam Chowder', '🥣', 6, 11], ['Fish Tacos', '🌮', 9, 15]]),
+  food('breakfast', ['Diner', 'Pancake House', 'Breakfast Club', 'Waffle House'], '🥞', '#f59e0b', [['Pancakes', '🥞', 7, 13], ['Waffles', '🧇', 7, 13], ['Eggs & Bacon', '🍳', 8, 14], ['French Toast', '🍞', 7, 12], ['Omelette', '🍳', 8, 14], ['Cereal Bowl', '🥣', 3, 6]]),
+  food('dessert', ['Desserts', 'Sweet Spot', 'Dessert Bar', 'Patisserie'], '🍰', '#ec4899', [['Cheesecake', '🍰', 5, 9], ['Brownie', '🍫', 3, 6], ['Macarons', '🍬', 2, 15], ['Crepe', '🥞', 6, 11], ['Pudding', '🍮', 3, 7], ['Cookie Sandwich', '🍪', 3, 6]]),
+  food('donuts', ['Donuts', 'Donut Shop', 'Glazed'], '🍩', '#f472b6', [['Glazed Donut', '🍩', 1.2, 3], ['Sprinkle Donut', '🍩', 1.5, 3.5], ['Donut Holes', '🍩', 2, 6], ['Box of a Dozen', '📦', 12, 24], ['Cruller', '🍩', 1.5, 3.5], ['Bear Claw', '🥐', 2.5, 5]]),
+  food('kebab', ['Kebab', 'Grill Express', 'Shawarma', 'Gyro Spot'], '🥙', '#92400e', [['Kebab', '🥙', 8, 15], ['Shawarma Wrap', '🌯', 8, 14], ['Falafel', '🧆', 6, 11], ['Hummus Plate', '🫓', 6, 11], ['Rice Plate', '🍚', 10, 16], ['Baklava', '🍯', 3, 6]]),
+  food('fruit', ['Fruit Stand', 'Orchard', 'Fruit Market'], '🍓', '#65a30d', [['Strawberries', '🍓', 3, 7], ['Grapes', '🍇', 3, 7], ['Mango', '🥭', 1.5, 4], ['Pineapple', '🍍', 3, 6], ['Cherries', '🍒', 4, 9], ['Peaches', '🍑', 2, 6]]),
+  food('cheese', ['Cheese Shop', 'Fromagerie', 'Cheese Cave'], '🧀', '#eab308', [['Cheddar', '🧀', 5, 14], ['Swiss Cheese', '🧀', 6, 15], ['Mozzarella', '🧀', 4, 10], ['Brie', '🧀', 7, 18], ['Crackers', '🍘', 3, 7], ['Cheese Board', '🧀', 20, 60]]),
+  food('chocolate', ['Chocolatier', 'Cocoa Shop', 'Chocolate Factory'], '🍫', '#78350f', [['Chocolate Bar', '🍫', 2, 8], ['Truffles', '🍬', 8, 30], ['Chocolate Egg', '🥚', 3, 12], ['Hot Fudge', '🍫', 5, 10], ['Chocolate Strawberries', '🍓', 10, 25], ['Cocoa Box', '🎁', 15, 60]]),
+  food('soup', ['Soup Kitchen', 'Soup Bar', 'Bowl House'], '🥣', '#ea580c', [['Tomato Soup', '🥣', 4, 8], ['Chicken Noodle Soup', '🍜', 5, 9], ['Corn Chowder', '🥣', 5, 9], ['Lentil Soup', '🥣', 4, 8], ['Bread Bowl', '🍞', 6, 11], ['Crackers', '🍘', 1, 3]]),
+  food('poke', ['Poke Bowls', 'Island Bowls', 'Poke Bar'], '🍱', '#0d9488', [['Poke Bowl', '🍱', 11, 18], ['Tuna Bowl', '🐟', 12, 19], ['Tofu Bowl', '🍱', 10, 16], ['Seaweed Salad', '🥗', 4, 7], ['Edamame', '🫛', 3, 6], ['Mochi', '🍡', 2, 5]]),
+  food('popcorn', ['Popcorn', 'Snack Shack', 'Snack Bar'], '🍿', '#facc15', [['Popcorn', '🍿', 3, 9], ['Pretzel', '🥨', 3, 6], ['Nachos', '🧀', 4, 8], ['Corn Dog', '🌭', 3, 6], ['Chips', '🥔', 1.5, 4], ['Peanuts', '🥜', 2, 5]]),
+];
+const DRINK_KINDS = [
+  drink('juice', ['Juice Bar', 'Juicery', 'Fresh Squeeze'], '🧃', '#f97316', [['Orange Juice', '🧃', 3, 7], ['Apple Juice', '🧃', 3, 6], ['Green Juice', '🥬', 5, 9], ['Carrot Juice', '🥕', 4, 8], ['Fruit Punch', '🍹', 3, 6]]),
+  drink('smoothie', ['Smoothies', 'Smoothie Bar', 'Blend'], '🥤', '#ec4899', [['Smoothie', '🥤', 5, 9], ['Protein Shake', '🥤', 6, 10], ['Acai Bowl', '🫐', 8, 13], ['Yogurt Shake', '🥛', 5, 8]]),
+  drink('bubbletea', ['Bubble Tea', 'Boba', 'Tea Pearls', 'Boba Bar'], '🧋', '#a16207', [['Bubble Tea', '🧋', 4.5, 7], ['Milk Tea', '🧋', 4, 6.5], ['Fruit Tea', '🍹', 4, 6.5], ['Slush', '🥤', 4.5, 7]]),
+  drink('tea', ['Tea House', 'Tea Room', 'Teapot'], '🍵', '#15803d', [['Green Tea', '🍵', 2.5, 5], ['Black Tea', '☕', 2.5, 5], ['Herbal Tea', '🍵', 3, 5.5], ['Iced Tea', '🧊', 2.5, 5], ['Chai', '☕', 3.5, 6]]),
+  drink('lemonade', ['Lemonade Stand', 'Lemonade', 'Citrus Bar'], '🍋', '#facc15', [['Lemonade', '🍋', 2, 5], ['Pink Lemonade', '🍋', 2.5, 5], ['Limeade', '🍈', 2.5, 5], ['Lemon Slush', '🧊', 3, 6]]),
+  drink('soda', ['Soda Fountain', 'Fizz', 'Pop Shop'], '🥤', '#dc2626', [['Soda', '🥤', 1.5, 4], ['Root Beer Float', '🍺', 3.5, 6], ['Cream Soda', '🥤', 2, 4], ['Ginger Ale', '🥤', 1.5, 4], ['Cola', '🥤', 1.5, 4]]),
+  drink('shake', ['Milkshakes', 'Shake Shop', 'Malt Bar'], '🥛', '#f472b6', [['Milkshake', '🥤', 4.5, 8], ['Malt', '🥛', 5, 8], ['Float', '🍨', 4, 7], ['Chocolate Milk', '🥛', 2, 4]]),
+  drink('cocoa', ['Hot Cocoa', 'Cocoa Café', 'Warm Cups'], '☕', '#78350f', [['Hot Chocolate', '☕', 3, 6], ['Marshmallow Cocoa', '☕', 3.5, 6.5], ['Steamed Milk', '🥛', 2.5, 4.5], ['Cocoa Mix', '🍫', 4, 10]]),
+  drink('water', ['Water Bar', 'Spring Water', 'Aqua'], '💧', '#0ea5e9', [['Spring Water', '💧', 1, 3], ['Sparkling Water', '🫧', 1.5, 3.5], ['Coconut Water', '🥥', 2.5, 5], ['Vitamin Water', '💧', 2, 4]]),
+  drink('coconut', ['Coconut Stand', 'Tropical Drinks', 'Island Sips'], '🥥', '#0d9488', [['Coconut Drink', '🥥', 4, 7], ['Pineapple Punch', '🍍', 4, 7], ['Mango Lassi', '🥭', 4, 7], ['Tropical Cooler', '🍹', 4, 7]]),
+];
+const FOOD_FROM = 10000, DRINK_FROM = 78000;
+export const SECTIONS = [
+  { name: 'Shops', from: 0, to: FOOD_FROM },
+  { name: 'Food', from: FOOD_FROM, to: DRINK_FROM },
+  { name: 'Drinks', from: DRINK_FROM, to: 88000 },
+];
+export const sectionOf = i => SECTIONS.find(s => i >= s.from && i < s.to) || SECTIONS[0];
+
 const infoCache = new Map(), itemCache = new Map();
 function remember(cache, key, val) { if (cache.size > 200) cache.delete(cache.keys().next().value); cache.set(key, val); return val; }
 
@@ -168,11 +228,13 @@ export function shopInfo(i) {
   const count = 7 + Math.floor(r() * 994);
   if (i < CURATED.length) {
     const c = CURATED[i];
-    return remember(infoCache, i, { index: i, number: i + 1, name: c.name, icon: c.icon, color: c.color, kind: KIND_BY_KEY[c.id], count: Math.max(count, c.items.length) });
+    return remember(infoCache, i, { index: i, number: i + 1, name: c.name, icon: c.icon, color: c.color, kind: KIND_BY_KEY[c.id], count: Math.max(count, c.items.length), section: 'Shops' });
   }
-  const kind = KINDS[Math.floor(r() * KINDS.length)];
-  const name = PREFIXES[Math.floor(r() * PREFIXES.length)] + ' ' + kind.words[Math.floor(r() * kind.words.length)];
-  return remember(infoCache, i, { index: i, number: i + 1, name, icon: kind.icon, color: kind.color, kind, count });
+  const kinds = i >= DRINK_FROM ? DRINK_KINDS : i >= FOOD_FROM ? FOOD_KINDS : KINDS;
+  const kind = kinds[Math.floor(r() * kinds.length)];
+  const lead = kinds !== KINDS && r() < 0.5 ? OWNERS[Math.floor(r() * OWNERS.length)] : PREFIXES[Math.floor(r() * PREFIXES.length)];
+  const name = lead + ' ' + kind.words[Math.floor(r() * kind.words.length)];
+  return remember(infoCache, i, { index: i, number: i + 1, name, icon: kind.icon, color: kind.color, kind, count, section: sectionOf(i).name });
 }
 
 // Every item in shop i: { id, name, icon, cents }
@@ -181,10 +243,11 @@ export function shopItems(i) {
   const info = shopInfo(i), kind = info.kind, T = kind.t.length;
   const out = i < CURATED.length ? CURATED[i].items.slice() : [];
   const seen = new Set(out.map(it => it.name));
-  const combos = T * COLORS.length * MODS.length;
+  const V1 = kind.v1 || COLORS, V2 = kind.v2 || MODS;
+  const combos = T * V1.length * V2.length;
   for (let j = 0; out.length < info.count && j < 5000; j++) {
     const [noun, icon, lo, hi] = kind.t[j % T];
-    const color = COLORS[Math.floor(j / T) % COLORS.length], [mod, mult] = MODS[Math.floor(j / (T * COLORS.length)) % MODS.length];
+    const color = V1[Math.floor(j / T) % V1.length], [mod, mult] = V2[Math.floor(j / (T * V1.length)) % V2.length];
     const series = Math.floor(j / combos);
     const name = [mod, color, noun].filter(Boolean).join(' ') + (series ? ` Series ${series + 1}` : '');
     if (seen.has(name)) continue;

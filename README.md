@@ -11,7 +11,7 @@ Live site: https://leelim81.github.io/robloc
 | Soccer: 3-a-side stadium match (striker, midfielder, goalkeeper) | Playable |
 | Pickleball: singles with serve, two-bounce, kitchen and side-out rules | Playable |
 | Baseball: bat and pitch through 1, 3 or 5 innings with balls, strikes, outs and base runners | Playable |
-| Shopping Mall: 10,000 shops (toys, food, pets, electronics, cars, homes, jets…), each selling 7 to 1,000 items at real prices plus 8% sales tax | Playable |
+| Shopping Mall: 88,000 shops (10,000 general shops, 68,000 food places, 10,000 drink shops), each selling 7 to 1,000 items at real prices plus 8% sales tax | Playable |
 | Guess the Price, Transport Modes, Dream Store, Prize Machine, Brick Builder Shop | Coming soon |
 
 Everything is drawn and synthesized in the browser: characters, stadiums, music and sound effects. There are no image or audio files to license.
@@ -38,7 +38,7 @@ js/games/soccer.js    Soccer
 js/games/pickleball.js Pickleball
 js/games/baseball.js  Baseball
 js/games/mall.js      Shopping Mall
-js/games/shops.js     shop catalog: 18 hand-made shops + generated shops 19–10,000
+js/games/shops.js     shop catalog: 18 hand-made shops + generated shops up to 88,000 (food and drinks)
 firestore.rules       security rules to publish in the Firebase console
 ```
 
