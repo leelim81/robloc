@@ -98,21 +98,32 @@ function drawCar(ctx, x, y, s, color) {
   ctx.fillStyle = '#94a3b8';
   ctx.beginPath(); ctx.arc(x + 28 * s, y - 8 * s, 6 * s, 0, Math.PI * 2); ctx.arc(x + 92 * s, y - 8 * s, 6 * s, 0, Math.PI * 2); ctx.fill();
 }
+// B1 car park: the bays are painted ON THE FLOOR, not on the wall.
+// Each bay is a ground plot (a trapezoid following the floor's perspective),
+// with its number painted on the floor and the car parked inside it.
 function drawBays(ctx, camX, x0, W) {
   const first = clamp(Math.floor((camX + x0 - X0) / BAY_W), 0, BAYS - 1), last = clamp(Math.ceil((camX + x0 + W - X0) / BAY_W), 0, BAYS - 1);
+  // The bay plot on the floor: from just below the wall base to 125px out,
+  // slanting the same way as the floor tiles (-140 over the floor height).
+  const TOP = FLOOR + 5, BOT = FLOOR + 125, SLANT = -93;
+  const shiftAt = y => SLANT * (y - TOP) / (BOT - TOP);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   for (let i = first; i <= last; i++) {
     const x = X0 + i * BAY_W;
     ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(x + 6, 250); ctx.lineTo(x + 6, FLOOR); ctx.moveTo(x + BAY_W - 6, 250); ctx.lineTo(x + BAY_W - 6, FLOOR); ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = "900 26px 'Lilita One'";
-    ctx.fillText('B' + (i + 1), x + BAY_W / 2, 215);
-    // Cars park on the floor: the wheels (bottom of the car, y + 5) touch FLOOR.
-    if (bayRand(i) < 0.75) drawCar(ctx, x + (BAY_W - 120) / 2, FLOOR - 5, 1, CAR_COLORS[Math.floor(bayRand(i + 1000) * CAR_COLORS.length)]);
-    else { ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.font = '900 16px Nunito'; ctx.fillText('EMPTY', x + BAY_W / 2, 400); }
+    ctx.beginPath();
+    ctx.moveTo(x + 6, TOP); ctx.lineTo(x + 6 + SLANT, BOT);
+    ctx.moveTo(x + BAY_W - 6, TOP); ctx.lineTo(x + BAY_W - 6 + SLANT, BOT);
+    ctx.moveTo(x + 6 + SLANT, BOT); ctx.lineTo(x + BAY_W - 6 + SLANT, BOT);
+    ctx.stroke();
+    // Bay number painted on the floor at the front of the bay.
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = "900 24px 'Lilita One'";
+    ctx.fillText('B' + (i + 1), x + BAY_W / 2 + SLANT, BOT - 20);
+    // The car parks inside its bay on the floor (wheels touch the ground).
+    const carY = FLOOR + 60;
+    if (bayRand(i) < 0.75) drawCar(ctx, x + (BAY_W - 120) / 2 + shiftAt(carY), carY, 1, CAR_COLORS[Math.floor(bayRand(i + 1000) * CAR_COLORS.length)]);
+    else { ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.font = '900 16px Nunito'; ctx.fillText('EMPTY', x + BAY_W / 2 + shiftAt((TOP + BOT) / 2), (TOP + BOT) / 2); }
   }
-  ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.moveTo(X0, FLOOR); ctx.lineTo(X0 + BAYS * BAY_W, FLOOR); ctx.stroke();
 }
 function drawElevator(ctx, x, floor, t, near) {
   ctx.fillStyle = '#475569'; ctx.fillRect(x - 115, 130, 230, FLOOR - 130);
