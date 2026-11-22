@@ -460,7 +460,7 @@ const host = {
     const shop = {
       profile: () => state.profile,
       buy: async (item, cents) => {
-        const res = await backend.purchase(item.id, cents);
+        const res = await backend.purchase(item.id, cents, state.profile);
         state.profile = normalizeProfile(res.profile);
         return res;
       },

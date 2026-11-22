@@ -475,7 +475,7 @@ function create(env) {
     ctx.fillText(`Price ${fmtCents(r.item.cents)} · Tax ${fmtCents(r.total - r.item.cents)}`, 0, 44);
     ctx.fillStyle = '#16a34a'; ctx.font = "22px 'Lilita One'";
     ctx.fillText(r.plan.money ? `PAID ${fmtCents(r.plan.money)}` : `PAID ${r.plan.coins.toLocaleString()} COINS`, 0, 84);
-    if (r.deviceOnly) { ctx.fillStyle = '#b45309'; ctx.font = '800 12px Nunito'; ctx.fillText('Saved on this device (Firebase rules not published yet)', 0, 112); }
+    if (r.deviceOnly) { ctx.fillStyle = '#b45309'; ctx.font = '800 12px Nunito'; ctx.fillText('Saved on this device (Firebase did not answer)', 0, 112); }
     ctx.restore();
   }
   function toastBar(ctx, text, color) {
