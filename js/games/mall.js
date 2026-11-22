@@ -7,18 +7,26 @@ import { payPlan as planFor, coinsOf, moneyCentsOf, itemsOwned, formatBig, forma
 import { SHOP_COUNT, SECTIONS, shopInfo, shopItems, withTax, fmtCents, TAX_RATE } from './shops.js';
 
 const SHOP_W = 470, X0 = 260, FLOOR = 540;
-const WORLD_W = X0 * 2 + SHOP_COUNT * SHOP_W;
+// The mall has 3 floors: 1 = shops, 2 = food, 3 = drinks. Each floor is its own long hallway.
+const FLOORS = [
+  { name: 'Shops', title: 'Floor 1 · Shops', icon: '🛍️', wall: ['#e0e7ff', '#f8fafc'], tile: ['#e7e5e4', '#d6d3d1'] },
+  { name: 'Food', title: 'Floor 2 · Food Court', icon: '🍔', wall: ['#ffedd5', '#fff7ed'], tile: ['#fef3c7', '#fde68a'] },
+  { name: 'Drinks', title: 'Floor 3 · Drinks', icon: '🧋', wall: ['#cffafe', '#f0fdfa'], tile: ['#ccfbf1', '#99f6e4'] },
+];
+const floorOf = i => SECTIONS.findIndex(s => i >= s.from && i < s.to);
+const worldW = f => X0 * 2 + (SECTIONS[f].to - SECTIONS[f].from) * SHOP_W;
+const ELEV_X = X0 - 130;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rand = (a, b) => a + Math.random() * (b - a);
-const doorX = i => X0 + i * SHOP_W + SHOP_W / 2;
 const MAP_PAGE = 16;
 
 // ---------- scenery ----------
-function drawMall(ctx, view, camX, t, nearShop) {
+function drawMall(ctx, view, camX, t, nearShop, floor = 0) {
+  const FL = FLOORS[floor], from = SECTIONS[floor].from, count = SECTIONS[floor].to - from, WORLD_W = worldW(floor);
   const x0 = -view.ox, y0 = -view.oy, W = view.W, H = view.H;
   // upper level and skylights
   const wall = ctx.createLinearGradient(0, y0, 0, FLOOR);
-  wall.addColorStop(0, '#e0e7ff'); wall.addColorStop(1, '#f8fafc');
+  wall.addColorStop(0, FL.wall[0]); wall.addColorStop(1, FL.wall[1]);
   ctx.fillStyle = wall; ctx.fillRect(x0, y0, W, FLOOR - y0);
   ctx.save(); ctx.translate(-camX * 0.5, 0);
   for (let x = Math.floor((camX * 0.5 + x0) / 300) * 300 - 300; x < camX * 0.5 + x0 + W + 300; x += 300) {
@@ -36,7 +44,7 @@ function drawMall(ctx, view, camX, t, nearShop) {
   ctx.fillStyle = '#e2e8f0'; ctx.fillRect(x0, 112, W, 10);
   // floor
   const fl = ctx.createLinearGradient(0, FLOOR, 0, y0 + H);
-  fl.addColorStop(0, '#e7e5e4'); fl.addColorStop(1, '#d6d3d1');
+  fl.addColorStop(0, FL.tile[0]); fl.addColorStop(1, FL.tile[1]);
   ctx.fillStyle = fl; ctx.fillRect(x0, FLOOR, W, y0 + H - FLOOR);
   ctx.strokeStyle = 'rgba(120,113,108,.18)'; ctx.lineWidth = 1.5;
   for (let x = Math.floor((camX + x0) / 90) * 90 - camX; x < x0 + W + 200; x += 90) { ctx.beginPath(); ctx.moveTo(x, FLOOR); ctx.lineTo(x - 140, y0 + H); ctx.stroke(); }
@@ -44,16 +52,17 @@ function drawMall(ctx, view, camX, t, nearShop) {
 
   ctx.save(); ctx.translate(-camX, 0);
   const vis0 = camX + x0 - SHOP_W, vis1 = camX + x0 + W + SHOP_W;
-  // mall entrance at both ends
-  for (const ex of [X0 - 130, WORLD_W - X0 + 130]) {
-    if (ex < vis0 || ex > vis1) continue;
+  // elevator at the start of every floor, mall exit at the end
+  if (ELEV_X > vis0) drawElevator(ctx, ELEV_X, floor, t, nearShop === 'elevator');
+  const ex = WORLD_W - X0 + 130;
+  if (ex < vis1) {
     ctx.fillStyle = '#94a3b8'; ctx.fillRect(ex - 110, 140, 220, FLOOR - 140);
     ctx.fillStyle = '#bae6fd'; ctx.fillRect(ex - 95, 190, 190, FLOOR - 190);
     ctx.fillStyle = '#0f172a'; ctx.font = "26px 'Lilita One'"; ctx.textAlign = 'center'; ctx.fillText('ROBLOC MALL', ex, 172);
   }
-  const first = clamp(Math.floor((vis0 - X0) / SHOP_W), 0, SHOP_COUNT - 1), last = clamp(Math.ceil((vis1 - X0) / SHOP_W), 0, SHOP_COUNT - 1);
-  for (let i = first; i <= last; i++) {
-    const x = X0 + i * SHOP_W;
+  const first = clamp(Math.floor((vis0 - X0) / SHOP_W), 0, count - 1), last = clamp(Math.ceil((vis1 - X0) / SHOP_W), 0, count - 1);
+  for (let li = first; li <= last; li++) {
+    const i = from + li, x = X0 + li * SHOP_W;
     const info = shopInfo(i), s = { ...info, items: shopItems(i).slice(0, 8) };
     drawStore(ctx, s, x, t, nearShop === i);
     // pillar + plant between stores
@@ -65,9 +74,23 @@ function drawMall(ctx, view, camX, t, nearShop) {
       for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.ellipse(x + (k - 2) * 9, FLOOR - 26 - Math.abs(k - 2) * -4, 10, 22, (k - 2) * 0.35, 0, Math.PI * 2); ctx.fill(); }
     }
     // a fountain every few shops
-    if (i % 9 === 8) drawFountain(ctx, x + SHOP_W, t);
+    if (li % 9 === 8) drawFountain(ctx, x + SHOP_W, t);
   }
   ctx.restore();
+}
+function drawElevator(ctx, x, floor, t, near) {
+  ctx.fillStyle = '#475569'; ctx.fillRect(x - 115, 130, 230, FLOOR - 130);
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(x - 70, 144, 140, 44);
+  ctx.fillStyle = '#f87171'; ctx.font = "30px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(`${['▲', '▲▼', '▼'][floor]} ${floor + 1}`, x, 168);
+  const open = near ? 0.35 + Math.sin(t * 3) * 0.05 : 0;
+  const dg = ctx.createLinearGradient(x - 90, 0, x + 90, 0);
+  dg.addColorStop(0, '#cbd5e1'); dg.addColorStop(0.5, '#f1f5f9'); dg.addColorStop(1, '#94a3b8');
+  ctx.fillStyle = '#1e293b'; ctx.fillRect(x - 90, 210, 180, FLOOR - 210);
+  ctx.fillStyle = dg;
+  ctx.fillRect(x - 90, 210, 90 * (1 - open), FLOOR - 210); ctx.fillRect(x + 90 * open, 210, 90 * (1 - open), FLOOR - 210);
+  ctx.strokeStyle = '#64748b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, 210); ctx.lineTo(x, FLOOR); ctx.stroke();
+  ctx.fillStyle = near ? '#facc15' : '#e2e8f0'; ctx.font = '900 14px Nunito'; ctx.fillText('🛗 ELEVATOR', x, 200);
 }
 function drawFountain(ctx, x, t) {
   const y = FLOOR + 70;
@@ -123,7 +146,11 @@ function fitText(ctx, text, x, y, maxW) {
 function create(env) {
   const { input, audio, fx, profile, shop } = env;
   const av = profile?.avatar || {};
-  const me = { x: X0 - 60, y: FLOOR + 90, vx: 0, phase: 0, flip: false };
+  const me = { x: X0 - 40, y: FLOOR + 90, vx: 0, phase: 0, flip: false };
+  let floor = 0;
+  const WW = () => worldW(floor);
+  const doorX = i => X0 + (i - SECTIONS[floor].from) * SHOP_W + SHOP_W / 2;
+  const nearElevator = () => Math.abs(me.x - ELEV_X) < 110;
   const npcs = Array.from({ length: 14 }, () => ({
     x: rand(X0, X0 + 6 * SHOP_W), y: rand(FLOOR + 40, FLOOR + 150), dir: Math.random() < 0.5 ? -1 : 1, speed: rand(50, 110), phase: rand(0, 6),
     look: { skin: SKINS[(Math.random() * SKINS.length) | 0], hair: HAIRS[(Math.random() * 7) | 0], style: HAIR_STYLES[(Math.random() * 5) | 0], shirt: SHIRTS[(Math.random() * SHIRTS.length) | 0] },
@@ -165,8 +192,14 @@ function create(env) {
   }
 
   function nearShop() {
-    const i = Math.floor((me.x - X0) / SHOP_W);
-    return i >= 0 && i < SHOP_COUNT && Math.abs(me.x - doorX(i)) < SHOP_W / 2 - 12 ? i : -1;
+    const li = Math.floor((me.x - X0) / SHOP_W), n = SECTIONS[floor].to - SECTIONS[floor].from, i = SECTIONS[floor].from + li;
+    return li >= 0 && li < n && Math.abs(me.x - doorX(i)) < SHOP_W / 2 - 12 ? i : -1;
+  }
+  function openElevator() { S.mode = 'elevator'; S.walkTo = null; S.autoShop = -1; S.liftSel = floor; audio.play('select'); }
+  function ride(f) {
+    floor = f; me.x = X0 - 40; me.vx = 0; camX = 0; S.mode = 'walk';
+    for (const n of npcs) n.x = rand(X0, X0 + 5 * SHOP_W);
+    S.floorBanner = 0; audio.play('go'); fx.dust(640, FLOOR + 70, 8);
   }
 
   // Tap targets are recorded while drawing and checked on the next update (last one drawn wins).
@@ -181,26 +214,29 @@ function create(env) {
     }
   }
   const enterShop = i => { S.mode = 'shop'; S.shop = i; S.sel = 0; S.walkTo = null; S.autoShop = -1; audio.play('select'); };
-  const openMap = () => { S.mode = 'map'; S.walkTo = null; S.autoShop = -1; const ns = nearShop(); S.mapSel = Math.max(0, ns >= 0 ? ns : clamp(Math.floor((me.x - X0) / SHOP_W), 0, SHOP_COUNT - 1)); audio.play('select'); };
-  const goToShop = i => { me.x = doorX(i); me.y = FLOOR + 70; me.vx = 0; camX = clamp(me.x - 640, 0, WORLD_W - 1280); S.mode = 'walk'; audio.play('whoosh'); fx.dust(640, FLOOR + 70, 8); };
+  const openMap = () => { S.mode = 'map'; S.walkTo = null; S.autoShop = -1; const ns = nearShop(); S.mapSel = Math.max(0, ns >= 0 ? ns : clamp(SECTIONS[floor].from + Math.floor((me.x - X0) / SHOP_W), SECTIONS[floor].from, SECTIONS[floor].to - 1)); audio.play('select'); };
+  const goToShop = i => {
+    if (floorOf(i) !== floor) { floor = floorOf(i); S.floorBanner = 0; for (const n of npcs) n.x = doorX(i) + rand(-1200, 1200); }
+    me.x = doorX(i); me.y = FLOOR + 70; me.vx = 0; camX = clamp(me.x - 640, 0, WW() - 1280); S.mode = 'walk'; audio.play('whoosh'); fx.dust(640, FLOOR + 70, 8);
+  };
 
   function update(dt) {
     handleTaps();
-    input.setTapMode(S.mode !== 'walk');
+    input.setTapMode(true);   // walk by tapping, so the joystick never blocks taps on shops or the elevator
     S.t += dt; S.intro += dt; S.navT -= dt; S.navHeld += dt; S.receiptT += dt; if (S.errorT !== undefined) S.errorT += dt;
     if (S.receipt && S.receiptT > 2.6) S.receipt = null;
     if (S.error && S.errorT > 2.6) S.error = null;
     const labelKey = S.mode;
     if (labelKey !== S.labelKey) {
       S.labelKey = labelKey;
-      const L = { walk: ['ENTER', 'MAP'], shop: ['BUY', 'LEAVE'], map: ['GO', 'CLOSE'] }[labelKey];
+      const L = { walk: ['ENTER', 'MAP'], shop: ['BUY', 'LEAVE'], map: ['GO', 'CLOSE'], elevator: ['GO', 'CLOSE'] }[labelKey];
       input.setLabels(L[0], L[1]);
     }
     // shoppers
     for (const n of npcs) {
       if (n.pause > 0) { n.pause -= dt; continue; }
       n.x += n.dir * n.speed * dt; n.phase += n.speed * dt * 0.06;
-      if (n.x < X0 - 40 || n.x > WORLD_W - X0 + 40) n.dir *= -1;
+      if (n.x < X0 - 40 || n.x > WW() - X0 + 40) n.dir *= -1;
       if (Math.abs(n.x - me.x) > 1600) { n.x = me.x + (Math.random() < 0.5 ? -1 : 1) * rand(700, 1400); n.dir = n.x > me.x ? -1 : 1; }
       if (Math.random() < dt * 0.08) n.pause = rand(1, 3);
     }
@@ -211,40 +247,52 @@ function create(env) {
       else if (S.walkTo !== null && S.walkTo !== undefined) {
         // walking to where the player tapped; enter the shop if they tapped one
         const d = S.walkTo - me.x;
-        if (Math.abs(d) < 18) { S.walkTo = null; if (S.autoShop >= 0) { const i = S.autoShop; S.autoShop = -1; enterShop(i); return; } }
+        if (Math.abs(d) < 18) {
+          S.walkTo = null;
+          if (S.autoShop >= 0) { const i = S.autoShop; S.autoShop = -1; enterShop(i); return; }
+          if (S.autoShop === 'elevator') { S.autoShop = -1; openElevator(); return; }
+        }
         else mx = clamp(d / 120, -1, 1);
       }
       me.vx += (mx * sp - me.vx) * Math.min(1, dt * 10);
-      me.x = clamp(me.x + me.vx * dt, X0 - 120, WORLD_W - X0 + 120);
+      me.x = clamp(me.x + me.vx * dt, ELEV_X - 60, WW() - X0 + 120);
       me.y = clamp(me.y + input.my * 160 * dt, FLOOR + 30, FLOOR + 160);
       if (Math.abs(me.vx) > 10) me.flip = me.vx < 0;
       me.phase += Math.abs(me.vx) * dt * 0.035 + Math.abs(input.my) * dt * 5;
       const ns = nearShop();
       if (input.a.pressed && ns >= 0) enterShop(ns);
+      else if (input.a.pressed && nearElevator()) openElevator();
       else if (input.b.pressed) openMap();
     } else if (S.mode === 'shop') {
       const items = shopItems(S.shop), cols = 4;
       nav((dx, dy, mult) => { S.sel = clamp(S.sel + dx + dy * cols * mult, 0, items.length - 1); });
       if (input.a.pressed) buy(items[S.sel]);
       if (input.b.pressed) leaveShop();
+    } else if (S.mode === 'elevator') {
+      nav((dx, dy) => { S.liftSel = clamp(S.liftSel - dy, 0, 2); });
+      if (input.a.pressed) ride(S.liftSel);
+      if (input.b.pressed) { S.mode = 'walk'; audio.play('back'); }
     } else if (S.mode === 'map') {
       // up/down pick a shop, left/right flip pages of 16 (hold to fly through thousands)
       nav((dx, dy, mult) => { S.mapSel = clamp(S.mapSel + dy * mult + dx * MAP_PAGE * mult, 0, SHOP_COUNT - 1); });
       if (input.a.pressed) goToShop(S.mapSel);
       if (input.b.pressed) { S.mode = 'walk'; audio.play('back'); }
     }
-    camX += (clamp(me.x - 640, 0, WORLD_W - 1280) - camX) * Math.min(1, dt * 6);
+    camX += (clamp(me.x - 640, ELEV_X - 260, WW() - 1280) - camX) * Math.min(1, dt * 6);
+    if (S.floorBanner !== undefined) S.floorBanner += dt;
   }
 
   function draw(ctx, view) {
     hits = [];
     const ns = S.mode === 'walk' ? nearShop() : -1;
-    drawMall(ctx, view, camX, S.t, ns);
+    drawMall(ctx, view, camX, S.t, ns >= 0 ? ns : S.mode === 'walk' && nearElevator() ? 'elevator' : -1, floor);
     if (S.mode === 'walk') {
       // tap the floor to walk there, or a shop front to walk in
-      hit(-view.ox, -view.oy, view.W, view.H, t => { S.walkTo = clamp(t.x + camX, X0 - 120, WORLD_W - X0 + 120); S.autoShop = -1; });
-      const first = Math.max(0, Math.floor((camX - view.ox - X0) / SHOP_W)), last = Math.min(SHOP_COUNT - 1, Math.ceil((camX - view.ox + view.W - X0) / SHOP_W));
-      for (let i = first; i <= last; i++) hit(X0 + i * SHOP_W + 12 - camX, 122, SHOP_W - 24, FLOOR - 122, () => { S.walkTo = doorX(i); S.autoShop = i; audio.play('tick'); });
+      hit(-view.ox, -view.oy, view.W, view.H, t => { S.walkTo = clamp(t.x + camX, ELEV_X - 60, WW() - X0 + 120); S.autoShop = -1; });
+      const from = SECTIONS[floor].from, n = SECTIONS[floor].to - from;
+      const first = Math.max(0, Math.floor((camX - view.ox - X0) / SHOP_W)), last = Math.min(n - 1, Math.ceil((camX - view.ox + view.W - X0) / SHOP_W));
+      for (let li = first; li <= last; li++) { const i = from + li; hit(X0 + li * SHOP_W + 12 - camX, 122, SHOP_W - 24, FLOOR - 122, () => { S.walkTo = doorX(i); S.autoShop = i; audio.play('tick'); }); }
+      hit(ELEV_X - 115 - camX, 130, 230, FLOOR - 130, () => { S.walkTo = ELEV_X; S.autoShop = 'elevator'; audio.play('tick'); });
     }
     // people, back to front
     const people = npcs.map(n => ({ y: n.y, d: () => drawPerson(ctx, n.x - camX, n.y, n.look, n.phase, n.pause > 0 ? 0 : 1, n.dir < 0, n.bag) }));
@@ -257,12 +305,16 @@ function create(env) {
     drawWallet(ctx);
     if (S.mode === 'walk') {
       button(ctx, 18, 68, 130, 44, '🗺️ MAP', '#7c3aed', openMap);
-      if (ns >= 0) prompt(ctx, `${input.touchMode ? 'Tap ENTER' : 'Press SPACE'} to go into ${shopInfo(ns).name}`, 1, '#fde68a');
+      button(ctx, 158, 68, 250, 44, `🛗 ${FLOORS[floor].title}`, '#0f766e', openElevator);
+      if (ns < 0 && nearElevator()) prompt(ctx, `${input.touchMode ? 'Tap the elevator' : 'Press SPACE'} to change floors`, 1, '#fde68a');
+      else if (ns >= 0) prompt(ctx, `${input.touchMode ? 'Tap ENTER' : 'Press SPACE'} to go into ${shopInfo(ns).name}`, 1, '#fde68a');
       else prompt(ctx, input.touchMode ? 'Tap a shop to go in · MAP to jump to any shop' : 'Arrows to walk · SPACE enter a shop · SHIFT mall map · or click', 0.85);
-      if (S.intro < 2) drawBanner(ctx, 'ROBLOC MALL', 640, 300, S.intro, { size: 96, color: '#fbcfe8', glow: '#db2777' });
+      if (S.intro < 2) drawBanner(ctx, 'ROBLOC MALL', 640, 300, S.intro, { size: 96, color: '#fbcfe8', glow: '#db2777', sub: FLOORS[floor].title });
+      else if (S.floorBanner !== undefined && S.floorBanner < 1.8) drawBanner(ctx, `FLOOR ${floor + 1}`, 640, 300, S.floorBanner, { size: 96, color: '#a5f3fc', glow: '#0891b2', sub: `${FLOORS[floor].icon} ${FLOORS[floor].name}` });
     }
     if (S.mode === 'shop') drawShop(ctx);
     if (S.mode === 'map') drawMap(ctx);
+    if (S.mode === 'elevator') drawLift(ctx);
     if (S.receipt) drawReceipt(ctx);
     if (S.error) toastBar(ctx, S.error, '#fecaca');
   }
@@ -389,6 +441,24 @@ function create(env) {
     ctx.fillText(`🛍️ You own ${formatBig(owned)} item${owned === 1n ? '' : 's'} · tap a shop to go there${input.touchMode ? '' : ' · or ▲▼ ◀▶ and SPACE'}`, X + W / 2, Y + H - 14);
   }
 
+  function drawLift(ctx) {
+    const X = 390, Y = 90, W = 500, H = 520;
+    panel(ctx, X, Y, W, H, '🛗 Elevator', '#0f766e');
+    closeButton(ctx, X + W - 52, Y + 13, () => { S.mode = 'walk'; audio.play('back'); });
+    [2, 1, 0].forEach((f, k) => {
+      const y = Y + 90 + k * 128, sel = S.liftSel === f, here = f === floor, sec = SECTIONS[f];
+      ctx.fillStyle = sel ? '#14b8a6' : '#1e293b'; rrect(ctx, X + 30, y, W - 60, 112, 18); ctx.fill();
+      if (sel) { ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4; rrect(ctx, X + 30, y, W - 60, 112, 18); ctx.stroke(); }
+      ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(X + 90, y + 56, 36, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fde68a'; ctx.font = "40px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(f + 1), X + 90, y + 58);
+      ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = "28px 'Lilita One'"; ctx.fillText(`${FLOORS[f].icon} ${FLOORS[f].name}`, X + 146, y + 42);
+      ctx.font = '800 14px Nunito'; ctx.fillStyle = '#cbd5e1';
+      ctx.fillText(`Shops ${(sec.from + 1).toLocaleString()}–${sec.to.toLocaleString()} · ${(sec.to - sec.from).toLocaleString()} shops`, X + 146, y + 74);
+      if (here) { ctx.fillStyle = '#facc15'; ctx.font = '900 13px Nunito'; ctx.fillText('YOU ARE HERE', X + 146, y + 96); }
+      hit(X + 30, y, W - 60, 112, () => ride(f));
+    });
+  }
+
   function drawReceipt(ctx) {
     const r = S.receipt, k = Math.min(1, S.receiptT / 0.25);
     ctx.save(); ctx.translate(640, 330); ctx.scale(0.7 + 0.3 * k, 0.7 + 0.3 * k); ctx.globalAlpha = Math.min(1, (2.6 - S.receiptT) * 2);
@@ -449,7 +519,8 @@ export default {
   labels: { a: 'ENTER', b: 'MAP' },
   options: [],
   howto: `<ul>
-    <li><b>Walk</b> with the joystick or arrows. Stand at a shop door and press <b>ENTER</b> (<kbd>Space</kbd>).</li>
+    <li>The mall has <b>3 floors</b>: Floor 1 shops, Floor 2 food court, Floor 3 drinks. Ride the 🛗 elevator at the start of each floor, or tap the floor button at the top.</li>
+    <li><b>Walk</b> by tapping where you want to go, or with the arrows. Tap a shop (or press <b>ENTER</b> / <kbd>Space</kbd> at its door) to go in.</li>
     <li><b>MAP</b> (<kbd>Shift</kbd>) opens the directory of all 88,000 shops: shops 1–10,000 sell all kinds of things, 10,001–78,000 are food and 78,001–88,000 are drinks. Flip pages left and right (hold to go faster) and jump to any shop.</li>
     <li>Every shop sells 7 to 1,000 things. Hold up or down in a shop to scroll faster.</li>
     <li>In a shop, pick an item and press <b>BUY</b>. Prices are real and ${Math.round(TAX_RATE * 100)}% sales tax is added at checkout.</li>
