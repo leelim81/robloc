@@ -93,4 +93,5 @@ Trevor, the boss, also earns money from the mall: the 8% sales tax on every purc
 - Soccer and Pickleball each start from PLAY, respond to keyboard and touch controls, and end with a results screen.
 - Rewards and new badges appear on the results screen and in the hub; reload and confirm they persist.
 - Leaderboard tabs (Overall, Soccer wins, Pickleball wins) show the top 30 players, then only your own row last, with your estimated world rank. A plain player never appears in the top 30 list itself, even if they would rank there. Trevor is always #1.
+- **Start over** (Settings, the gear): erase everything — points, coins, money, badges, wins, items — and begin again from zero. Tap it twice to confirm, so a stray tap cannot wipe a player. It only resets your own save (the rules let a player write only their own document), and it clears the device-local shop store too, so nothing old can come back. Trevor never sees this button: his numbers are the game's #1.
 - On a phone or tablet in landscape: joystick moves smoothly, buttons respond, nothing is cut off.

@@ -413,12 +413,48 @@ $$('.vol-sfx').forEach(i => { i.addEventListener('input', () => { audio.setVolum
 $('#btn-settings').addEventListener('click', () => {
   syncVolumeInputs();
   $('#settings-acct').textContent = backend.mode === 'demo' ? 'Demo mode: saved on this device only.' : `Signed in as ${state.user?.email || 'Google account'}`;
+  // The owner never starts over: his numbers are the game's #1.
+  $('#btn-start-over').classList.toggle('hidden', state.profile?.role === 'owner');
+  disarmStartOver();
   $('#settings').classList.remove('hidden');
 });
-$('#btn-settings-close').addEventListener('click', () => $('#settings').classList.add('hidden'));
-$('#btn-edit-profile').addEventListener('click', () => { $('#settings').classList.add('hidden'); openSetup(true); });
+$('#btn-settings-close').addEventListener('click', () => { $('#settings').classList.add('hidden'); disarmStartOver(); });
+$('#btn-edit-profile').addEventListener('click', () => { $('#settings').classList.add('hidden'); disarmStartOver(); openSetup(true); });
 $('#profile-chip').addEventListener('click', () => openSetup(true));
-$('#btn-signout').addEventListener('click', async () => { $('#settings').classList.add('hidden'); await backend.signOut(); });
+$('#btn-signout').addEventListener('click', async () => { $('#settings').classList.add('hidden'); disarmStartOver(); await backend.signOut(); });
+// Start over: erase everything and begin again from zero. Two taps, so a
+// stray tap cannot wipe a player. The owner never sees this button.
+let startOverArmed = false;
+function disarmStartOver() {
+  startOverArmed = false;
+  const b = $('#btn-start-over');
+  if (!b) return;
+  b.textContent = 'Start over';
+  b.classList.remove('btn-danger');
+  b.classList.add('btn-ghost');
+}
+$('#btn-start-over').addEventListener('click', async () => {
+  if (!state.profile || state.profile.role === 'owner') return;
+  const b = $('#btn-start-over');
+  if (!startOverArmed) {
+    startOverArmed = true;
+    b.textContent = 'Tap again to erase everything';
+    b.classList.remove('btn-ghost');
+    b.classList.add('btn-danger');
+    return;
+  }
+  disarmStartOver();
+  b.disabled = true;
+  try {
+    state.profile = await backend.resetProfile();
+    $('#settings').classList.add('hidden');
+    enterHub();
+    toast('Starting from zero!');
+  } catch (e) {
+    console.error(e);
+    toast('Could not start over: ' + (e.code || e.message));
+  } finally { b.disabled = false; }
+});
 
 // ---------------- game host ----------------
 const host = {

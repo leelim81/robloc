@@ -34,6 +34,17 @@ function roleValue(v) {
   return /^\d+$/.test(s) ? s : '0';
 }
 const PLAYER_ROLE = { role: 'player', moneyBase: '0', coinsBase: '0', pointsBase: '0', playedBase: '0', winsBase: '0', winChance: '0' };
+// Everything a plain player starts with: all numbers zero, no badges, no
+// items. Used by "Start over" in Settings. The role fields are plain-player
+// values, so writing them is always allowed by the rules.
+const ZERO_PROFILE = {
+  ...PLAYER_ROLE,
+  levelBase: 0, ownedBase: '0', gamesBase: {},
+  points: 0, coinsEarned: 0, totalCoinsEarned: 0,
+  badges: [], stats: {},
+  inventory: {}, moneySpentCents: '0', coinsSpent: 0, moneyEarnedCents: '0',
+  bossPaidCents: '0',
+};
 
 class FirebaseBackend {
   mode = 'firebase';
@@ -147,6 +158,18 @@ class FirebaseBackend {
   async updateIdentity({ name, avatar }) {
     await this.withRepair(() => this.F.updateDoc(this.userRef(), { name, avatar }));
   }
+  // Start over: erase everything (points, coins, money, badges, stats, items,
+  // boss tax paid) and begin again from zero. Only the signed-in player can
+  // reset their own save - the rules let a player write only their own
+  // document - so the owner cannot reset anyone else from his account. The
+  // device-local shop store is cleared too, so nothing old can merge back in.
+  async resetProfile() {
+    const { serverTimestamp } = this.F;
+    await this.withRepair(() => this.F.updateDoc(this.userRef(), { ...ZERO_PROFILE, lastAward: serverTimestamp() }));
+    clearLocal(this.user.uid);
+    const snap = await this.F.getDoc(this.userRef());
+    return normalizeProfile(snap.data());
+  }
   async recordMatch(match) {
     const { runTransaction, serverTimestamp } = this.F;
     return this.withRepair(() => runTransaction(this.db, async tx => {
@@ -243,6 +266,7 @@ function readLocal(uid) {
   catch { return { inventory: {}, moneySpentCents: '0', coinsSpent: 0 }; }
 }
 function writeLocal(uid, l) { try { localStorage.setItem(localKey(uid), JSON.stringify(l)); } catch {} }
+function clearLocal(uid) { try { localStorage.removeItem(localKey(uid)); } catch {} }
 function mergeLocal(uid, p) {
   const l = readLocal(uid), inv = { ...(p.inventory || {}) };
   for (const [k, n] of Object.entries(l.inventory)) inv[k] = (inv[k] || 0) + n;
@@ -295,6 +319,13 @@ class DemoBackend {
     this.write(p); return p;
   }
   async updateIdentity({ name, avatar }) { const p = this.read(); this.write({ ...p, name, avatar }); }
+  async resetProfile() {
+    const cur = this.read() || {};
+    const p = normalizeProfile({ ...cur, ...ZERO_PROFILE });
+    this.write(p);
+    clearLocal(this.user.uid);
+    return p;
+  }
   async recordMatch(match) {
     const p = normalizeProfile(this.read());
     const { next, reward, newBadges } = applyMatch(p, match);
