@@ -17,7 +17,7 @@ const OPT_W = 400, OPT_H = 86;
 
 function pickItem() {
   // mostly general shops, then food, then drinks
-  const r = Math.random(), sec = r < 0.5 ? SECTIONS[0] : r < 0.85 ? SECTIONS[1] : SECTIONS[2];
+  const r = Math.random(), sec = r < 0.45 ? SECTIONS[0] : r < 0.75 ? SECTIONS[1] : r < 0.88 ? SECTIONS[2] : SECTIONS[3];
   const shop = sec.from + Math.floor(Math.random() * (sec.to - sec.from));
   const items = shopItems(shop);
   return { item: items[Math.floor(Math.random() * items.length)], shop: shopInfo(shop) };

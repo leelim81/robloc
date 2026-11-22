@@ -12,6 +12,7 @@ const FLOORS = [
   { name: 'Shops', title: 'Floor 1 · Shops', icon: '🛍️', wall: ['#e0e7ff', '#f8fafc'], tile: ['#e7e5e4', '#d6d3d1'] },
   { name: 'Food', title: 'Floor 2 · Food Court', icon: '🍔', wall: ['#ffedd5', '#fff7ed'], tile: ['#fef3c7', '#fde68a'] },
   { name: 'Drinks', title: 'Floor 3 · Drinks', icon: '🧋', wall: ['#cffafe', '#f0fdfa'], tile: ['#ccfbf1', '#99f6e4'] },
+  { name: 'Clothes', title: 'Floor 4 · Clothes & Shoes', icon: '👕', wall: ['#fce7f3', '#fdf2f8'], tile: ['#f5d0fe', '#e9d5ff'] },
 ];
 const floorOf = i => SECTIONS.findIndex(s => i >= s.from && i < s.to);
 const worldW = f => X0 * 2 + (SECTIONS[f].to - SECTIONS[f].from) * SHOP_W;
@@ -82,7 +83,7 @@ function drawElevator(ctx, x, floor, t, near) {
   ctx.fillStyle = '#475569'; ctx.fillRect(x - 115, 130, 230, FLOOR - 130);
   ctx.fillStyle = '#0f172a'; ctx.fillRect(x - 70, 144, 140, 44);
   ctx.fillStyle = '#f87171'; ctx.font = "30px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(`${['▲', '▲▼', '▼'][floor]} ${floor + 1}`, x, 168);
+  ctx.fillText(`${['▲', '▲▼', '▲▼', '▼'][floor]} ${floor + 1}`, x, 168);
   const open = near ? 0.35 + Math.sin(t * 3) * 0.05 : 0;
   const dg = ctx.createLinearGradient(x - 90, 0, x + 90, 0);
   dg.addColorStop(0, '#cbd5e1'); dg.addColorStop(0.5, '#f1f5f9'); dg.addColorStop(1, '#94a3b8');
@@ -269,7 +270,7 @@ function create(env) {
       if (input.a.pressed) buy(items[S.sel]);
       if (input.b.pressed) leaveShop();
     } else if (S.mode === 'elevator') {
-      nav((dx, dy) => { S.liftSel = clamp(S.liftSel - dy, 0, 2); });
+      nav((dx, dy) => { S.liftSel = clamp(S.liftSel - dy, 0, FLOORS.length - 1); });
       if (input.a.pressed) ride(S.liftSel);
       if (input.b.pressed) { S.mode = 'walk'; audio.play('back'); }
     } else if (S.mode === 'map') {
@@ -417,7 +418,7 @@ function create(env) {
     panel(ctx, X, Y, W, H, '🗺️ Mall Directory', '#7c3aed');
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#cbd5e1'; ctx.font = '900 15px Nunito';
     const from = page * MAP_PAGE, to = Math.min(SHOP_COUNT, from + MAP_PAGE);
-    const sec = shopInfo(from).section, icon = { Shops: '🛍️', Food: '🍔', Drinks: '🧋' }[sec];
+    const sec = shopInfo(from).section, icon = { Shops: '🛍️', Food: '🍔', Drinks: '🧋', Clothes: '👕' }[sec];
     ctx.fillText(`${icon} ${sec} · shops ${(from + 1).toLocaleString()}–${to.toLocaleString()} of ${SHOP_COUNT.toLocaleString()} · page ${(page + 1).toLocaleString()} of ${pages.toLocaleString()}`, X + W / 2, Y + 84);
     for (let i = from; i < to; i++) {
       const k = i - from, col = k >= MAP_PAGE / 2 ? 1 : 0, row = k - col * MAP_PAGE / 2;
@@ -436,9 +437,9 @@ function create(env) {
     closeButton(ctx, X + W - 52, Y + 13, () => { S.mode = 'walk'; audio.play('back'); });
     // page buttons: jump to a section, or move 100 / 1 pages
     const pageTo = i => () => { S.mapSel = clamp(i, 0, SHOP_COUNT - 1); audio.play('tick'); };
-    const by = Y + 534, bw = 112, gap = 9, bx = X + (W - (7 * bw + 6 * gap)) / 2;
+    const by = Y + 534, bw = 101, gap = 8, bx = X + (W - (8 * bw + 7 * gap)) / 2;
     [['🛍️ Shops', pageTo(SECTIONS[0].from), '#0ea5e9'], ['◀◀ 100', pageTo(S.mapSel - MAP_PAGE * 100), '#334155'], ['◀', pageTo(S.mapSel - MAP_PAGE), '#334155'],
-      ['▶', pageTo(S.mapSel + MAP_PAGE), '#334155'], ['100 ▶▶', pageTo(S.mapSel + MAP_PAGE * 100), '#334155'], ['🍔 Food', pageTo(SECTIONS[1].from), '#ea580c'], ['🧋 Drinks', pageTo(SECTIONS[2].from), '#db2777']]
+      ['▶', pageTo(S.mapSel + MAP_PAGE), '#334155'], ['100 ▶▶', pageTo(S.mapSel + MAP_PAGE * 100), '#334155'], ['🍔 Food', pageTo(SECTIONS[1].from), '#ea580c'], ['🧋 Drinks', pageTo(SECTIONS[2].from), '#db2777'], ['👕 Clothes', pageTo(SECTIONS[3].from), '#7c3aed']]
       .forEach(([label, fn, color], k) => button(ctx, bx + k * (bw + gap), by, bw, 40, label, color, fn));
     const owned = itemsOwned(prof());
     ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '800 13px Nunito';
@@ -446,11 +447,11 @@ function create(env) {
   }
 
   function drawLift(ctx) {
-    const X = 390, Y = 90, W = 500, H = 520;
+    const X = 390, Y = 50, W = 500, H = 620;
     panel(ctx, X, Y, W, H, '🛗 Elevator', '#0f766e');
     closeButton(ctx, X + W - 52, Y + 13, () => { S.mode = 'walk'; audio.play('back'); });
-    [2, 1, 0].forEach((f, k) => {
-      const y = Y + 90 + k * 128, sel = S.liftSel === f, here = f === floor, sec = SECTIONS[f];
+    [3, 2, 1, 0].forEach((f, k) => {
+      const y = Y + 80 + k * 132, sel = S.liftSel === f, here = f === floor, sec = SECTIONS[f];
       ctx.fillStyle = sel ? '#14b8a6' : '#1e293b'; rrect(ctx, X + 30, y, W - 60, 112, 18); ctx.fill();
       if (sel) { ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4; rrect(ctx, X + 30, y, W - 60, 112, 18); ctx.stroke(); }
       ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(X + 90, y + 56, 36, 0, Math.PI * 2); ctx.fill();
@@ -515,17 +516,17 @@ function drawThumb(ctx, w, h, t, view) {
 export default {
   id: 'mall',
   title: 'Shopping Mall',
-  tagline: '88,000 shops, food and drinks',
-  desc: 'Walk the ROBLOC Mall: 10,000 shops (toys, pets, phones, cars, houses, jets…), 68,000 food places and 10,000 drink shops, with real prices and sales tax.',
+  tagline: '4 floors: shops, food, drinks, clothes',
+  desc: 'Walk the ROBLOC Mall: 10,000 shops (toys, pets, phones, cars, houses, jets…), 68,000 food places, 10,000 drink shops and 2,780 clothes and shoe shops on 4 floors, with real prices and sales tax.',
   music: 'mall',
   noDifficulty: true,
   playLabel: 'ENTER MALL',
   labels: { a: 'ENTER', b: 'MAP' },
   options: [],
   howto: `<ul>
-    <li>The mall has <b>3 floors</b>: Floor 1 shops, Floor 2 food court, Floor 3 drinks. Ride the 🛗 elevator at the start of each floor, or tap the floor button at the top.</li>
+    <li>The mall has <b>4 floors</b>: Floor 1 shops, Floor 2 food court, Floor 3 drinks, Floor 4 clothes &amp; shoes. Ride the 🛗 elevator at the start of each floor, or tap the floor button at the top.</li>
     <li><b>Walk</b> by tapping where you want to go, or with the arrows. Tap a shop (or press <b>ENTER</b> / <kbd>Space</kbd> at its door) to go in.</li>
-    <li><b>MAP</b> (<kbd>Shift</kbd>) opens the directory of all 88,000 shops: shops 1–10,000 sell all kinds of things, 10,001–78,000 are food and 78,001–88,000 are drinks. Flip pages left and right (hold to go faster) and jump to any shop.</li>
+    <li><b>MAP</b> (<kbd>Shift</kbd>) opens the directory of all 90,780 shops: 1–10,000 sell all kinds of things, 10,001–78,000 are food, 78,001–88,000 are drinks and 88,001–90,780 are clothes and shoes. Flip pages left and right (hold to go faster) and jump to any shop.</li>
     <li>Every shop sells 7 to 1,000 things. Hold up or down in a shop to scroll faster.</li>
     <li>In a shop, pick an item and press <b>BUY</b>. Prices are real and ${Math.round(TAX_RATE * 100)}% sales tax is added at checkout.</li>
     <li>You pay with your money ($) first. If you don't have enough money, you can pay with coins: 1 coin = $1.</li>

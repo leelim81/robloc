@@ -11,7 +11,7 @@ Live site: https://leelim81.github.io/robloc
 | Soccer: 3-a-side stadium match (striker, midfielder, goalkeeper) | Playable |
 | Pickleball: singles with serve, two-bounce, kitchen and side-out rules | Playable |
 | Baseball: bat and pitch through 1, 3 or 5 innings with balls, strikes, outs and base runners | Playable |
-| Shopping Mall: 3 floors with an elevator and 88,000 shops (Floor 1: 10,000 general shops, Floor 2: 68,000 food places, Floor 3: 10,000 drink shops), each selling 7 to 1,000 items at real prices plus 8% sales tax | Playable |
+| Shopping Mall: 4 floors with an elevator and 90,780 shops (Floor 1: 10,000 general shops, Floor 2: 68,000 food places, Floor 3: 10,000 drink shops, Floor 4: 2,780 clothes and shoe shops), each selling 7 to 1,000 items at real prices plus 8% sales tax | Playable |
 | Guess the Price: game show with real mall items; pick the right price and beat the CPU contestant | Playable |
 | Prize Machine: claw machine with plush toys, toys, coin bags and a golden crown | Playable |
 | Transport Modes, Dream Store, Brick Builder Shop | Coming soon |
@@ -42,7 +42,7 @@ js/games/baseball.js  Baseball
 js/games/mall.js      Shopping Mall
 js/games/guessprice.js Guess the Price
 js/games/prizemachine.js Prize Machine
-js/games/shops.js     shop catalog: 18 hand-made shops + generated shops up to 88,000 (food and drinks)
+js/games/shops.js     shop catalog: 18 hand-made shops + generated shops up to 90,780 (food, drinks, clothes)
 firestore.rules       security rules to publish in the Firebase console
 ```
 

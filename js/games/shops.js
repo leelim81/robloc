@@ -1,5 +1,5 @@
-// ROBLOC shop catalog: 88,000 shops. 1-10,000 sell all kinds of things (the first 18 are hand-made),
-// 10,001-78,000 sell food and 78,001-88,000 sell drinks.
+// ROBLOC shop catalog: 90,780 shops. 1-10,000 sell all kinds of things (the first 18 are hand-made),
+// 10,001-78,000 sell food, 78,001-88,000 sell drinks and 88,001-90,780 sell clothes and shoes.
 // Prices are in cents.
 
 export const TAX_RATE = 0.08;
@@ -64,7 +64,7 @@ export function fmtCents(c) {
 // ---------- generated shops ----------
 // Shops 19 to 10,000 are generated from shop types below. The same shop number always gives the same
 // name, items and prices, so nothing needs storing. Each shop sells 7 to 1,000 items.
-export const SHOP_COUNT = 88000;
+export const SHOP_COUNT = 90780;
 
 // [item, emoji, lowest price, highest price] in dollars
 const KINDS = [
@@ -215,11 +215,29 @@ const DRINK_KINDS = [
   drink('water', ['Water Bar', 'Spring Water', 'Aqua'], '💧', '#0ea5e9', [['Spring Water', '💧', 1, 3], ['Sparkling Water', '🫧', 1.5, 3.5], ['Coconut Water', '🥥', 2.5, 5], ['Vitamin Water', '💧', 2, 4]]),
   drink('coconut', ['Coconut Stand', 'Tropical Drinks', 'Island Sips'], '🥥', '#0d9488', [['Coconut Drink', '🥥', 4, 7], ['Pineapple Punch', '🍍', 4, 7], ['Mango Lassi', '🥭', 4, 7], ['Tropical Cooler', '🍹', 4, 7]]),
 ];
-const FOOD_FROM = 10000, DRINK_FROM = 78000;
+// Floor 4: clothes and shoes. Colors and sizes make the item names ("Large Pink Hoodie").
+const WEAR_V2 = [['', 1], ['Kids', 0.6], ['Small', 1], ['Medium', 1], ['Large', 1.05], ['XL', 1.1], ['Designer', 3.2], ['Sport', 1.25],
+  ['Classic', 1], ['Limited Edition', 2.6], ['2-Pack', 1.8], ['Vintage', 1.6], ['Premium', 2.1], ['Party', 1.4]];
+const wear = (key, words, icon, color, t) => ({ key, words, icon, color, t, v1: COLORS, v2: WEAR_V2 });
+const CLOTHES_KINDS = [
+  wear('tees', ['Tees', 'Shirt Shop', 'Top Shop'], '👕', '#2563eb', [['T-Shirt', '👕', 9, 40], ['Polo Shirt', '👕', 18, 70], ['Tank Top', '🎽', 8, 30], ['Long Sleeve Shirt', '👕', 14, 55], ['Button-Up Shirt', '👔', 22, 90], ['Graphic Tee', '👕', 12, 35]]),
+  wear('jeans', ['Denim', 'Jeans Co.', 'Pants Place'], '👖', '#1e40af', [['Jeans', '👖', 25, 150], ['Shorts', '🩳', 15, 60], ['Joggers', '👖', 20, 80], ['Cargo Pants', '👖', 25, 90], ['Leggings', '👖', 12, 70], ['Overalls', '👖', 30, 110]]),
+  wear('dresses', ['Dresses', 'Boutique', 'Gown Gallery'], '👗', '#db2777', [['Dress', '👗', 25, 200], ['Party Dress', '👗', 40, 300], ['Skirt', '👗', 18, 90], ['Sundress', '👗', 22, 120], ['Gown', '👗', 90, 900], ['Kimono', '👘', 50, 400]]),
+  wear('jackets', ['Outerwear', 'Coat Shop', 'Jacket Hut'], '🧥', '#78350f', [['Hoodie', '🧥', 25, 90], ['Winter Coat', '🧥', 70, 500], ['Rain Jacket', '🧥', 35, 200], ['Denim Jacket', '🧥', 40, 150], ['Puffer Vest', '🦺', 35, 160], ['Fleece', '🧥', 25, 120]]),
+  wear('sneakers', ['Sneakers', 'Kicks', 'Sneaker Spot'], '👟', '#0ea5e9', [['Running Shoes', '👟', 45, 220], ['High Tops', '👟', 50, 250], ['Skate Shoes', '👟', 40, 120], ['Basketball Shoes', '👟', 70, 300], ['Slip-Ons', '👟', 30, 90], ['Soccer Cleats', '👟', 40, 280]]),
+  wear('boots', ['Boots', 'Boot Barn', 'Shoe Hall'], '🥾', '#92400e', [['Hiking Boots', '🥾', 60, 260], ['Rain Boots', '👢', 25, 90], ['Cowboy Boots', '👢', 90, 450], ['Dress Shoes', '👞', 60, 300], ['Heels', '👠', 40, 400], ['Sandals', '🩴', 15, 90], ['Slippers', '🥿', 12, 60]]),
+  wear('hats', ['Hats', 'Hat Rack', 'Cap Corner'], '🧢', '#0f766e', [['Baseball Cap', '🧢', 15, 45], ['Beanie', '🧶', 10, 35], ['Sun Hat', '👒', 15, 60], ['Top Hat', '🎩', 25, 120], ['Bucket Hat', '👒', 15, 45], ['Graduation Cap', '🎓', 20, 50]]),
+  wear('bags', ['Bags', 'Bag Shop', 'Carry Co.'], '👜', '#a16207', [['Handbag', '👜', 30, 2500], ['Backpack', '🎒', 25, 200], ['Purse', '👛', 20, 900], ['Duffel Bag', '👝', 30, 250], ['Suitcase', '🧳', 60, 600], ['Wallet', '👛', 15, 300]]),
+  wear('accessories', ['Accessories', 'Extras', 'Style Bar'], '🕶️', '#7c3aed', [['Sunglasses', '🕶️', 15, 300], ['Scarf', '🧣', 12, 120], ['Gloves', '🧤', 10, 80], ['Necktie', '👔', 15, 90], ['Belt', '🪢', 15, 120], ['Hair Bow', '🎀', 4, 25], ['Watch', '⌚', 30, 900]]),
+  wear('sportswear', ['Sportswear', 'Active Wear', 'Team Shop'], '🎽', '#16a34a', [['Jersey', '🎽', 30, 150], ['Track Suit', '🥋', 40, 180], ['Swimsuit', '🩱', 20, 120], ['Swim Trunks', '🩳', 15, 70], ['Martial Arts Uniform', '🥋', 35, 140], ['Sports Socks', '🧦', 6, 25]]),
+  wear('sleep', ['Sleepwear', 'Cozy Nights', 'PJ Palace'], '🩲', '#8b5cf6', [['Pajamas', '👕', 18, 80], ['Robe', '🥋', 25, 120], ['Fuzzy Socks', '🧦', 5, 20], ['Slippers', '🥿', 12, 60], ['Sleep Mask', '😴', 5, 25], ['Onesie', '👕', 20, 70]]),
+];
+const FOOD_FROM = 10000, DRINK_FROM = 78000, CLOTHES_FROM = 88000;
 export const SECTIONS = [
   { name: 'Shops', from: 0, to: FOOD_FROM },
   { name: 'Food', from: FOOD_FROM, to: DRINK_FROM },
-  { name: 'Drinks', from: DRINK_FROM, to: 88000 },
+  { name: 'Drinks', from: DRINK_FROM, to: CLOTHES_FROM },
+  { name: 'Clothes', from: CLOTHES_FROM, to: 90780 },
 ];
 export const sectionOf = i => SECTIONS.find(s => i >= s.from && i < s.to) || SECTIONS[0];
 
@@ -235,7 +253,7 @@ export function shopInfo(i) {
     const c = CURATED[i];
     return remember(infoCache, i, { index: i, number: i + 1, name: c.name, icon: c.icon, color: c.color, kind: KIND_BY_KEY[c.id], count: Math.max(count, c.items.length), section: 'Shops' });
   }
-  const kinds = i >= DRINK_FROM ? DRINK_KINDS : i >= FOOD_FROM ? FOOD_KINDS : KINDS;
+  const kinds = i >= CLOTHES_FROM ? CLOTHES_KINDS : i >= DRINK_FROM ? DRINK_KINDS : i >= FOOD_FROM ? FOOD_KINDS : KINDS;
   const kind = kinds[Math.floor(r() * kinds.length)];
   const lead = kinds !== KINDS && r() < 0.5 ? OWNERS[Math.floor(r() * OWNERS.length)] : PREFIXES[Math.floor(r() * PREFIXES.length)];
   const name = lead + ' ' + kind.words[Math.floor(r() * kind.words.length)];
