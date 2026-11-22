@@ -13,7 +13,8 @@ Live site: https://leelim81.github.io/robloc
 | Baseball: bat and pitch through 1, 3 or 5 innings with balls, strikes, outs and base runners | Playable |
 | Shopping Mall: 88,000 shops (10,000 general shops, 68,000 food places, 10,000 drink shops), each selling 7 to 1,000 items at real prices plus 8% sales tax | Playable |
 | Guess the Price: game show with real mall items; pick the right price and beat the CPU contestant | Playable |
-| Transport Modes, Dream Store, Prize Machine, Brick Builder Shop | Coming soon |
+| Prize Machine: claw machine with plush toys, toys, coin bags and a golden crown | Playable |
+| Transport Modes, Dream Store, Brick Builder Shop | Coming soon |
 
 Everything is drawn and synthesized in the browser: characters, stadiums, music and sound effects. There are no image or audio files to license.
 
@@ -40,6 +41,7 @@ js/games/pickleball.js Pickleball
 js/games/baseball.js  Baseball
 js/games/mall.js      Shopping Mall
 js/games/guessprice.js Guess the Price
+js/games/prizemachine.js Prize Machine
 js/games/shops.js     shop catalog: 18 hand-made shops + generated shops up to 88,000 (food and drinks)
 firestore.rules       security rules to publish in the Firebase console
 ```
@@ -69,7 +71,7 @@ The player named **trevor** (any capitals) is always the owner, even without a `
 
 Trevor's numbers live in the code (`OWNER_STATS` in `js/economy.js`), so changing them only needs a push:
 $73,573,649,729,729,638,637,737,872 money, 67,243,852,825,918 coins, 72,673,674,787,374,873 points, level 653,763,
-87,963,845,395 games played and 75,375,285,572 won (split across Soccer, Pickleball, Baseball and Guess the Price), 4,826,371,592,047 mall items owned, 90% win chance, and every badge.
+87,963,845,395 games played and 75,375,285,572 won (split across Soccer, Pickleball, Baseball, Guess the Price and Prize Machine), 4,826,371,592,047 mall items owned, 90% win chance, and every badge.
 
 Other roles can still set `moneyBase`, `coinsBase`, `pointsBase`, `playedBase`, `winsBase` and `winChance` as **string** fields in their `roles` document.
 
