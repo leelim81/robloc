@@ -186,7 +186,7 @@ function renderTopbar(animate = true) {
   $('#money-wrap').title = '$' + formatBig(money);
   $('#badge-count').textContent = p.badges.length;
   const c = careerOf(p);
-  $('#career').innerHTML = `<span title="${formatBig(c.played)}">🎮 <b>${formatShort(c.played)}</b> played</span><span title="${formatBig(c.wins)}">🏆 <b>${formatShort(c.wins)}</b> won</span><span>📈 <b>${c.rate}%</b> wins</span>`;
+  $('#career').innerHTML = `<span title="${formatBig(c.played)}">🎮 <b>${formatShort(c.played)}</b> played</span><span title="${formatBig(c.wins)}">🏆 <b>${formatShort(c.wins)}</b> won</span>`;
 }
 function rollNumber(sel, from, to, animate, fmt) {
   const el = $(sel);
