@@ -203,6 +203,17 @@ class FirebaseBackend {
     } catch { return 0; }
   }
 
+  // How many players exist in total, for the leaderboard footer. This is
+  // the real count from the database, not a made-up number. Null when it
+  // cannot be read, so the footer is hidden instead of guessed.
+  async playerCount() {
+    const { collection, getCountFromServer } = this.F;
+    try {
+      const snap = await getCountFromServer(collection(this.db, 'users'));
+      return snap.data().count;
+    } catch { return null; }
+  }
+
   async leaderboard(kind) {
     const { collection, query, orderBy, limit, getDocs, where } = this.F;
     const field = LB_FIELD[kind];
@@ -301,6 +312,9 @@ class DemoBackend {
   async bossTotal() {
     return Number(normalizeProfile(this.read()).bossPaidCents || '0');
   }
+
+  // Demo mode has only this device's player.
+  async playerCount() { return 1; }
   async leaderboard(kind) {
     const p = this.read();
     if (!p) return [];

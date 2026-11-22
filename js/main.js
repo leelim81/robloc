@@ -257,16 +257,17 @@ function stopThumbs() { cancelAnimationFrame(thumbRAF); }
 // nobody is given points: the owner always stays #1 (put in at #1 himself
 // when his online player is not found), and everyone else earns their place.
 const OWNER_POINTS_FALLBACK = BigInt(OWNER_STATS.pointsBase);   // Trevor's points if his profile is not loaded
-const WORLD_PLAYERS = 187_000_000;               // size of the pretend world used to estimate ranks
 function clamp01(v) { return Math.max(0, Math.min(1, v)); }
-function estimateRank(points, anchor, floor) {
+// Estimate a player's world rank from their points. `world` is the real
+// number of players, so the rank never pretends the world is bigger than it is.
+function estimateRank(points, anchor, floor, world) {
   const p = Number(points), top = Math.max(10, Number(anchor));
   const exp = 1 - Math.log10(p + 1) / Math.log10(top + 1);
-  return Math.max(floor, Math.round(Math.pow(WORLD_PLAYERS, clamp01(exp)) * (1 + (p % 97) / 1000)));
+  return Math.max(floor, Math.round(Math.pow(world, clamp01(exp)) * (1 + (p % 97) / 1000)));
 }
 const cmpBig = (a, b) => (BigInt(b.value) > BigInt(a.value) ? 1 : BigInt(b.value) < BigInt(a.value) ? -1 : 0);
 
-function buildOverall(rows) {
+function buildOverall(rows, world) {
   // If the signed-in player is the owner, use their own profile so they always show at #1.
   if (state.user && state.profile?.role === 'owner') {
     const p = state.profile;
@@ -290,7 +291,7 @@ function buildOverall(rows) {
   }
   rest.sort(cmpBig);
   let last = top.length;
-  rest.forEach(r => { r.rank = Math.max(last + 1, estimateRank(r.value, anchor, top.length + 1)); last = r.rank; });
+  rest.forEach(r => { r.rank = Math.max(last + 1, estimateRank(r.value, anchor, top.length + 1, world)); last = r.rank; });
   return { top, rest };
 }
 
@@ -302,13 +303,18 @@ $$('#lb-tabs .chip').forEach(c => c.addEventListener('click', () => {
 async function renderLeaderboard() {
   const list = $('#lb-list'), pod = $('#podium'), note = $('#lb-note');
   list.innerHTML = '<li class="lb-note">Loading…</li>'; pod.innerHTML = ''; note.textContent = '';
-  let rows;
-  try { rows = await backend.leaderboard(state.lbKind); }
+  let rows, count = null;
+  try {
+    [rows, count] = await Promise.all([
+      backend.leaderboard(state.lbKind),
+      backend.playerCount ? backend.playerCount().catch(() => null) : Promise.resolve(null),
+    ]);
+  }
   catch (e) { console.error(e); list.innerHTML = ''; note.textContent = 'Could not load the leaderboard: ' + (e.code || e.message); return; }
   list.innerHTML = '';
   const overall = state.lbKind === 'points';
   let top = rows, rest = [];
-  if (overall) ({ top, rest } = buildOverall(rows));
+  if (overall) ({ top, rest } = buildOverall(rows, count || rows.length || 1));
   else {
     // Wins tabs: top 30, then your own row at the bottom if you're not in it.
     // Trevor is always #1 here too: if his row is missing, put him in at #1
@@ -351,7 +357,7 @@ async function renderLeaderboard() {
     rest.forEach((r, i) => addRow(r, top.length + i));
   }
   if (!top.length) note.textContent = 'No rankings yet. Finish a match to get on the board!';
-  else if (overall) note.textContent = `${formatBig(WORLD_PLAYERS)} players worldwide`;
+  else if (overall) note.textContent = count ? (count === 1 ? '1 player worldwide' : `${formatBig(count)} players worldwide`) : '';
   else if (backend.mode === 'demo') note.textContent = 'Demo mode shows only this device. Sign in online to compete with everyone.';
   else note.textContent = 'Top 30 players.';
 }

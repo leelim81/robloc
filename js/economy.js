@@ -82,15 +82,76 @@ export function emptyStats() {
   };
 }
 
+// True when a badge could have been earned from this profile's own stats.
+// Every badge has a necessary condition on the saved numbers (a win, a
+// goal, enough coins, ...). A badge that fails its condition was not earned
+// here: it came from an old save when the rules were different, so it is
+// dropped for plain players. The owner keeps every badge by design.
+function badgePossible(id, p, st) {
+  const so = st.soccer, pb = st.pickleball, bb = st.baseball, pr = st.price, pz = st.prize;
+  switch (id) {
+    case 'first_match': return st.matches > 0;
+    case 'soccer_goal': return so.goals > 0;
+    case 'soccer_win': return so.wins > 0;
+    case 'soccer_hattrick': return so.goals >= 3;
+    case 'soccer_clean': return so.wins > 0;
+    case 'soccer_legend': return so.legendWins > 0;
+    case 'pb_win': return pb.wins > 0;
+    case 'pb_ace': return pb.aces > 0;
+    case 'pb_rally': return pb.longestRally >= 12;
+    case 'pb_shutout': return pb.wins > 0;
+    case 'pb_legend': return pb.legendWins > 0;
+    case 'bb_hit': return bb.hits > 0;
+    case 'bb_homer': return bb.homers > 0;
+    case 'bb_win': return bb.wins > 0;
+    case 'bb_k': return bb.strikeouts >= 3;
+    case 'bb_legend': return bb.legendWins > 0;
+    case 'gp_win': return pr.wins > 0;
+    case 'gp_perfect': return pr.bestStreak >= 5;
+    case 'gp_legend': return pr.legendWins > 0;
+    case 'pm_first': return pz.prizes > 0;
+    case 'pm_win': return pz.wins > 0;
+    case 'pm_gold': return pz.golden > 0;
+    case 'all_rounder': return so.wins > 0 && pb.wins > 0;
+    case 'coins_250': return (p.totalCoinsEarned || 0) >= 250;
+    case 'coins_2000': return (p.totalCoinsEarned || 0) >= 2000;
+    case 'pts_1000': return (p.points || 0) >= 1000;
+    case 'pts_5000': return (p.points || 0) >= 5000;
+    case 'marathon': return st.matches >= 25;
+    default: return false;
+  }
+}
+
+const big0 = v => { try { return BigInt(v ?? '0'); } catch { return 0n; } };
+
 export function normalizeProfile(p) {
   const s = emptyStats();
   const st = p.stats || {};
+  const stats = {
+    soccer: { ...s.soccer, ...(st.soccer || {}) },
+    pickleball: { ...s.pickleball, ...(st.pickleball || {}) },
+    baseball: { ...s.baseball, ...(st.baseball || {}) },
+    price: { ...s.price, ...(st.price || {}) },
+    prize: { ...s.prize, ...(st.prize || {}) },
+    matches: st.matches || 0,
+  };
   // Only Trevor is the owner (by name, or by role "owner" in roles/{uid}).
   // Everyone else starts from the beginning, like real games: any bonus
   // numbers in a roles document for another role are ignored here, and the
-  // role itself becomes a plain player.
+  // role itself becomes a plain player. Every owner bonus is zeroed for
+  // plain players, including level, owned items and per-game wins.
   if (p.role === 'owner' || isOwnerName(p.name)) p = { ...p, ...OWNER_STATS, role: 'owner' };
-  else p = { ...p, moneyBase: '0', coinsBase: '0', pointsBase: '0', playedBase: '0', winsBase: '0', winChance: '0', role: 'player' };
+  else p = { ...p, moneyBase: '0', coinsBase: '0', pointsBase: '0', playedBase: '0', winsBase: '0', winChance: '0', ownedBase: '0', levelBase: 0, gamesBase: {}, role: 'player' };
+  // A plain player cannot keep things bought with money they never earned.
+  // Lifetime spending (money + coins at $1 each) can never pass lifetime
+  // earnings; when it does, the items came from an old owner-era save, so
+  // the inventory starts from zero again. Real players are never affected:
+  // the game only lets you spend what you have.
+  const spent = big0(p.moneySpentCents) + big0(p.coinsSpent) * 100n;
+  const earned = big0(p.moneyEarnedCents) + big0(p.totalCoinsEarned) * 100n;
+  const inventory = (p.role === 'owner' || spent <= earned)
+    ? (p.inventory && typeof p.inventory === 'object' ? p.inventory : {})
+    : {};
   return {
     ...p,
     levelBase: p.levelBase || 0,
@@ -103,7 +164,7 @@ export function normalizeProfile(p) {
     playedBase: p.playedBase || '0',
     winsBase: p.winsBase || '0',
     winChance: p.winChance || '0',
-    inventory: p.inventory && typeof p.inventory === 'object' ? p.inventory : {},
+    inventory,
     moneySpentCents: p.moneySpentCents || '0',
     coinsSpent: p.coinsSpent || 0,
     // Sales tax this player has paid in the mall: it all goes to Trevor, the boss.
@@ -111,17 +172,11 @@ export function normalizeProfile(p) {
     moneyEarnedCents: p.moneyEarnedCents || '0',
     role: p.role || 'player',
     // The owner (Trevor) has every badge unlocked. Everyone else starts with
-    // no badges at all, and the old Welcome badge is not kept for them.
+    // no badges at all, keeps only badges their own play could have earned,
+    // and the old Welcome badge is not kept for them.
     badges: p.role === 'owner' ? [...new Set([...(Array.isArray(p.badges) ? p.badges : []), ...BADGES.map(b => b.id)])]
-      : (Array.isArray(p.badges) ? p.badges : []).filter(b => b !== 'welcome'),
-    stats: {
-      soccer: { ...s.soccer, ...(st.soccer || {}) },
-      pickleball: { ...s.pickleball, ...(st.pickleball || {}) },
-      baseball: { ...s.baseball, ...(st.baseball || {}) },
-      price: { ...s.price, ...(st.price || {}) },
-      prize: { ...s.prize, ...(st.prize || {}) },
-      matches: st.matches || 0,
-    },
+      : (Array.isArray(p.badges) ? p.badges : []).filter(b => b !== 'welcome' && badgePossible(b, p, stats)),
+    stats,
   };
 }
 
