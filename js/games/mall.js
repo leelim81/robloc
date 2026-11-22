@@ -158,7 +158,7 @@ function create(env) {
       audio.play('coin'); fx.confetti(640, 360, 40);
     } catch (e) {
       console.error(e);
-      S.error = e.code === 'not-enough' ? 'Not enough money or coins for this.' : 'Could not complete the purchase: ' + (e.code || e.message); S.errorT = 0;
+      S.error = e.code === 'not-enough' ? 'Not enough money or coins for this.' : e.code === 'permission-denied' ? 'Firebase refused the purchase: publish the new firestore.rules in the Firebase console.' : 'Could not complete the purchase: ' + (e.code || e.message); S.errorT = 0;
       audio.play('fault');
     }
     S.busy = false;

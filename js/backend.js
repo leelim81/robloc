@@ -1,7 +1,7 @@
 // Persistence layer. Uses Firebase (Google sign-in + Firestore) when configured,
 // otherwise falls back to a local demo mode backed by localStorage.
 import { firebaseConfig } from './firebase-config.js';
-import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel } from './economy.js';
+import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwnerName } from './economy.js';
 
 const OWNER_NAME_SPELLINGS = ['trevor', 'Trevor', 'TREVOR', 'trevor ', 'Trevor '];
 
@@ -94,9 +94,27 @@ class FirebaseBackend {
   }
   // Copies roles/{uid} into the player's profile so others see it on the leaderboard. Never blocks play.
   async syncRole(p, r) {
+    // Trevor is recognized by name, so his saved profile only needs plain-player values.
+    if (isOwnerName(p.name)) r = PLAYER_ROLE;
     if (!ROLE_FIELDS.some(k => r[k] !== p[k])) return;
     try { await this.F.updateDoc(this.userRef(), r); }
-    catch (e) { console.warn('Role bonuses could not be saved to the profile (check that roles fields are strings)', e); }
+    catch (e) {
+      console.warn('Role bonuses could not be saved to the profile (check that roles fields are strings)', e);
+      await this.resetRole();
+    }
+  }
+  // Old role values that no longer match roles/{uid} make Firebase refuse every save. Plain-player values are always allowed.
+  async resetRole() {
+    try { await this.F.updateDoc(this.userRef(), PLAYER_ROLE); return true; }
+    catch (e) { console.warn('Could not reset role fields', e); return false; }
+  }
+  // Runs a save; if Firebase refuses it, resets the role fields and tries once more.
+  async withRepair(fn) {
+    try { return await fn(); }
+    catch (e) {
+      if (e.code !== 'permission-denied' || !(await this.resetRole())) throw e;
+      return fn();
+    }
   }
 
   async createProfile({ name, avatar }) {
@@ -117,32 +135,31 @@ class FirebaseBackend {
   }
 
   async updateIdentity({ name, avatar }) {
-    await this.F.updateDoc(this.userRef(), { name, avatar });
+    await this.withRepair(() => this.F.updateDoc(this.userRef(), { name, avatar }));
   }
-
   async recordMatch(match) {
     const { runTransaction, serverTimestamp } = this.F;
-    return runTransaction(this.db, async tx => {
+    return this.withRepair(() => runTransaction(this.db, async tx => {
       const snap = await tx.get(this.userRef());
       if (!snap.exists()) throw new Error('Profile missing');
       const p = normalizeProfile(snap.data());
       const { next, reward, newBadges } = applyMatch(p, match);
       tx.update(this.userRef(), { ...next, lastAward: serverTimestamp() });
       return { profile: { ...p, ...next }, reward, newBadges };
-    });
+    }));
   }
 
   // Buys one shop item for `cents` (tax included). Throws { code: 'not-enough' } when it can't be afforded.
   async purchase(itemId, cents) {
     const { runTransaction } = this.F;
-    return runTransaction(this.db, async tx => {
+    return this.withRepair(() => runTransaction(this.db, async tx => {
       const snap = await tx.get(this.userRef());
       if (!snap.exists()) throw new Error('Profile missing');
       const p = normalizeProfile(snap.data());
       const next = spend(p, itemId, cents);
       tx.update(this.userRef(), next);
       return { profile: { ...p, ...next } };
-    });
+    }));
   }
 
   async leaderboard(kind) {
