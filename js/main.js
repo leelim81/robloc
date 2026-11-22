@@ -143,7 +143,10 @@ $('#btn-setup-done').addEventListener('click', async () => {
     }
     enterHub();
   } catch (e) {
-    console.error(e); showError('#setup-error', 'Could not save: ' + (e.code || e.message));
+    console.error(e);
+    showError('#setup-error', e.code === 'permission-denied'
+      ? 'Could not save: Firebase is still using old rules. Publish the new firestore.rules in the Firebase console, then try again.'
+      : 'Could not save: ' + (e.code || e.message));
   } finally { btn.disabled = false; }
 });
 

@@ -27,6 +27,12 @@ function lbValue(p, kind) {
   return totalPoints(p);
 }
 const ROLE_FIELDS = ['role', 'moneyBase', 'coinsBase', 'pointsBase', 'playedBase', 'winsBase', 'winChance'];
+// Role values should be typed as strings in the console. Numbers still work, but very big ones lose digits.
+function roleValue(v) {
+  if (typeof v === 'number') return Number.isFinite(v) ? BigInt(Math.round(v)).toString() : '0';
+  const s = String(v ?? '0').replace(/[,\s$]/g, '');
+  return /^\d+$/.test(s) ? s : '0';
+}
 const PLAYER_ROLE = { role: 'player', moneyBase: '0', coinsBase: '0', pointsBase: '0', playedBase: '0', winsBase: '0', winChance: '0' };
 
 class FirebaseBackend {
@@ -67,8 +73,8 @@ class FirebaseBackend {
       const snap = await this.F.getDoc(this.F.doc(this.db, 'roles', this.user.uid));
       if (snap.exists()) {
         const r = snap.data();
-        const out = { role: r.role };
-        for (const k of ROLE_FIELDS.slice(1)) out[k] = String(r[k] || '0');
+        const out = { role: String(r.role || 'player') };
+        for (const k of ROLE_FIELDS.slice(1)) out[k] = roleValue(r[k]);
         return out;
       }
     } catch (e) { console.warn('role read failed', e); }
@@ -78,27 +84,34 @@ class FirebaseBackend {
   async loadProfile() {
     const snap = await this.F.getDoc(this.userRef());
     if (!snap.exists()) return null;
-    let p = normalizeProfile(snap.data());
+    const p = normalizeProfile(snap.data());
     const r = await this.readRole();
-    if (ROLE_FIELDS.some(k => r[k] !== p[k])) {
-      await this.F.updateDoc(this.userRef(), r);
-      p = { ...p, ...r };
-    }
-    return p;
+    await this.syncRole(p, r);
+    // Show the role bonuses locally even if saving them to the profile was refused.
+    return { ...p, ...r, badges: normalizeProfile({ ...p, ...r }).badges };
+  }
+  // Copies roles/{uid} into the player's profile so others see it on the leaderboard. Never blocks play.
+  async syncRole(p, r) {
+    if (!ROLE_FIELDS.some(k => r[k] !== p[k])) return;
+    try { await this.F.updateDoc(this.userRef(), r); }
+    catch (e) { console.warn('Role bonuses could not be saved to the profile (check that roles fields are strings)', e); }
   }
 
   async createProfile({ name, avatar }) {
     const r = await this.readRole();
     const { serverTimestamp, setDoc } = this.F;
+    // Always create as a plain player first, so sign-up works no matter how the roles document is set up.
     const data = {
-      name, avatar, ...r,
+      name, avatar, ...PLAYER_ROLE,
       points: 0, coinsEarned: 0, totalCoinsEarned: 0,
       badges: ['welcome'], stats: {},
       inventory: {}, moneySpentCents: '0', coinsSpent: 0,
       createdAt: serverTimestamp(), lastAward: serverTimestamp(),
     };
     await setDoc(this.userRef(), data);
-    return normalizeProfile({ ...data, createdAt: null, lastAward: null });
+    const p = normalizeProfile({ ...data, createdAt: null, lastAward: null });
+    if (r.role !== 'player') await this.syncRole(p, r);
+    return normalizeProfile({ ...p, ...r });
   }
 
   async updateIdentity({ name, avatar }) {

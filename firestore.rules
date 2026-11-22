@@ -20,20 +20,21 @@ service cloud.firestore {
 
     function rolePath(uid) { return /databases/$(database)/documents/roles/$(uid); }
     function roleStr(uid, k) { return string(get(rolePath(uid)).data.get(k, '0')); }
-    // The role fields in a player's save must match roles/{uid}, or be plain-player defaults when there is no role.
+    // The role fields in a player's save must be plain-player defaults, or match roles/{uid}.
     function roleFieldsOk(uid, d) {
-      return (exists(rolePath(uid))
+      return isPlayer(d) || (exists(rolePath(uid))
                && d.get('role', 'player') == get(rolePath(uid)).data.role
                && d.get('moneyBase', '0') == roleStr(uid, 'moneyBase')
                && d.get('coinsBase', '0') == roleStr(uid, 'coinsBase')
                && d.get('pointsBase', '0') == roleStr(uid, 'pointsBase')
                && d.get('playedBase', '0') == roleStr(uid, 'playedBase')
                && d.get('winsBase', '0') == roleStr(uid, 'winsBase')
-               && d.get('winChance', '0') == roleStr(uid, 'winChance'))
-          || (!exists(rolePath(uid))
-               && d.get('role', 'player') == 'player' && d.get('moneyBase', '0') == '0' && d.get('coinsBase', '0') == '0'
-               && d.get('pointsBase', '0') == '0' && d.get('playedBase', '0') == '0'
-               && d.get('winsBase', '0') == '0' && d.get('winChance', '0') == '0');
+               && d.get('winChance', '0') == roleStr(uid, 'winChance'));
+    }
+    function isPlayer(d) {
+      return d.get('role', 'player') == 'player' && d.get('moneyBase', '0') == '0' && d.get('coinsBase', '0') == '0'
+          && d.get('pointsBase', '0') == '0' && d.get('playedBase', '0') == '0'
+          && d.get('winsBase', '0') == '0' && d.get('winChance', '0') == '0';
     }
 
     match /roles/{uid} {
