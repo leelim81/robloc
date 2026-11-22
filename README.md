@@ -67,7 +67,7 @@ The player named **trevor** (any capitals) is always the owner, even without a `
 
 Trevor's numbers live in the code (`OWNER_STATS` in `js/economy.js`), so changing them only needs a push:
 $73,573,649,729,729,638,637,737,872 money, 67,243,852,825,918 coins, 72,673,674,787,374,873 points, level 653,763,
-87,963,845,395 games played, 75,375,285,572 won, 90% win chance, and every badge.
+87,963,845,395 games played and 75,375,285,572 won (split across Soccer, Pickleball and Baseball), 4,826,371,592,047 mall items owned, 90% win chance, and every badge.
 
 Other roles can still set `moneyBase`, `coinsBase`, `pointsBase`, `playedBase`, `winsBase` and `winChance` as **string** fields in their `roles` document.
 

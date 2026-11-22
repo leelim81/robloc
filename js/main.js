@@ -2,7 +2,7 @@ import { backend, validateName } from './backend.js';
 import { audio } from './audio.js';
 import { Input } from './input.js';
 import { FX } from './fx.js';
-import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf } from './economy.js';
+import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned } from './economy.js';
 import { SKINS, HAIRS, SHIRTS, HAIR_STYLES, HAIR_STYLE_LABELS, DEFAULT_AVATAR, drawPortrait, drawAvatarFull } from './art.js';
 import soccer from './games/soccer.js';
 import pickleball from './games/pickleball.js';
@@ -215,13 +215,13 @@ function renderGames() {
   GAMES.forEach((g, i) => {
     const card = document.createElement('button');
     card.className = 'game-card playable'; card.style.animationDelay = (i * 0.08) + 's';
-    const st = p.stats[g.id] || {};
+    const st = gameStats(p, g.id);
     card.innerHTML = `<canvas data-thumb="${g.id}" width="520" height="325"></canvas>
       <span class="play-badge">PLAY</span>
       <div class="card-body"><h3 class="card-title">${g.title}</h3><p class="card-sub">${g.tagline}</p>
       <div class="card-meta">${g.id === 'mall'
-        ? `<span class="meta-pill best">🛍️ ${Object.values(p.inventory || {}).reduce((x, y) => x + y, 0)} items owned</span>`
-        : `<span class="meta-pill">${st.played || 0} played</span><span class="meta-pill best">🏆 ${st.wins || 0} wins</span>`}</div></div>`;
+        ? `<span class="meta-pill best" title="${formatBig(itemsOwned(p))}">🛍️ ${formatShort(itemsOwned(p))} items owned</span>`
+        : `<span class="meta-pill" title="${formatBig(st.played)}">${formatShort(st.played)} played</span><span class="meta-pill best" title="${formatBig(st.wins)}">🏆 ${formatShort(st.wins)} wins</span>`}</div></div>`;
     card.addEventListener('click', () => openPregame(g));
     grid.appendChild(card);
   });
@@ -326,7 +326,7 @@ async function renderLeaderboard() {
     top = rows.slice(0, 30);
     if (state.user && state.profile && !top.some(r => r.uid === state.user.uid)) {
       const mine = rows.find(r => r.uid === state.user.uid);
-      const p = state.profile, wins = p.stats?.[state.lbKind]?.wins || 0;
+      const p = state.profile, wins = gameStats(p, state.lbKind).wins;
       rest = [mine || { uid: state.user.uid, name: p.name, avatar: p.avatar, role: p.role, value: wins, points: totalPoints(p), level: playerLevel(p).level, rank: rows.length + 1 }];
     }
   }

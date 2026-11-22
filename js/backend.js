@@ -1,7 +1,7 @@
 // Persistence layer. Uses Firebase (Google sign-in + Firestore) when configured,
 // otherwise falls back to a local demo mode backed by localStorage.
 import { firebaseConfig } from './firebase-config.js';
-import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwnerName } from './economy.js';
+import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwnerName, gameStats } from './economy.js';
 
 const OWNER_NAME_SPELLINGS = ['trevor', 'Trevor', 'TREVOR', 'trevor ', 'Trevor '];
 
@@ -23,9 +23,7 @@ export function validateName(raw) {
 const LB_FIELD = { points: 'points', soccer: 'stats.soccer.wins', pickleball: 'stats.pickleball.wins', baseball: 'stats.baseball.wins' };
 
 function lbValue(p, kind) {
-  if (kind === 'soccer') return p.stats?.soccer?.wins || 0;
-  if (kind === 'pickleball') return p.stats?.pickleball?.wins || 0;
-  if (kind === 'baseball') return p.stats?.baseball?.wins || 0;
+  if (kind === 'soccer' || kind === 'pickleball' || kind === 'baseball') return gameStats(p, kind).wins;
   return totalPoints(p);
 }
 const ROLE_FIELDS = ['role', 'moneyBase', 'coinsBase', 'pointsBase', 'playedBase', 'winsBase', 'winChance'];
@@ -171,7 +169,7 @@ class FirebaseBackend {
       getDocs(q),
       kind === 'points' ? getDocs(query(collection(this.db, 'users'), where('role', 'in', ['owner', 'siwei']))) : null,
       // the player named Trevor is the owner even without a roles document
-      kind === 'points' ? getDocs(query(collection(this.db, 'users'), where('name', 'in', OWNER_NAME_SPELLINGS))) : null,
+      getDocs(query(collection(this.db, 'users'), where('name', 'in', OWNER_NAME_SPELLINGS))),
     ]);
     const byId = new Map();
     for (const d of [...snaps.docs, ...(special ? special.docs : []), ...(named ? named.docs : [])]) {

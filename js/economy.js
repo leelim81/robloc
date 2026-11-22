@@ -41,7 +41,24 @@ export const OWNER_STATS = {
   winsBase: '75375285572',                // 75,375,285,572 games won
   winChance: '90',                        // wins about 90% of matches
   levelBase: 653763,                      // level 653,763 (set directly, not from points)
+  // Per-game totals (they add up to playedBase and winsBase above).
+  gamesBase: {
+    soccer: { played: 31482617903, wins: 27106394218 },
+    pickleball: { played: 29375846120, wins: 25019672481 },
+    baseball: { played: 27105381372, wins: 23249218873 },
+  },
+  ownedBase: '4826371592047',             // 4,826,371,592,047 mall items owned
 };
+
+// Played and won for one game, including the owner's bonus totals. Shown on the game cards and wins leaderboards.
+export function gameStats(p, id) {
+  const st = p.stats?.[id] || {}, b = p.gamesBase?.[id] || {};
+  return { played: (st.played || 0) + (b.played || 0), wins: (st.wins || 0) + (b.wins || 0) };
+}
+// Number of mall items owned, including the owner's bonus.
+export function itemsOwned(p) {
+  return BigInt(p.ownedBase || '0') + BigInt(Object.values(p.inventory || {}).reduce((a, b) => a + b, 0));
+}
 
 export const OWNER_NAME = 'trevor';
 export const isOwnerName = name => String(name || '').trim().toLowerCase() === OWNER_NAME;

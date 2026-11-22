@@ -2,7 +2,7 @@
 // Prices are in cents. Purchases are paid with money ($) first, or with coins at 1 coin = $1.
 import { drawHuman, shade, rrect, SKINS, HAIRS, HAIR_STYLES, SHIRTS } from '../art.js';
 import { drawBanner } from '../fx.js';
-import { payPlan as planFor, coinsOf, moneyCentsOf } from '../economy.js';
+import { payPlan as planFor, coinsOf, moneyCentsOf, itemsOwned, formatBig } from '../economy.js';
 
 import { SHOP_COUNT, shopInfo, shopItems, withTax, fmtCents, TAX_RATE } from './shops.js';
 
@@ -328,9 +328,9 @@ function create(env) {
       ctx.textAlign = 'right'; ctx.font = '800 12px Nunito'; ctx.fillStyle = sel ? '#fff' : '#94a3b8';
       ctx.fillText(s.count.toLocaleString() + ' items', x + w - 12, y + 24);
     }
-    const owned = Object.values(prof().inventory || {}).reduce((a, b) => a + b, 0);
+    const owned = itemsOwned(prof());
     ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '800 14px Nunito';
-    ctx.fillText(`🛍️ You own ${owned} item${owned === 1 ? '' : 's'} · ▲▼ pick · ◀▶ page (hold to go faster) · ${input.touchMode ? 'GO / CLOSE' : 'SPACE go · SHIFT close'}`, X + W / 2, Y + H - 22);
+    ctx.fillText(`🛍️ You own ${formatBig(owned)} item${owned === 1n ? '' : 's'} · ▲▼ pick · ◀▶ page (hold to go faster) · ${input.touchMode ? 'GO / CLOSE' : 'SPACE go · SHIFT close'}`, X + W / 2, Y + H - 22);
   }
 
   function drawReceipt(ctx) {
