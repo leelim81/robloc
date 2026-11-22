@@ -191,6 +191,9 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .card-meta { display: flex; gap: 8px; flex-wrap: wrap; }
 .meta-pill { font-size: 12px; font-weight: 900; padding: 4px 10px; border-radius: 99px; background: rgba(255,255,255,.08); }
 .meta-pill.best { background: rgba(251,191,36,.16); color: var(--gold); }
+.career { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.career span { font-size: 13px; font-weight: 800; padding: 6px 12px; border-radius: 99px; background: rgba(255,255,255,.08); }
+.career b { color: var(--gold); }
 .play-badge {
   position: absolute; top: 12px; right: 12px; padding: 8px 16px; border-radius: 99px; font-family: var(--display); letter-spacing: 1px;
   background: linear-gradient(180deg, #4ff0ff, #1a8fd0); color: #04233a; box-shadow: 0 4px 0 #0d5d8c; font-size: 16px;

@@ -5,7 +5,8 @@ rules_version = '2';
 //
 // Data model
 //   users/{uid}  one document per Google account (only that account can write it)
-//   roles/{uid}  special roles (owner = Trevor, siwei = Si Wei); created by hand in the console only
+//   roles/{uid}  special roles (owner = Trevor, siwei = Si Wei) and their starting balances,
+//                level, career totals and win chance; created by hand in the console only
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -13,17 +14,24 @@ service cloud.firestore {
     function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
 
     function rolePath(uid) { return /databases/$(database)/documents/roles/$(uid); }
+    function roleStr(uid, k) { return string(get(rolePath(uid)).data.get(k, '0')); }
     function roleFieldsOk(uid, d) {
       return (exists(rolePath(uid))
                && d.role == get(rolePath(uid)).data.role
-               && d.moneyBase == string(get(rolePath(uid)).data.moneyBase)
-               && d.coinsBase == string(get(rolePath(uid)).data.coinsBase))
-          || (!exists(rolePath(uid)) && d.role == 'player' && d.moneyBase == '0' && d.coinsBase == '0');
+               && d.moneyBase == roleStr(uid, 'moneyBase')
+               && d.coinsBase == roleStr(uid, 'coinsBase')
+               && d.get('pointsBase', '0') == roleStr(uid, 'pointsBase')
+               && d.get('playedBase', '0') == roleStr(uid, 'playedBase')
+               && d.get('winsBase', '0') == roleStr(uid, 'winsBase')
+               && d.get('winChance', '0') == roleStr(uid, 'winChance'))
+          || (!exists(rolePath(uid)) && d.role == 'player' && d.moneyBase == '0' && d.coinsBase == '0'
+               && d.get('pointsBase', '0') == '0' && d.get('playedBase', '0') == '0'
+               && d.get('winsBase', '0') == '0' && d.get('winChance', '0') == '0');
     }
 
     function allKeys() {
-      return ['name', 'avatar', 'role', 'moneyBase', 'coinsBase', 'points', 'coinsEarned',
-              'totalCoinsEarned', 'badges', 'stats', 'createdAt', 'lastAward'];
+      return ['name', 'avatar', 'role', 'moneyBase', 'coinsBase', 'pointsBase', 'playedBase', 'winsBase', 'winChance',
+              'points', 'coinsEarned', 'totalCoinsEarned', 'badges', 'stats', 'createdAt', 'lastAward'];
     }
     function validName(n) { return n is string && n.size() >= 2 && n.size() <= 16 && n.matches('^[A-Za-z0-9 _.\\-]+$'); }
     function shortStr(s) { return s is string && s.size() <= 16; }
@@ -41,7 +49,8 @@ service cloud.firestore {
     }
     // Role fields can only be copied from roles/{uid}, which players cannot write.
     function roleSync(uid) {
-      return changed().hasOnly(['role', 'moneyBase', 'coinsBase']) && roleFieldsOk(uid, request.resource.data);
+      return changed().hasOnly(['role', 'moneyBase', 'coinsBase', 'pointsBase', 'playedBase', 'winsBase', 'winChance'])
+          && roleFieldsOk(uid, request.resource.data);
     }
     // Match rewards: bounded, never negative, and at most one reward every 20 seconds.
     function award() {

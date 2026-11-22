@@ -45,6 +45,10 @@ export function normalizeProfile(p) {
     totalCoinsEarned: p.totalCoinsEarned || 0,
     moneyBase: p.moneyBase || '0',
     coinsBase: p.coinsBase || '0',
+    pointsBase: p.pointsBase || '0',
+    playedBase: p.playedBase || '0',
+    winsBase: p.winsBase || '0',
+    winChance: p.winChance || '0',
     role: p.role || 'player',
     badges: Array.isArray(p.badges) ? p.badges : [],
     stats: {
@@ -57,6 +61,17 @@ export function normalizeProfile(p) {
 
 export function coinsOf(p) { return BigInt(p.coinsBase || '0') + BigInt(p.coinsEarned || 0); }
 export function moneyOf(p) { return BigInt(p.moneyBase || '0'); }
+// Points shown in the hub and the Overall leaderboard: earned points plus any role bonus.
+export function totalPoints(p) { return BigInt(p.pointsBase || '0') + BigInt(p.points || 0); }
+// Career totals across every game, plus any role bonus.
+export function careerOf(p) {
+  const s = p.stats || emptyStats();
+  const played = BigInt(p.playedBase || '0') + BigInt(s.matches || 0);
+  const wins = BigInt(p.winsBase || '0') + BigInt((s.soccer?.wins || 0) + (s.pickleball?.wins || 0));
+  const chance = Number(p.winChance || 0);
+  const rate = chance > 0 ? chance : played > 0n ? Number(wins * 100n / played) : 0;
+  return { played, wins, rate };
+}
 
 export function formatBig(v) {
   const s = BigInt(v).toString();
@@ -78,7 +93,9 @@ export function formatShort(v) {
 
 // Level curve: level n starts at 50·n·(n−1) points.
 export function levelInfo(points) {
-  let n = 1;
+  points = Number(points);
+  let n = Math.max(1, Math.floor((1 + Math.sqrt(1 + points / 12.5)) / 2));
+  while (n > 1 && 50 * n * (n - 1) > points) n--;
   while (50 * (n + 1) * n <= points) n++;
   const start = 50 * n * (n - 1), next = 50 * (n + 1) * n;
   return { level: n, progress: (points - start) / (next - start), toNext: next - points };

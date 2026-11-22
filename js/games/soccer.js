@@ -9,6 +9,7 @@ const DIFF = {
   rookie: { speed: 0.8, tackle: 1.4, keeper: 0.5, shootSkill: 0.55, think: 0.45 },
   pro: { speed: 0.93, tackle: 2.0, keeper: 0.66, shootSkill: 0.75, think: 0.3 },
   legend: { speed: 1.04, tackle: 2.8, keeper: 0.8, shootSkill: 0.9, think: 0.18 },
+  boost: { speed: 0.55, tackle: 0.2, keeper: 0.12, shootSkill: 0.1, think: 1.2 },  // win-chance matches
 };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const len = (x, y) => Math.hypot(x, y);
@@ -193,7 +194,7 @@ function pickOppColor(mine) {
 // ---------- game ----------
 function create(env) {
   const { input, audio, fx, options, profile } = env;
-  const D = DIFF[options.difficulty] || DIFF.rookie;
+  const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
   const matchLen = +(options.length || 150);
   const av = profile?.avatar || {};
   const myColor = av.shirt || '#2563eb';

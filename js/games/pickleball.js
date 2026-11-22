@@ -9,6 +9,7 @@ const DIFF = {
   rookie: { speed: 3.5, react: 0.38, err: 1.4, q: 0.5, letOut: 0.35 },
   pro: { speed: 4.3, react: 0.26, err: 0.9, q: 0.72, letOut: 0.7 },
   legend: { speed: 5.0, react: 0.16, err: 0.55, q: 0.88, letOut: 0.92 },
+  boost: { speed: 2.4, react: 0.7, err: 2.6, q: 0.25, letOut: 0.05 },  // win-chance matches
 };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -172,7 +173,7 @@ function drawPlayerAt(ctx, pl, t) {
 // ---------- game ----------
 function create(env) {
   const { input, audio, fx, options, profile } = env;
-  const D = DIFF[options.difficulty] || DIFF.rookie;
+  const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
   const target = +(options.target || 11);
   const autoSwing = (options.assist || 'auto') === 'auto';
   const av = profile?.avatar || {};

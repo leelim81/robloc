@@ -2,7 +2,7 @@ import { backend, validateName } from './backend.js';
 import { audio } from './audio.js';
 import { Input } from './input.js';
 import { FX } from './fx.js';
-import { BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, formatBig, formatShort, levelInfo, normalizeProfile } from './economy.js';
+import { BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, formatBig, formatShort, levelInfo, normalizeProfile, totalPoints, careerOf } from './economy.js';
 import { SKINS, HAIRS, SHIRTS, HAIR_STYLES, HAIR_STYLE_LABELS, DEFAULT_AVATAR, drawPortrait, drawAvatarFull } from './art.js';
 import soccer from './games/soccer.js';
 import pickleball from './games/pickleball.js';
@@ -164,11 +164,12 @@ function renderTopbar(animate = true) {
   const tag = $('#role-tag');
   tag.className = 'role-tag' + (p.role === 'owner' ? ' owner' : p.role === 'siwei' ? ' siwei' : ' hidden');
   tag.textContent = p.role === 'owner' ? '👑 OWNER' : p.role === 'siwei' ? '✨ VIP' : '';
-  const li = levelInfo(p.points);
+  const total = totalPoints(p);
+  const li = levelInfo(total);
   $('#hub-level').textContent = 'Lv ' + li.level;
   $('#hub-xp').style.width = (li.progress * 100).toFixed(1) + '%';
   $('#hub-level').title = `${li.toNext} points to level ${li.level + 1}`;
-  const coins = coinsOf(p), pts = BigInt(p.points);
+  const coins = coinsOf(p), pts = total;
   rollNumber('#hub-points', shown.points, pts, animate, v => formatBig(v));
   rollNumber('#hub-coins', shown.coins, coins, animate, v => formatShort(v));
   $('#hub-coins').parentElement.title = formatBig(coins) + ' coins';
@@ -178,6 +179,8 @@ function renderTopbar(animate = true) {
   $('#hub-money').textContent = formatShort(money);
   $('#money-wrap').title = '$' + formatBig(money);
   $('#badge-count').textContent = p.badges.length;
+  const c = careerOf(p);
+  $('#career').innerHTML = `<span>🎮 <b>${formatBig(c.played)}</b> played</span><span>🏆 <b>${formatBig(c.wins)}</b> won</span><span>📈 <b>${c.rate}%</b> wins</span>`;
 }
 function rollNumber(sel, from, to, animate, fmt) {
   const el = $(sel);
@@ -367,7 +370,10 @@ const host = {
     input.enabled = true; input.reset(); input.setLabels(this.game.labels.a, this.game.labels.b);
     this.fx = new FX();
     this.paused = false; this.ended = false;
-    this.inst = this.game.create({ input, audio, fx: this.fx, options, profile: state.profile, end: r => this.finish(r), toast });
+    // Players with a win chance (set in roles/{uid}) get a weakened opponent in that share of matches.
+    const chance = Number(state.profile?.winChance || 0);
+    const boost = chance > 0 && Math.random() * 100 < chance;
+    this.inst = this.game.create({ input, audio, fx: this.fx, options: { ...options, boost }, profile: state.profile, end: r => this.finish(r), toast });
     audio.music(this.game.music);
     cancelAnimationFrame(this.raf);
     this.last = performance.now();

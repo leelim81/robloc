@@ -1,7 +1,7 @@
 // Persistence layer. Uses Firebase (Google sign-in + Firestore) when configured,
 // otherwise falls back to a local demo mode backed by localStorage.
 import { firebaseConfig } from './firebase-config.js';
-import { applyMatch, normalizeProfile } from './economy.js';
+import { applyMatch, normalizeProfile, totalPoints } from './economy.js';
 
 const FB_VERSION = '10.12.2';
 // Add ?demo to the URL to force local demo mode (handy for offline testing).
@@ -23,8 +23,10 @@ const LB_FIELD = { points: 'points', soccer: 'stats.soccer.wins', pickleball: 's
 function lbValue(p, kind) {
   if (kind === 'soccer') return p.stats?.soccer?.wins || 0;
   if (kind === 'pickleball') return p.stats?.pickleball?.wins || 0;
-  return p.points || 0;
+  return totalPoints(p);
 }
+const ROLE_FIELDS = ['role', 'moneyBase', 'coinsBase', 'pointsBase', 'playedBase', 'winsBase', 'winChance'];
+const PLAYER_ROLE = { role: 'player', moneyBase: '0', coinsBase: '0', pointsBase: '0', playedBase: '0', winsBase: '0', winChance: '0' };
 
 class FirebaseBackend {
   mode = 'firebase';
@@ -64,10 +66,12 @@ class FirebaseBackend {
       const snap = await this.F.getDoc(this.F.doc(this.db, 'roles', this.user.uid));
       if (snap.exists()) {
         const r = snap.data();
-        return { role: r.role, moneyBase: String(r.moneyBase || '0'), coinsBase: String(r.coinsBase || '0') };
+        const out = { role: r.role };
+        for (const k of ROLE_FIELDS.slice(1)) out[k] = String(r[k] || '0');
+        return out;
       }
     } catch (e) { console.warn('role read failed', e); }
-    return { role: 'player', moneyBase: '0', coinsBase: '0' };
+    return { ...PLAYER_ROLE };
   }
 
   async loadProfile() {
@@ -75,7 +79,7 @@ class FirebaseBackend {
     if (!snap.exists()) return null;
     let p = normalizeProfile(snap.data());
     const r = await this.readRole();
-    if (r.role !== p.role || r.moneyBase !== p.moneyBase || r.coinsBase !== p.coinsBase) {
+    if (ROLE_FIELDS.some(k => r[k] !== p[k])) {
       await this.F.updateDoc(this.userRef(), r);
       p = { ...p, ...r };
     }
@@ -115,11 +119,18 @@ class FirebaseBackend {
     const { collection, query, orderBy, limit, getDocs, where } = this.F;
     const field = LB_FIELD[kind];
     const q = query(collection(this.db, 'users'), where(field, '>', 0), orderBy(field, 'desc'), limit(50));
-    const snaps = await getDocs(q);
-    return snaps.docs.map(d => {
+    // Role holders can have bonus points that the points query does not see, so fetch them too.
+    const [snaps, special] = await Promise.all([
+      getDocs(q),
+      kind === 'points' ? getDocs(query(collection(this.db, 'users'), where('role', 'in', ['owner', 'siwei']))) : null,
+    ]);
+    const byId = new Map();
+    for (const d of [...snaps.docs, ...(special ? special.docs : [])]) {
       const p = normalizeProfile(d.data());
-      return { uid: d.id, name: p.name, avatar: p.avatar, role: p.role, value: lbValue(p, kind), points: p.points };
-    });
+      const value = lbValue(p, kind);
+      if (value > 0) byId.set(d.id, { uid: d.id, name: p.name, avatar: p.avatar, role: p.role, value, points: totalPoints(p) });
+    }
+    return [...byId.values()].sort((a, b) => (BigInt(b.value) > BigInt(a.value) ? 1 : BigInt(b.value) < BigInt(a.value) ? -1 : 0)).slice(0, 50);
   }
 }
 
@@ -146,7 +157,7 @@ class DemoBackend {
   write(p) { try { localStorage.setItem(this.KEY, JSON.stringify(p)); } catch {} }
   async loadProfile() { const p = this.read(); return p ? normalizeProfile(p) : null; }
   async createProfile({ name, avatar }) {
-    const p = normalizeProfile({ name, avatar, role: 'player', moneyBase: '0', coinsBase: '0', badges: ['welcome'] });
+    const p = normalizeProfile({ name, avatar, ...PLAYER_ROLE, badges: ['welcome'] });
     this.write(p); return p;
   }
   async updateIdentity({ name, avatar }) { const p = this.read(); this.write({ ...p, name, avatar }); }
@@ -162,7 +173,7 @@ class DemoBackend {
     if (!p) return [];
     const np = normalizeProfile(p);
     const v = lbValue(np, kind);
-    return v > 0 ? [{ uid: 'demo-player', name: np.name, avatar: np.avatar, role: np.role, value: v, points: np.points }] : [];
+    return v > 0 ? [{ uid: 'demo-player', name: np.name, avatar: np.avatar, role: np.role, value: v, points: totalPoints(np) }] : [];
   }
 }
 
