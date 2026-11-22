@@ -134,9 +134,11 @@ $('#btn-setup-done').addEventListener('click', async () => {
   if (!v.ok) { showError('#setup-error', v.error); audio.play('fault'); return; }
   const btn = $('#btn-setup-done'); btn.disabled = true;
   try {
+    // The owner's name belongs to whoever took it first (Trevor).
+    if (await backend.nameTaken(v.name)) { showError('#setup-error', 'That name is taken. Please choose another one.'); audio.play('fault'); return; }
     if (state.editing) {
       await backend.updateIdentity({ name: v.name, avatar: state.avatar });
-      state.profile = { ...state.profile, name: v.name, avatar: { ...state.avatar } };
+      state.profile = normalizeProfile({ ...state.profile, name: v.name, avatar: { ...state.avatar } });
     } else {
       state.profile = await backend.createProfile({ name: v.name, avatar: { ...state.avatar } });
       setTimeout(() => badgeToast(BADGE_MAP.welcome), 900);
@@ -331,7 +333,7 @@ async function renderLeaderboard() {
     }
   }
   const unit = overall ? 'pts' : 'wins';
-  const roleTag = r => r.role === 'owner' ? '<span class="role-tag owner">👑</span>' : r.role === 'siwei' ? '<span class="role-tag siwei">✨</span>' : r.bot ? '<span class="role-tag allstar">★</span>' : '';
+  const roleTag = r => r.role === 'owner' ? '<span class="role-tag owner">👑</span>' : r.role === 'siwei' ? '<span class="role-tag siwei">✨</span>' : '';
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   top.slice(0, 3).forEach((r, i) => {
     const d = document.createElement('div');
@@ -356,7 +358,7 @@ async function renderLeaderboard() {
     rest.forEach((r, i) => addRow(r, top.length + i));
   }
   if (!top.length) note.textContent = 'No rankings yet. Finish a match to get on the board!';
-  else if (overall) note.textContent = `${formatBig(WORLD_PLAYERS)} players worldwide · ★ ROBLOC All-Stars are computer players.`;
+  else if (overall) note.textContent = `${formatBig(WORLD_PLAYERS)} players worldwide`;
   else if (backend.mode === 'demo') note.textContent = 'Demo mode shows only this device. Sign in online to compete with everyone.';
   else note.textContent = 'Top 30 players.';
 }

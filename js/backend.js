@@ -115,6 +115,15 @@ class FirebaseBackend {
     }
   }
 
+  // True when the name is the owner's and another account already uses it.
+  async nameTaken(name) {
+    if (!isOwnerName(name)) return false;
+    try {
+      const { collection, query, where, getDocs } = this.F;
+      const snaps = await getDocs(query(collection(this.db, 'users'), where('name', 'in', OWNER_NAME_SPELLINGS)));
+      return snaps.docs.some(d => d.id !== this.user.uid);
+    } catch (e) { console.warn('name check failed', e); return false; }
+  }
   async createProfile({ name, avatar }) {
     const r = await this.readRole();
     const { serverTimestamp, setDoc } = this.F;
@@ -213,6 +222,7 @@ class DemoBackend {
   read() { try { const s = localStorage.getItem(this.KEY); return s ? JSON.parse(s) : null; } catch { return null; } }
   write(p) { try { localStorage.setItem(this.KEY, JSON.stringify(p)); } catch {} }
   async loadProfile() { const p = this.read(); return p ? normalizeProfile(p) : null; }
+  async nameTaken() { return false; }
   async createProfile({ name, avatar }) {
     const p = normalizeProfile({ name, avatar, ...PLAYER_ROLE, badges: ['welcome'] });
     this.write(p); return p;

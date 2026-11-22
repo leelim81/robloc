@@ -150,7 +150,6 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .role-tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 900; letter-spacing: .8px; }
 .role-tag.owner { background: linear-gradient(90deg, #fbbf24, #f59e0b); color: #3b2300; }
 .role-tag.siwei { background: linear-gradient(90deg, #c084fc, #818cf8); color: #1e1047; }
-.role-tag.allstar { background: rgba(255,255,255,.12); color: var(--gold); }
 .level-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .level-pill { font-size: 12px; font-weight: 900; background: rgba(163,230,53,.18); color: var(--lime); padding: 1px 8px; border-radius: 999px; }
 .xp-bar { width: 110px; height: 8px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; }
