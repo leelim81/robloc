@@ -1,7 +1,7 @@
 // Persistence layer. Uses Firebase (Google sign-in + Firestore) when configured,
 // otherwise falls back to a local demo mode backed by localStorage.
 import { firebaseConfig } from './firebase-config.js';
-import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwnerName, gameStats } from './economy.js';
+import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwnerName, gameStats, SIWEI_STATS } from './economy.js';
 
 const OWNER_NAME_SPELLINGS = ['trevor', 'Trevor', 'TREVOR', 'trevor ', 'Trevor '];
 
@@ -92,17 +92,24 @@ class FirebaseBackend {
     return { ...PLAYER_ROLE };
   }
 
+  // Role bonuses for the signed-in player, from roles/{uid}. The owner gets
+  // all of them. Si Wei gets only his starting money and coins (the amounts
+  // in the code, so an old roles document can never under-pay him). Everyone
+  // else starts from zero.
+  bonusesFor(r) {
+    if (r.role === 'owner') return r;
+    if (r.role === 'siwei') return { ...PLAYER_ROLE, role: 'siwei', moneyBase: SIWEI_STATS.moneyBase, coinsBase: SIWEI_STATS.coinsBase };
+    return { ...PLAYER_ROLE };
+  }
+
   async loadProfile() {
     const snap = await this.F.getDoc(this.userRef());
     if (!snap.exists()) return null;
     const p = normalizeProfile(snap.data());
     const r = await this.readRole();
     await this.syncRole({ ...PLAYER_ROLE, ...snap.data() }, r);
-    // Only the owner gets role bonuses from roles/{uid}; everyone else starts
-    // from zero, so their role values are never applied on top.
-    const bonuses = r.role === 'owner' ? r : { ...PLAYER_ROLE };
     // Show the role bonuses locally even if saving them to the profile was refused.
-    return mergeLocal(this.user.uid, { ...p, ...bonuses });
+    return mergeLocal(this.user.uid, { ...p, ...this.bonusesFor(r) });
   }
   // Copies roles/{uid} into the player's profile so others see it on the leaderboard. Never blocks play.
   async syncRole(p, r) {
@@ -168,7 +175,10 @@ class FirebaseBackend {
     await this.withRepair(() => this.F.updateDoc(this.userRef(), { ...ZERO_PROFILE, lastAward: serverTimestamp() }));
     clearLocal(this.user.uid);
     const snap = await this.F.getDoc(this.userRef());
-    return normalizeProfile(snap.data());
+    // Starting over returns the player to their starting balance: Si Wei
+    // gets his $700,000 and 10,000 coins back, like a brand-new Si Wei
+    // player. Everyone else starts from zero.
+    return { ...normalizeProfile(snap.data()), ...this.bonusesFor(await this.readRole()) };
   }
   async recordMatch(match) {
     const { runTransaction, serverTimestamp } = this.F;
@@ -321,10 +331,13 @@ class DemoBackend {
   async updateIdentity({ name, avatar }) { const p = this.read(); this.write({ ...p, name, avatar }); }
   async resetProfile() {
     const cur = this.read() || {};
+    const wasSiwei = cur.role === 'siwei';
     const p = normalizeProfile({ ...cur, ...ZERO_PROFILE });
-    this.write(p);
+    // Starting over returns Si Wei to his starting balance, like the live game.
+    const out = wasSiwei ? { ...p, ...SIWEI_STATS, role: 'siwei' } : p;
+    this.write(out);
     clearLocal(this.user.uid);
-    return p;
+    return out;
   }
   async recordMatch(match) {
     const p = normalizeProfile(this.read());

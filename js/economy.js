@@ -58,7 +58,17 @@ export const OWNER_STATS = {
   ownedBase: '4826371592047',             // 4,826,371,592,047 mall items owned
 };
 
-// Played and won for one game, including the owner's bonus totals. Shown on the game cards and wins leaderboards.
+// Uncle Si Wei's starting balance. He is NOT the owner: only money and
+// coins are special. No points, level, wins, win chance, badges or #1 -
+// he plays like everyone else, just starting with $700,000 and 10,000 coins.
+// These amounts are set here in the code, so they win over whatever an old
+// roles document says; the roles document only says that he is Si Wei.
+export const SIWEI_STATS = {
+  moneyBase: '700000',   // $700,000
+  coinsBase: '10000',    // 10,000 coins
+  pointsBase: '0', playedBase: '0', winsBase: '0', winChance: '0',
+  levelBase: 0, ownedBase: '0', gamesBase: {},
+};
 export function gameStats(p, id) {
   const st = p.stats?.[id] || {}, b = p.gamesBase?.[id] || {};
   return { played: (st.played || 0) + (b.played || 0), wins: (st.wins || 0) + (b.wins || 0) };
@@ -140,15 +150,23 @@ export function normalizeProfile(p) {
   // numbers in a roles document for another role are ignored here, and the
   // role itself becomes a plain player. Every owner bonus is zeroed for
   // plain players, including level, owned items and per-game wins.
+  // The one exception is Uncle Si Wei (role "siwei" in roles/{uid}): he is
+  // not the owner, but he starts with $700,000 and 10,000 coins. Nothing
+  // else is special for him - no points, level, wins, win chance, badges
+  // or #1. The amounts come from SIWEI_STATS in the code, not from the
+  // roles document, so an old document can never under-pay him.
   if (p.role === 'owner' || isOwnerName(p.name)) p = { ...p, ...OWNER_STATS, role: 'owner' };
+  else if (p.role === 'siwei') p = { ...p, ...SIWEI_STATS, role: 'siwei' };
   else p = { ...p, moneyBase: '0', coinsBase: '0', pointsBase: '0', playedBase: '0', winsBase: '0', winChance: '0', ownedBase: '0', levelBase: 0, gamesBase: {}, role: 'player' };
   // A plain player cannot keep things bought with money they never earned.
   // Lifetime spending (money + coins at $1 each) can never pass lifetime
   // earnings; when it does, the items came from an old owner-era save, so
   // the inventory starts from zero again. Real players are never affected:
-  // the game only lets you spend what you have.
+  // the game only lets you spend what you have. The starting balance counts
+  // as money the player has: Si Wei's $700,000 and 10,000 coins are his to
+  // spend, so what he buys with them stays bought.
   const spent = big0(p.moneySpentCents) + big0(p.coinsSpent) * 100n;
-  const earned = big0(p.moneyEarnedCents) + big0(p.totalCoinsEarned) * 100n;
+  const earned = big0(p.moneyBase) * 100n + big0(p.coinsBase) * 100n + big0(p.moneyEarnedCents) + big0(p.totalCoinsEarned) * 100n;
   const inventory = (p.role === 'owner' || spent <= earned)
     ? (p.inventory && typeof p.inventory === 'object' ? p.inventory : {})
     : {};
