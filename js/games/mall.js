@@ -4,70 +4,14 @@ import { drawHuman, shade, rrect, SKINS, HAIRS, HAIR_STYLES, SHIRTS } from '../a
 import { drawBanner } from '../fx.js';
 import { payPlan as planFor, coinsOf, moneyCentsOf } from '../economy.js';
 
-export const TAX_RATE = 0.08;
-const $c = d => Math.round(d * 100);
-export const SHOPS = [
-  { id: 'toys', name: 'Toy Galaxy', icon: '🧸', color: '#f43f5e', items: [
-    ['teddy', 'Teddy Bear', '🧸', 24.99], ['racecar', 'Race Car Set', '🏎️', 39.99], ['robot', 'Robot Kit', '🤖', 79.99], ['dollhouse', 'Doll House', '🏠', 129.99],
-    ['yoyo', 'Yo-Yo', '🪀', 6.99], ['kite', 'Rainbow Kite', '🪁', 19.99], ['puzzle', '1000-Piece Puzzle', '🧩', 17.99], ['boardgame', 'Board Game', '🎲', 29.99]] },
-  { id: 'shoes', name: 'Sole Society', icon: '👟', color: '#0ea5e9', items: [
-    ['sneakers', 'Running Sneakers', '👟', 89.99], ['boots', 'Hiking Boots', '🥾', 129.99], ['flipflops', 'Flip-Flops', '🩴', 14.99], ['flats', 'Ballet Flats', '🩰', 49.99],
-    ['dressshoes', 'Dress Shoes', '👞', 119.99], ['heels', 'Party Heels', '👠', 79.99], ['socks', 'Socks 6-Pack', '🧦', 16.99]] },
-  { id: 'bakery', name: 'Sweet Crumbs Bakery', icon: '🥐', color: '#d97706', items: [
-    ['croissant', 'Croissant', '🥐', 3.49], ['cake', 'Birthday Cake', '🎂', 34.99], ['cupcake', 'Cupcake', '🧁', 3.99], ['donuts', 'Box of Donuts', '🍩', 12.99],
-    ['bread', 'Bread Loaf', '🍞', 5.49], ['cookie', 'Giant Cookie', '🍪', 1.99], ['pie', 'Apple Pie', '🥧', 18.99]] },
-  { id: 'electronics', name: 'Volt Electronics', icon: '📱', color: '#6366f1', items: [
-    ['phone', 'Smartphone', '📱', 799], ['laptop', 'Laptop', '💻', 1199], ['headphones', 'Headphones', '🎧', 249.99], ['smartwatch', 'Smart Watch', '⌚', 399],
-    ['tv', '65" 4K TV', '📺', 649.99], ['camera', 'Camera', '📷', 899], ['desktop', 'Gaming PC', '🖥️', 1499], ['speaker', 'Speaker', '🔊', 129.99]] },
-  { id: 'pets', name: 'Paws & Claws Pets', icon: '🐶', color: '#16a34a', items: [
-    ['puppy', 'Puppy', '🐶', 850], ['kitten', 'Kitten', '🐱', 350], ['goldfish', 'Goldfish', '🐠', 4.99], ['hamster', 'Hamster', '🐹', 19.99],
-    ['parrot', 'Parrot', '🦜', 1200], ['bunny', 'Bunny', '🐰', 85], ['turtle', 'Turtle', '🐢', 39.99], ['petfood', 'Pet Food Bag', '🦴', 34.99]] },
-  { id: 'icecream', name: 'Scoop Dreams', icon: '🍦', color: '#ec4899', items: [
-    ['cone', 'Ice Cream Cone', '🍦', 4.5], ['sundae', 'Sundae', '🍨', 7.95], ['shake', 'Milkshake', '🥤', 6.49], ['shavedice', 'Shaved Ice', '🍧', 4.25], ['waffle', 'Waffle Bowl', '🧇', 5.75]] },
-  { id: 'sports', name: 'Pro Sports Locker', icon: '⚽', color: '#22c55e', items: [
-    ['soccerball', 'Soccer Ball', '⚽', 29.99], ['basketball', 'Basketball', '🏀', 34.99], ['glove', 'Baseball Glove', '🧤', 59.99], ['racket', 'Tennis Racket', '🎾', 89.99],
-    ['skateboard', 'Skateboard', '🛹', 79.99], ['bike', 'Mountain Bike', '🚲', 349.99], ['football', 'Football', '🏈', 24.99], ['paddle', 'Pickleball Paddle', '🏓', 49.99]] },
-  { id: 'books', name: 'Bookworm Books', icon: '📚', color: '#92400e', items: [
-    ['comic', 'Comic Book', '📕', 4.99], ['novel', 'Adventure Novel', '📘', 14.99], ['encyclopedia', 'Encyclopedia Set', '📚', 89.99], ['coloring', 'Coloring Book', '🖍️', 7.99], ['atlas', 'World Atlas', '🗺️', 24.99]] },
-  { id: 'fashion', name: 'Glow Up Fashion', icon: '👕', color: '#a855f7', items: [
-    ['tshirt', 'T-Shirt', '👕', 19.99], ['jeans', 'Jeans', '👖', 49.99], ['coat', 'Winter Coat', '🧥', 129.99], ['dress', 'Dress', '👗', 59.99],
-    ['cap', 'Baseball Cap', '🧢', 24.99], ['sunglasses', 'Sunglasses', '🕶️', 39.99], ['backpack', 'Backpack', '🎒', 54.99], ['scarf', 'Scarf', '🧣', 22.99]] },
-  { id: 'games', name: 'Game Zone', icon: '🎮', color: '#0891b2', items: [
-    ['videogame', 'Video Game', '💿', 69.99], ['console', 'Game Console', '🎮', 499.99], ['vr', 'VR Headset', '🥽', 499], ['giftcard', 'Gift Card', '🎁', 25], ['joystick', 'Arcade Stick', '🕹️', 149.99]] },
-  { id: 'home', name: 'Home Nest', icon: '🛋️', color: '#78716c', items: [
-    ['sofa', 'Sofa', '🛋️', 899], ['bed', 'Bed', '🛏️', 699], ['lamp', 'Lamp', '💡', 39.99], ['plant', 'House Plant', '🪴', 24.99],
-    ['chair', 'Chair', '🪑', 89.99], ['clock', 'Wall Clock', '🕰️', 45], ['mirror', 'Mirror', '🪞', 79.99], ['bathtub', 'Bathtub', '🛁', 1299]] },
-  { id: 'jewelry', name: 'Sparkle Jewelry', icon: '💍', color: '#eab308', items: [
-    ['ring', 'Diamond Ring', '💍', 1299], ['necklace', 'Pearl Necklace', '📿', 349], ['diamond', 'Big Diamond', '💎', 9999], ['crown', 'Gold Crown', '👑', 25000], ['goldwatch', 'Gold Watch', '⌚', 2499]] },
-  { id: 'market', name: 'Fresh Market', icon: '🍎', color: '#65a30d', items: [
-    ['apple', 'Apple', '🍎', 0.99], ['bananas', 'Bananas', '🍌', 1.29], ['milk', 'Milk', '🥛', 3.79], ['eggs', 'Dozen Eggs', '🥚', 4.29],
-    ['pizza', 'Frozen Pizza', '🍕', 8.99], ['cheese', 'Cheese', '🧀', 6.49], ['watermelon', 'Watermelon', '🍉', 5.99], ['carrots', 'Carrots', '🥕', 1.99]] },
-  { id: 'music', name: 'Music Box', icon: '🎸', color: '#dc2626', items: [
-    ['guitar', 'Guitar', '🎸', 299], ['keyboard', 'Keyboard', '🎹', 449], ['drums', 'Drum Kit', '🥁', 799], ['violin', 'Violin', '🎻', 399], ['trumpet', 'Trumpet', '🎺', 529], ['mic', 'Microphone', '🎤', 99.99]] },
-  { id: 'cars', name: 'Turbo Motors', icon: '🚗', color: '#1d4ed8', items: [
-    ['familycar', 'Family Car', '🚗', 27500], ['sportscar', 'Sports Car', '🏎️', 189000], ['pickup', 'Pickup Truck', '🛻', 42900], ['motorcycle', 'Motorcycle', '🏍️', 12499],
-    ['escooter', 'Electric Scooter', '🛴', 599], ['camper', 'Camper Van', '🚐', 89000]] },
-  { id: 'homes', name: 'Dream Homes Realty', icon: '🏡', color: '#0d9488', items: [
-    ['house', 'Cozy House', '🏠', 385000], ['familyhome', 'Family Home', '🏡', 649000], ['apartment', 'City Apartment', '🏢', 725000], ['villa', 'Beach Villa', '🏖️', 4200000], ['castle', 'Castle', '🏰', 12500000]] },
-  { id: 'aviation', name: 'SkyHigh Aviation', icon: '✈️', color: '#0284c7', items: [
-    ['balloon', 'Hot Air Balloon', '🎈', 45000], ['smallplane', 'Small Plane', '🛩️', 350000], ['helicopter', 'Helicopter', '🚁', 2900000], ['jet', 'Private Jet', '✈️', 65000000], ['rocket', 'Rocket', '🚀', 90000000]] },
-  { id: 'boats', name: 'Harbor Boats', icon: '⛵', color: '#0369a1', items: [
-    ['kayak', 'Kayak', '🛶', 799], ['sailboat', 'Sailboat', '⛵', 85000], ['speedboat', 'Speedboat', '🚤', 129000], ['yacht', 'Yacht', '🛥️', 8500000], ['cruise', 'Cruise Ship', '🚢', 950000000]] },
-].map(s => ({ ...s, items: s.items.map(([id, name, icon, d]) => ({ id: s.id + '.' + id, name, icon, cents: $c(d) })) }));
-export const ITEMS = Object.fromEntries(SHOPS.flatMap(s => s.items.map(i => [i.id, { ...i, shop: s.name }])));
-export const withTax = cents => Math.round(cents * (1 + TAX_RATE));
-
-export function fmtCents(c) {
-  const n = BigInt(c), neg = n < 0n, a = neg ? -n : n;
-  const d = (a / 100n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','), r = (a % 100n).toString().padStart(2, '0');
-  return (neg ? '-$' : '$') + d + '.' + r;
-}
+import { SHOP_COUNT, shopInfo, shopItems, withTax, fmtCents, TAX_RATE } from './shops.js';
 
 const SHOP_W = 470, X0 = 260, FLOOR = 540;
-const WORLD_W = X0 * 2 + SHOPS.length * SHOP_W;
+const WORLD_W = X0 * 2 + SHOP_COUNT * SHOP_W;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rand = (a, b) => a + Math.random() * (b - a);
 const doorX = i => X0 + i * SHOP_W + SHOP_W / 2;
+const MAP_PAGE = 16;
 
 // ---------- scenery ----------
 function drawMall(ctx, view, camX, t, nearShop) {
@@ -107,9 +51,10 @@ function drawMall(ctx, view, camX, t, nearShop) {
     ctx.fillStyle = '#bae6fd'; ctx.fillRect(ex - 95, 190, 190, FLOOR - 190);
     ctx.fillStyle = '#0f172a'; ctx.font = "26px 'Lilita One'"; ctx.textAlign = 'center'; ctx.fillText('ROBLOC MALL', ex, 172);
   }
-  SHOPS.forEach((s, i) => {
+  const first = clamp(Math.floor((vis0 - X0) / SHOP_W), 0, SHOP_COUNT - 1), last = clamp(Math.ceil((vis1 - X0) / SHOP_W), 0, SHOP_COUNT - 1);
+  for (let i = first; i <= last; i++) {
     const x = X0 + i * SHOP_W;
-    if (x + SHOP_W < vis0 || x > vis1) return;
+    const info = shopInfo(i), s = { ...info, items: shopItems(i).slice(0, 8) };
     drawStore(ctx, s, x, t, nearShop === i);
     // pillar + plant between stores
     ctx.fillStyle = '#f1f5f9'; ctx.fillRect(x - 12, 122, 24, FLOOR - 122);
@@ -119,9 +64,9 @@ function drawMall(ctx, view, camX, t, nearShop) {
       ctx.fillStyle = '#16a34a';
       for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.ellipse(x + (k - 2) * 9, FLOOR - 26 - Math.abs(k - 2) * -4, 10, 22, (k - 2) * 0.35, 0, Math.PI * 2); ctx.fill(); }
     }
-    // fountain in the middle of the mall
-    if (i === 8) drawFountain(ctx, x + SHOP_W, t);
-  });
+    // a fountain every few shops
+    if (i % 9 === 8) drawFountain(ctx, x + SHOP_W, t);
+  }
   ctx.restore();
 }
 function drawFountain(ctx, x, t) {
@@ -145,8 +90,10 @@ function drawStore(ctx, s, x, t, near) {
   ctx.strokeStyle = shade(c, 0.4); ctx.lineWidth = 3; rrect(ctx, x + 40, 140, SHOP_W - 80, 64, 14); ctx.stroke();
   ctx.font = "30px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.shadowColor = c; ctx.shadowBlur = near ? 22 : 10;
-  ctx.fillStyle = '#fff'; fitText(ctx, s.icon + ' ' + s.name, x + SHOP_W / 2, 173, SHOP_W - 110);
+  ctx.fillStyle = '#fff'; fitText(ctx, s.icon + ' ' + s.name, x + SHOP_W / 2, 167, SHOP_W - 110);
   ctx.shadowBlur = 0;
+  ctx.font = '800 12px Nunito'; ctx.fillStyle = 'rgba(255,255,255,.6)';
+  ctx.fillText(`SHOP #${s.number.toLocaleString()} · ${s.count.toLocaleString()} ITEMS`, x + SHOP_W / 2, 193);
   // windows with displays
   const win = (wx, items) => {
     ctx.fillStyle = 'rgba(224,242,254,.85)'; ctx.fillRect(wx, 230, 140, 220);
@@ -178,11 +125,11 @@ function create(env) {
   const av = profile?.avatar || {};
   const me = { x: X0 - 60, y: FLOOR + 90, vx: 0, phase: 0, flip: false };
   const npcs = Array.from({ length: 14 }, () => ({
-    x: rand(X0, WORLD_W - X0), y: rand(FLOOR + 40, FLOOR + 150), dir: Math.random() < 0.5 ? -1 : 1, speed: rand(50, 110), phase: rand(0, 6),
+    x: rand(X0, X0 + 6 * SHOP_W), y: rand(FLOOR + 40, FLOOR + 150), dir: Math.random() < 0.5 ? -1 : 1, speed: rand(50, 110), phase: rand(0, 6),
     look: { skin: SKINS[(Math.random() * SKINS.length) | 0], hair: HAIRS[(Math.random() * 7) | 0], style: HAIR_STYLES[(Math.random() * 5) | 0], shirt: SHIRTS[(Math.random() * SHIRTS.length) | 0] },
-    bag: Math.random() < 0.6 ? SHOPS[(Math.random() * SHOPS.length) | 0].color : null, pause: 0,
+    bag: Math.random() < 0.6 ? shopInfo((Math.random() * 60) | 0).color : null, pause: 0,
   }));
-  const S = { t: 0, mode: 'walk', shop: -1, sel: 0, navT: 0, lastNav: '', busy: false, receipt: null, receiptT: 0, error: null, mapSel: 0, labelKey: '', intro: 0 };
+  const S = { t: 0, mode: 'walk', shop: -1, sel: 0, navT: 0, navHeld: 0, lastNav: '', busy: false, receipt: null, receiptT: 0, error: null, mapSel: 0, labelKey: '', intro: 0 };
   let camX = 0;
 
   const prof = () => shop.profile() || profile;
@@ -193,8 +140,11 @@ function create(env) {
     // joystick / arrows step the selection once per push, then repeat while held
     const dx = input.mx > 0.5 ? 1 : input.mx < -0.5 ? -1 : 0, dy = input.my > 0.5 ? 1 : input.my < -0.5 ? -1 : 0;
     const key = dx + ',' + dy;
-    if (key === '0,0') { S.lastNav = key; return; }
-    if (key !== S.lastNav || S.navT <= 0) { onMove(dx, dy); S.navT = key !== S.lastNav ? 0.35 : 0.12; S.lastNav = key; audio.play('tick'); }
+    if (key === '0,0') { S.lastNav = key; S.navHeld = 0; return; }
+    if (key !== S.lastNav) S.navHeld = 0;
+    // holding a direction speeds up: 1, 5, 25, then 100 steps at a time
+    const mult = S.navHeld > 4 ? 100 : S.navHeld > 2.5 ? 25 : S.navHeld > 1.2 ? 5 : 1;
+    if (key !== S.lastNav || S.navT <= 0) { onMove(dx, dy, mult); S.navT = key !== S.lastNav ? 0.35 : 0.1; S.lastNav = key; audio.play('tick'); }
   }
 
   async function buy(item) {
@@ -215,12 +165,12 @@ function create(env) {
   }
 
   function nearShop() {
-    for (let i = 0; i < SHOPS.length; i++) if (Math.abs(me.x - doorX(i)) < SHOP_W / 2 - 12) return i;
-    return -1;
+    const i = Math.floor((me.x - X0) / SHOP_W);
+    return i >= 0 && i < SHOP_COUNT && Math.abs(me.x - doorX(i)) < SHOP_W / 2 - 12 ? i : -1;
   }
 
   function update(dt) {
-    S.t += dt; S.intro += dt; S.navT -= dt; S.receiptT += dt; if (S.errorT !== undefined) S.errorT += dt;
+    S.t += dt; S.intro += dt; S.navT -= dt; S.navHeld += dt; S.receiptT += dt; if (S.errorT !== undefined) S.errorT += dt;
     if (S.receipt && S.receiptT > 2.6) S.receipt = null;
     if (S.error && S.errorT > 2.6) S.error = null;
     const labelKey = S.mode;
@@ -234,6 +184,7 @@ function create(env) {
       if (n.pause > 0) { n.pause -= dt; continue; }
       n.x += n.dir * n.speed * dt; n.phase += n.speed * dt * 0.06;
       if (n.x < X0 - 40 || n.x > WORLD_W - X0 + 40) n.dir *= -1;
+      if (Math.abs(n.x - me.x) > 1600) { n.x = me.x + (Math.random() < 0.5 ? -1 : 1) * rand(700, 1400); n.dir = n.x > me.x ? -1 : 1; }
       if (Math.random() < dt * 0.08) n.pause = rand(1, 3);
     }
     if (S.mode === 'walk') {
@@ -245,20 +196,16 @@ function create(env) {
       me.phase += Math.abs(me.vx) * dt * 0.035 + Math.abs(input.my) * dt * 5;
       const ns = nearShop();
       if (input.a.pressed && ns >= 0) { S.mode = 'shop'; S.shop = ns; S.sel = 0; audio.play('select'); }
-      else if (input.b.pressed) { S.mode = 'map'; S.mapSel = Math.max(0, ns); audio.play('select'); }
+      else if (input.b.pressed) { S.mode = 'map'; S.mapSel = Math.max(0, ns >= 0 ? ns : clamp(Math.floor((me.x - X0) / SHOP_W), 0, SHOP_COUNT - 1)); audio.play('select'); }
     } else if (S.mode === 'shop') {
-      const items = SHOPS[S.shop].items, cols = 4;
-      nav((dx, dy) => { S.sel = clamp(S.sel + dx + dy * cols, 0, items.length - 1); });
+      const items = shopItems(S.shop), cols = 4;
+      nav((dx, dy, mult) => { S.sel = clamp(S.sel + dx + dy * cols * mult, 0, items.length - 1); });
       if (input.a.pressed) buy(items[S.sel]);
       if (input.b.pressed && !S.busy) { S.mode = 'walk'; audio.play('back'); }
     } else if (S.mode === 'map') {
-      const half = Math.ceil(SHOPS.length / 2);
-      nav((dx, dy) => {
-        let col = S.mapSel >= half ? 1 : 0, row = S.mapSel - col * half;
-        col = clamp(col + dx, 0, 1); row = clamp(row + dy, 0, half - 1);
-        S.mapSel = Math.min(SHOPS.length - 1, col * half + row);
-      });
-      if (input.a.pressed) { me.x = doorX(S.mapSel); me.y = FLOOR + 70; me.vx = 0; S.mode = 'walk'; audio.play('whoosh'); fx.dust(640, FLOOR + 70, 8); }
+      // up/down pick a shop, left/right flip pages of 16 (hold to fly through thousands)
+      nav((dx, dy, mult) => { S.mapSel = clamp(S.mapSel + dy * mult + dx * MAP_PAGE * mult, 0, SHOP_COUNT - 1); });
+      if (input.a.pressed) { me.x = doorX(S.mapSel); me.y = FLOOR + 70; me.vx = 0; camX = clamp(me.x - 640, 0, WORLD_W - 1280); S.mode = 'walk'; audio.play('whoosh'); fx.dust(640, FLOOR + 70, 8); }
       if (input.b.pressed) { S.mode = 'walk'; audio.play('back'); }
     }
     camX += (clamp(me.x - 640, 0, WORLD_W - 1280) - camX) * Math.min(1, dt * 6);
@@ -277,7 +224,7 @@ function create(env) {
     fx.draw(ctx);
     drawWallet(ctx);
     if (S.mode === 'walk') {
-      if (ns >= 0) prompt(ctx, `${input.touchMode ? 'Tap ENTER' : 'Press SPACE'} to go into ${SHOPS[ns].name}`, 1, '#fde68a');
+      if (ns >= 0) prompt(ctx, `${input.touchMode ? 'Tap ENTER' : 'Press SPACE'} to go into ${shopInfo(ns).name}`, 1, '#fde68a');
       else prompt(ctx, input.touchMode ? 'Walk to a shop door · MAP to jump to any shop' : 'Arrows to walk · SPACE enter a shop · SHIFT mall map', 0.85);
       if (S.intro < 2) drawBanner(ctx, 'ROBLOC MALL', 640, 300, S.intro, { size: 96, color: '#fbcfe8', glow: '#db2777' });
     }
@@ -317,12 +264,23 @@ function create(env) {
   }
 
   function drawShop(ctx) {
-    const s = SHOPS[S.shop], items = s.items, cols = 4;
+    const s = shopInfo(S.shop), items = shopItems(S.shop), cols = 4, rows = 3;
     const X = 90, Y = 70, W = 1100, H = 580;
     panel(ctx, X, Y, W, H, s.icon + ' ' + s.name, s.color);
     const cw = 252, ch = 132, gx = 16, gy = 14, ox = X + (W - (cols * cw + (cols - 1) * gx)) / 2, oy = Y + 84;
-    items.forEach((it, i) => {
-      const cx = ox + (i % cols) * (cw + gx), cy = oy + Math.floor(i / cols) * (ch + gy);
+    // show 3 rows at a time, scrolling with the selection
+    const totalRows = Math.ceil(items.length / cols), selRow = Math.floor(S.sel / cols);
+    const top = clamp(selRow - 1, 0, Math.max(0, totalRows - rows));
+    ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = '900 15px Nunito';
+    ctx.fillText(`Item ${(S.sel + 1).toLocaleString()} of ${items.length.toLocaleString()}`, X + W - 28, Y + 34);
+    if (totalRows > rows) {
+      const bh = 3 * (ch + gy) - gy, th = Math.max(30, bh * rows / totalRows), ty = oy + (bh - th) * (top / Math.max(1, totalRows - rows));
+      ctx.fillStyle = 'rgba(255,255,255,.1)'; rrect(ctx, X + W - 18, oy, 6, bh, 3); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.5)'; rrect(ctx, X + W - 18, ty, 6, th, 3); ctx.fill();
+    }
+    items.slice(top * cols, (top + rows) * cols).forEach((it, k) => {
+      const i = top * cols + k;
+      const cx = ox + (k % cols) * (cw + gx), cy = oy + Math.floor(k / cols) * (ch + gy);
       const sel = i === S.sel, owned = (prof().inventory || {})[it.id] || 0;
       ctx.fillStyle = sel ? shade(s.color, -0.2) : '#1e293b'; rrect(ctx, cx, cy, cw, ch, 16); ctx.fill();
       if (sel) { ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4; rrect(ctx, cx, cy, cw, ch, 16); ctx.stroke(); }
@@ -350,23 +308,28 @@ function create(env) {
   }
 
   function drawMap(ctx) {
-    const X = 190, Y = 60, W = 900, H = 600, half = Math.ceil(SHOPS.length / 2);
+    const X = 190, Y = 60, W = 900, H = 600;
+    const page = Math.floor(S.mapSel / MAP_PAGE), pages = Math.ceil(SHOP_COUNT / MAP_PAGE);
     panel(ctx, X, Y, W, H, '🗺️ Mall Directory', '#7c3aed');
-    SHOPS.forEach((s, i) => {
-      const col = i >= half ? 1 : 0, row = i - col * half;
-      const x = X + 30 + col * (W / 2 - 15), y = Y + 84 + row * 54, w = W / 2 - 45;
-      const sel = i === S.mapSel;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#cbd5e1'; ctx.font = '900 15px Nunito';
+    const from = page * MAP_PAGE, to = Math.min(SHOP_COUNT, from + MAP_PAGE);
+    ctx.fillText(`Shops ${(from + 1).toLocaleString()}–${to.toLocaleString()} of ${SHOP_COUNT.toLocaleString()} · page ${page + 1} of ${pages}`, X + W / 2, Y + 84);
+    for (let i = from; i < to; i++) {
+      const k = i - from, col = k >= MAP_PAGE / 2 ? 1 : 0, row = k - col * MAP_PAGE / 2;
+      const x = X + 30 + col * (W / 2 - 15), y = Y + 104 + row * 54, w = W / 2 - 45;
+      const s = shopInfo(i), sel = i === S.mapSel;
       ctx.fillStyle = sel ? s.color : '#1e293b'; rrect(ctx, x, y, w, 46, 12); ctx.fill();
       if (sel) { ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3; rrect(ctx, x, y, w, 46, 12); ctx.stroke(); }
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.font = '900 19px Nunito';
-      ctx.fillText(`${s.icon}  ${s.name}`, x + 14, y + 24);
-      const cheapest = Math.min(...s.items.map(i => i.cents));
-      ctx.textAlign = 'right'; ctx.font = '800 13px Nunito'; ctx.fillStyle = sel ? '#fff' : '#94a3b8';
-      ctx.fillText('from ' + fmtCents(cheapest), x + w - 14, y + 24);
-    });
+      ctx.textAlign = 'left'; ctx.fillStyle = sel ? '#fff' : '#94a3b8'; ctx.font = '800 12px Nunito';
+      ctx.fillText('#' + s.number.toLocaleString(), x + 12, y + 24);
+      ctx.fillStyle = '#fff'; ctx.font = '900 17px Nunito';
+      fitTextLeft(ctx, `${s.icon} ${s.name}`, x + 70, y + 24, w - 170);
+      ctx.textAlign = 'right'; ctx.font = '800 12px Nunito'; ctx.fillStyle = sel ? '#fff' : '#94a3b8';
+      ctx.fillText(s.count.toLocaleString() + ' items', x + w - 12, y + 24);
+    }
     const owned = Object.values(prof().inventory || {}).reduce((a, b) => a + b, 0);
-    ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '800 15px Nunito';
-    ctx.fillText(`🛍️ You own ${owned} item${owned === 1 ? '' : 's'} · ${input.touchMode ? 'GO to walk there · CLOSE' : 'SPACE go · SHIFT close'}`, X + W / 2, Y + H - 22);
+    ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '800 14px Nunito';
+    ctx.fillText(`🛍️ You own ${owned} item${owned === 1 ? '' : 's'} · ▲▼ pick · ◀▶ page (hold to go faster) · ${input.touchMode ? 'GO / CLOSE' : 'SPACE go · SHIFT close'}`, X + W / 2, Y + H - 22);
   }
 
   function drawReceipt(ctx) {
@@ -420,8 +383,8 @@ function drawThumb(ctx, w, h, t, view) {
 export default {
   id: 'mall',
   title: 'Shopping Mall',
-  tagline: 'Shop 18 stores with real prices',
-  desc: 'Walk the ROBLOC Mall and buy toys, food, pets, phones, cars, houses and even jets, with real prices and sales tax.',
+  tagline: '10,000 shops with real prices',
+  desc: 'Walk the ROBLOC Mall: 10,000 shops selling toys, food, pets, phones, cars, houses and even jets, with real prices and sales tax.',
   music: 'mall',
   noDifficulty: true,
   playLabel: 'ENTER MALL',
@@ -429,7 +392,8 @@ export default {
   options: [],
   howto: `<ul>
     <li><b>Walk</b> with the joystick or arrows. Stand at a shop door and press <b>ENTER</b> (<kbd>Space</kbd>).</li>
-    <li><b>MAP</b> (<kbd>Shift</kbd>) opens the mall directory so you can jump to any of the 18 shops.</li>
+    <li><b>MAP</b> (<kbd>Shift</kbd>) opens the directory of all 10,000 shops. Flip pages left and right (hold to go faster) and jump to any shop.</li>
+    <li>Every shop sells 7 to 1,000 things. Hold up or down in a shop to scroll faster.</li>
     <li>In a shop, pick an item and press <b>BUY</b>. Prices are real and ${Math.round(TAX_RATE * 100)}% sales tax is added at checkout.</li>
     <li>You pay with your money ($) first. If you don't have enough money, you can pay with coins: 1 coin = $1.</li>
     <li>Everything you buy is saved to your account. Earn more coins by playing the other games.</li>
