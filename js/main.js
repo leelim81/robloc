@@ -253,7 +253,7 @@ const WORLD_PLAYERS = 187_000_000;               // size of the pretend world us
 const BOT_NAMES = ['NovaStriker', 'PixelPanda', 'TurboTaco', 'SkyDasher', 'CosmicKai', 'BlazeRunner', 'MangoMaverick', 'ZoomZara',
   'FrostByte', 'LuckyLlama', 'RocketRae', 'ShadowFox', 'BubbleBoss', 'ThunderTom', 'JellyJet', 'NinjaNoodle', 'SunnySpark',
   'MegaMilo', 'CrystalCat', 'DinoDash', 'ViperVee', 'GalaxyGus', 'PopcornPete', 'StormySam', 'WaffleWiz', 'AquaAce',
-  'BerryBlitz', 'CometCody', 'DizzyDuck', 'EchoEmi'];
+  'BerryBlitz', 'CometCody', 'DizzyDuck'];   // 29 All-Stars + the owner = top 30
 function seeded(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 const BOTS = BOT_NAMES.map((name, i) => {
   const r = seeded(i * 7919 + 11);
@@ -280,9 +280,10 @@ function buildOverall(rows) {
     return { ...b, value, points: value };
   });
   const lowestBot = bots[bots.length - 1].value;
-  const top = [...rows.filter(r => BigInt(r.value) > lowestBot), ...bots].sort(cmpBig);
+  const top = [...rows.filter(r => BigInt(r.value) > lowestBot), ...bots].sort(cmpBig).slice(0, 30);
   top.forEach((r, i) => { r.rank = i + 1; });
-  const rest = rows.filter(r => BigInt(r.value) <= lowestBot);
+  // Below the top 30 only the signed-in player's own row is shown, with their estimated world rank.
+  const rest = rows.filter(r => BigInt(r.value) <= lowestBot && r.uid === state.user?.uid);
   // the signed-in player always appears, even before they score
   if (state.user && state.profile && ![...top, ...rest].some(r => r.uid === state.user.uid)) {
     const p = state.profile;
