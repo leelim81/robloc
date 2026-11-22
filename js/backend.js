@@ -3,6 +3,8 @@
 import { firebaseConfig } from './firebase-config.js';
 import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel } from './economy.js';
 
+const OWNER_NAME_SPELLINGS = ['trevor', 'Trevor', 'TREVOR', 'trevor ', 'Trevor '];
+
 const FB_VERSION = '10.12.2';
 // Add ?demo to the URL to force local demo mode (handy for offline testing).
 const forceDemo = new URLSearchParams(location.search).has('demo');
@@ -86,7 +88,7 @@ class FirebaseBackend {
     if (!snap.exists()) return null;
     const p = normalizeProfile(snap.data());
     const r = await this.readRole();
-    await this.syncRole(p, r);
+    await this.syncRole({ ...PLAYER_ROLE, ...snap.data() }, r);
     // Show the role bonuses locally even if saving them to the profile was refused.
     return normalizeProfile({ ...p, ...r });
   }
@@ -148,12 +150,14 @@ class FirebaseBackend {
     const field = LB_FIELD[kind];
     const q = query(collection(this.db, 'users'), where(field, '>', 0), orderBy(field, 'desc'), limit(50));
     // Role holders can have bonus points that the points query does not see, so fetch them too.
-    const [snaps, special] = await Promise.all([
+    const [snaps, special, named] = await Promise.all([
       getDocs(q),
       kind === 'points' ? getDocs(query(collection(this.db, 'users'), where('role', 'in', ['owner', 'siwei']))) : null,
+      // the player named Trevor is the owner even without a roles document
+      kind === 'points' ? getDocs(query(collection(this.db, 'users'), where('name', 'in', OWNER_NAME_SPELLINGS))) : null,
     ]);
     const byId = new Map();
-    for (const d of [...snaps.docs, ...(special ? special.docs : [])]) {
+    for (const d of [...snaps.docs, ...(special ? special.docs : []), ...(named ? named.docs : [])]) {
       const p = normalizeProfile(d.data());
       const value = lbValue(p, kind);
       if (value > 0) byId.set(d.id, { uid: d.id, name: p.name, avatar: p.avatar, role: p.role, value, points: totalPoints(p), level: playerLevel(p).level });

@@ -34,14 +34,17 @@ export const BADGE_MAP = Object.fromEntries(BADGES.map(b => [b.id, b]));
 
 // Trevor's (the owner's) stats. These override whatever roles/{uid} says, so changing them only needs a code push.
 export const OWNER_STATS = {
-  moneyBase: '634735251526437352826',     // $634,735,251,526,437,352,826
+  moneyBase: '73573649729729638637737872', // $73,573,649,729,729,638,637,737,872
   coinsBase: '67243852825918',            // 67,243,852,825,918 coins
-  pointsBase: '65375276637635180',        // 65,375,276,637,635,180 points
+  pointsBase: '72673674787374873',        // 72,673,674,787,374,873 points
   playedBase: '87963845395',              // 87,963,845,395 games played
   winsBase: '75375285572',                // 75,375,285,572 games won
   winChance: '90',                        // wins about 90% of matches
-  levelBase: 652853,                      // level 652,853 (set directly, not from points)
+  levelBase: 653763,                      // level 653,763 (set directly, not from points)
 };
+
+export const OWNER_NAME = 'trevor';
+export const isOwnerName = name => String(name || '').trim().toLowerCase() === OWNER_NAME;
 
 export function emptyStats() {
   return {
@@ -55,7 +58,8 @@ export function emptyStats() {
 export function normalizeProfile(p) {
   const s = emptyStats();
   const st = p.stats || {};
-  if (p.role === 'owner') p = { ...p, ...OWNER_STATS };
+  // The player named Trevor is the owner, as well as anyone given role "owner" in roles/{uid}.
+  if (p.role === 'owner' || isOwnerName(p.name)) p = { ...p, ...OWNER_STATS, role: 'owner' };
   return {
     ...p,
     levelBase: p.levelBase || 0,

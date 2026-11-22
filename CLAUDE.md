@@ -11,5 +11,5 @@
 
 ## Firebase
 - Project `robloc-d500b`. Rules in `firestore.rules` are kept simple (own document only; role bonuses come from `roles/{uid}`), so new features shouldn't need a rules change.
-- Trevor is the owner (`roles/{uid}` with `role: owner`); keep him #1 on the Overall leaderboard.
+- Trevor is the owner: any player named "trevor" (any capitals), or `roles/{uid}` with `role: owner`. Keep him #1 on the Overall leaderboard.
 - Trevor's numbers are in `OWNER_STATS` (`js/economy.js`); change them there when he asks.

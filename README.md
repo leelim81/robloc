@@ -63,8 +63,10 @@ Roles are never granted by typing a name. After the person signs in and creates 
 1. Firebase console → Firestore Database → `users` collection → find the document whose `name` is theirs. The document ID is their user ID.
 2. Create a collection `roles` and add a document with **that same ID** and a string field `role`: `owner` for Trevor, `siwei` for Si Wei.
 
+The player named **trevor** (any capitals) is always the owner, even without a `roles` document.
+
 Trevor's numbers live in the code (`OWNER_STATS` in `js/economy.js`), so changing them only needs a push:
-$634,735,251,526,437,352,826 money, 67,243,852,825,918 coins, 65,375,276,637,635,180 points, level 652,853,
+$73,573,649,729,729,638,637,737,872 money, 67,243,852,825,918 coins, 72,673,674,787,374,873 points, level 653,763,
 87,963,845,395 games played, 75,375,285,572 won, 90% win chance, and every badge.
 
 Other roles can still set `moneyBase`, `coinsBase`, `pointsBase`, `playedBase`, `winsBase` and `winChance` as **string** fields in their `roles` document.
