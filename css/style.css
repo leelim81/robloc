@@ -221,7 +221,8 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   display: grid; grid-template-columns: minmax(44px, auto) 44px 1fr auto; align-items: center; gap: 12px; padding: 8px 16px 8px 10px;
   border-radius: 16px; background: var(--panel); border: 1px solid var(--line); animation: cardIn .4s ease backwards;
 }
-.lb-row.me { border-color: rgba(34,211,238,.7); background: rgba(34,211,238,.12); }
+.lb-row.me { border: 2px solid var(--gold); background: rgba(252, 211, 77, .1); box-shadow: 0 0 0 2px rgba(252, 211, 77, .25), 0 8px 20px rgba(0,0,0,.3); }
+.lb-you { font-size: 11px; font-weight: 900; letter-spacing: 1px; color: #1e293b; background: var(--gold); border-radius: 99px; padding: 3px 8px; white-space: nowrap; }
 .lb-rank { font-family: var(--display); font-size: 22px; text-align: center; color: var(--muted); }
 .lb-rank.long { font-size: 14px; }
 .lb-gap { text-align: center; color: var(--muted); font-weight: 900; letter-spacing: 4px; padding: 2px 0; }
