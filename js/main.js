@@ -256,9 +256,9 @@ function stopThumbs() { cancelAnimationFrame(thumbRAF); }
 // The Overall board shows real players only. Everybody starts from zero, so
 // nobody is given points: the owner always stays #1 (put in at #1 himself
 // when his online player is not found), and everyone else earns their place.
-// The board shows the top 30, then only the viewing player's own row last,
+// The board shows the top 10, then only the viewing player's own row last,
 // with their estimated world rank. A plain player never appears in the top
-// 30 list, even if they would rank there.
+// 10 list, even if they would rank there.
 const OWNER_POINTS_FALLBACK = BigInt(OWNER_STATS.pointsBase);   // Trevor's points if his profile is not loaded
 function clamp01(v) { return Math.max(0, Math.min(1, v)); }
 // Estimate a player's world rank from their points. `world` is the real
@@ -284,13 +284,13 @@ function buildOverall(rows, world) {
   const owner = rows.find(r => r.role === 'owner');
   const anchor = owner ? BigInt(owner.value) : OWNER_POINTS_FALLBACK;
   const isOwnerViewer = state.user && state.profile?.role === 'owner';
-  // The top 30 are the leaders. A plain player never appears in that list:
-  // their own row always goes last, below the top 30, with their estimated
-  // world rank. The owner is the exception: his row is #1 in the top 30.
+  // The top 10 are the leaders. A plain player never appears in that list:
+  // their own row always goes last, below the top 10, with their estimated
+  // world rank. The owner is the exception: his row is #1 in the top 10.
   const pool = isOwnerViewer ? rows : rows.filter(r => r.uid !== state.user?.uid);
-  const top = [...pool].sort(cmpBig).slice(0, 30);
+  const top = [...pool].sort(cmpBig).slice(0, 10);
   top.forEach((r, i) => { r.rank = i + 1; });
-  // Below the top 30 only the signed-in player's own row is shown, with their estimated world rank.
+  // Below the top 10 only the signed-in player's own row is shown, with their estimated world rank.
   const rest = [];
   if (state.user && state.profile && !isOwnerViewer) {
     const p = state.profile;
@@ -324,8 +324,8 @@ async function renderLeaderboard() {
   let top = rows, rest = [];
   if (overall) ({ top, rest } = buildOverall(rows, count || rows.length || 1));
   else {
-    // Wins tabs: top 30, then your own row at the bottom. A plain player
-    // never appears in the top 30: their own row always goes last.
+    // Wins tabs: top 10, then your own row at the bottom. A plain player
+    // never appears in the top 10: their own row always goes last.
     // Trevor is always #1 here too: if his row is missing, put him in at #1
     // from his fixed per-game wins and push everyone else one rank down.
     if (!rows.some(r => r.role === 'owner')) {
@@ -335,7 +335,7 @@ async function renderLeaderboard() {
     const isOwnerViewer = state.user && state.profile?.role === 'owner';
     const pool = isOwnerViewer ? rows : rows.filter(r => r.uid !== state.user?.uid);
     pool.forEach((r, i) => { r.rank = i + 1; });
-    top = pool.slice(0, 30);
+    top = pool.slice(0, 10);
     if (state.user && state.profile && !isOwnerViewer) {
       const mine = rows.find(r => r.uid === state.user.uid);
       const p = state.profile, wins = gameStats(p, state.lbKind).wins;
@@ -355,10 +355,11 @@ async function renderLeaderboard() {
   });
   const addRow = (r, i) => {
     const li = document.createElement('li');
-    li.className = 'lb-row' + (r.uid === state.user?.uid ? ' me' : ''); li.style.animationDelay = Math.min(i, 15) * 0.03 + 's';
+    const isMe = r.uid === state.user?.uid;
+    li.className = 'lb-row' + (isMe ? ' me' : ''); li.style.animationDelay = Math.min(i, 15) * 0.03 + 's';
     const rank = formatBig(r.rank);
     li.innerHTML = `<span class="lb-rank${rank.length > 3 ? ' long' : ''}">${rank}</span><canvas width="88" height="88"></canvas>
-      <span class="lb-name">${esc(r.name)} ${roleTag(r)} ${!overall ? `<small>Lv ${formatShort(r.level ?? levelInfo(r.points).level)}</small>` : ''}</span>
+      <span class="lb-name">${esc(r.name)} ${roleTag(r)} ${!overall ? `<small>Lv ${formatShort(r.level ?? levelInfo(r.points).level)}</small>` : ''}${isMe ? '<span class="lb-you">YOU</span>' : ''}</span>
       <span class="lb-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</span>`;
     drawPortrait(li.querySelector('canvas'), r.avatar);
     list.appendChild(li);
@@ -371,7 +372,7 @@ async function renderLeaderboard() {
   if (!top.length) note.textContent = 'No rankings yet. Finish a match to get on the board!';
   else if (overall) note.textContent = count ? (count === 1 ? '1 player worldwide' : `${formatBig(count)} players worldwide`) : '';
   else if (backend.mode === 'demo') note.textContent = 'Demo mode shows only this device. Sign in online to compete with everyone.';
-  else note.textContent = 'Top 30 players.';
+  else note.textContent = 'Top 10 players.';
 }
 
 function renderBadges() {
