@@ -1,5 +1,6 @@
-// ROBLOC shop catalog: 90,780 shops. 1-10,000 sell all kinds of things (the first 18 are hand-made),
-// 10,001-78,000 sell food, 78,001-88,000 sell drinks and 88,001-90,780 sell clothes and shoes.
+// ROBLOC shop catalog: 93,560 shops. 1-10,000 sell all kinds of things (the first 18 are hand-made),
+// 10,001-78,000 sell food, 78,001-88,000 sell drinks, 88,001-90,780 sell clothes and shoes,
+// and 90,781-93,560 sell makeup.
 // Prices are in cents.
 
 export const TAX_RATE = 0.08;
@@ -64,7 +65,7 @@ export function fmtCents(c) {
 // ---------- generated shops ----------
 // Shops 19 to 10,000 are generated from shop types below. The same shop number always gives the same
 // name, items and prices, so nothing needs storing. Each shop sells 7 to 1,000 items.
-export const SHOP_COUNT = 90780;
+export const SHOP_COUNT = 93560;
 
 // [item, emoji, lowest price, highest price] in dollars
 const KINDS = [
@@ -232,12 +233,27 @@ const CLOTHES_KINDS = [
   wear('sportswear', ['Sportswear', 'Active Wear', 'Team Shop'], '🎽', '#16a34a', [['Jersey', '🎽', 30, 150], ['Track Suit', '🥋', 40, 180], ['Swimsuit', '🩱', 20, 120], ['Swim Trunks', '🩳', 15, 70], ['Martial Arts Uniform', '🥋', 35, 140], ['Sports Socks', '🧦', 6, 25]]),
   wear('sleep', ['Sleepwear', 'Cozy Nights', 'PJ Palace'], '🩲', '#8b5cf6', [['Pajamas', '👕', 18, 80], ['Robe', '🥋', 25, 120], ['Fuzzy Socks', '🧦', 5, 20], ['Slippers', '🥿', 12, 60], ['Sleep Mask', '😴', 5, 25], ['Onesie', '👕', 20, 70]]),
 ];
-const FOOD_FROM = 10000, DRINK_FROM = 78000, CLOTHES_FROM = 88000;
+// Floor 5: makeup. Colors make the item names ("Pink Lipstick").
+const makeup = (key, words, icon, color, t) => ({ key, words, icon, color, t, v1: COLORS, v2: MODS });
+const MAKEUP_KINDS = [
+  makeup('lipstick', ['Lipstick', 'Lip Bar', 'Lipstick Studio'], '💄', '#db2777', [['Lipstick', '💄', 6, 60], ['Lip Gloss', '💄', 5, 40], ['Lip Balm', '💄', 3, 20], ['Lip Liner', '✏️', 4, 25]]),
+  makeup('perfume', ['Perfume', 'Fragrance', 'Scent Shop'], '🌸', '#ec4899', [['Perfume', '🌸', 25, 400], ['Body Spray', '🌸', 10, 80], ['Scented Lotion', '🌸', 8, 60], ['Rollerball Perfume', '🌸', 12, 90]]),
+  makeup('nails', ['Nails', 'Nail Bar', 'Nail Studio'], '💅', '#f472b6', [['Nail Polish', '💅', 4, 25], ['Nail Stickers', '💅', 3, 15], ['Nail File', '💅', 2, 12], ['Nail Polish Remover', '💅', 3, 10]]),
+  makeup('face', ['Face Care', 'Skin Care', 'Face Shop'], '🧴', '#0ea5e9', [['Face Cream', '🧴', 10, 200], ['Face Mask', '🧴', 5, 60], ['Moisturizer', '🧴', 8, 120], ['Sunscreen', '🧴', 6, 30]]),
+  makeup('eyes', ['Eyes', 'Eye Studio', 'Eye Makeup'], '👁️', '#7c3aed', [['Eyeshadow', '🎨', 8, 80], ['Mascara', '👁️', 6, 50], ['Eyeliner', '✏️', 5, 40], ['Eye Pencil', '✏️', 4, 30]]),
+  makeup('blush', ['Blush', 'Cheek Studio', 'Glow Bar'], '💄', '#f43f5e', [['Blush', '💄', 6, 60], ['Bronzer', '💄', 8, 70], ['Highlighter', '✨', 10, 80], ['Blush Brush', '🖌️', 5, 40]]),
+  makeup('brushes', ['Brushes', 'Brush Studio', 'Makeup Tools'], '🖌️', '#a855f7', [['Makeup Brush', '🖌️', 5, 60], ['Brush Set', '🖌️', 15, 150], ['Makeup Sponge', '🧽', 3, 20], ['Powder Puff', '🧽', 2, 15]]),
+  makeup('hair', ['Hair Accessories', 'Hair Studio', 'Hair Bar'], '🎀', '#db2777', [['Hair Clip', '🎀', 2, 20], ['Hair Band', '🎀', 3, 25], ['Hair Brush', '🪮', 5, 60], ['Hair Bow', '🎀', 3, 20]]),
+  makeup('mirror', ['Mirrors', 'Vanity', 'Mirror Shop'], '🪞', '#64748b', [['Mirror', '🪞', 10, 150], ['Makeup Bag', '👜', 12, 120], ['Vanity Case', '👜', 25, 300], ['Travel Mirror', '🪞', 8, 60]]),
+  makeup('bath', ['Bath & Body', 'Bath Shop', 'Body Care'], '🛁', '#14b8a6', [['Bath Bomb', '🛁', 3, 15], ['Soap', '🧼', 2, 15], ['Body Wash', '🧴', 4, 25], ['Hand Cream', '🧴', 3, 30]]),
+];
+const FOOD_FROM = 10000, DRINK_FROM = 78000, CLOTHES_FROM = 88000, MAKEUP_FROM = 90780;
 export const SECTIONS = [
   { name: 'Shops', from: 0, to: FOOD_FROM },
   { name: 'Food', from: FOOD_FROM, to: DRINK_FROM },
   { name: 'Drinks', from: DRINK_FROM, to: CLOTHES_FROM },
-  { name: 'Clothes', from: CLOTHES_FROM, to: 90780 },
+  { name: 'Clothes', from: CLOTHES_FROM, to: MAKEUP_FROM },
+  { name: 'Makeup', from: MAKEUP_FROM, to: 93560 },
 ];
 export const sectionOf = i => SECTIONS.find(s => i >= s.from && i < s.to) || SECTIONS[0];
 
@@ -253,7 +269,7 @@ export function shopInfo(i) {
     const c = CURATED[i];
     return remember(infoCache, i, { index: i, number: i + 1, name: c.name, icon: c.icon, color: c.color, kind: KIND_BY_KEY[c.id], count: Math.max(count, c.items.length), section: 'Shops' });
   }
-  const kinds = i >= CLOTHES_FROM ? CLOTHES_KINDS : i >= DRINK_FROM ? DRINK_KINDS : i >= FOOD_FROM ? FOOD_KINDS : KINDS;
+  const kinds = i >= MAKEUP_FROM ? MAKEUP_KINDS : i >= CLOTHES_FROM ? CLOTHES_KINDS : i >= DRINK_FROM ? DRINK_KINDS : i >= FOOD_FROM ? FOOD_KINDS : KINDS;
   const kind = kinds[Math.floor(r() * kinds.length)];
   const lead = kinds !== KINDS && r() < 0.5 ? OWNERS[Math.floor(r() * OWNERS.length)] : PREFIXES[Math.floor(r() * PREFIXES.length)];
   const name = lead + ' ' + kind.words[Math.floor(r() * kind.words.length)];

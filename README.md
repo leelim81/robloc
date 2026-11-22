@@ -11,7 +11,7 @@ Live site: https://leelim81.github.io/robloc
 | Soccer: 3-a-side stadium match (striker, midfielder, goalkeeper) | Playable |
 | Pickleball: singles with serve, two-bounce, kitchen and side-out rules | Playable |
 | Baseball: bat and pitch through 1, 3 or 5 innings with balls, strikes, outs and base runners | Playable |
-| Shopping Mall: 4 floors with an elevator and 90,780 shops (Floor 1: 10,000 general shops, Floor 2: 68,000 food places, Floor 3: 10,000 drink shops, Floor 4: 2,780 clothes and shoe shops), each selling 7 to 1,000 items at real prices plus 8% sales tax | Playable |
+| Shopping Mall: 5 floors with an elevator and 93,560 shops (Floor 1: 10,000 general shops, Floor 2: 68,000 food places, Floor 3: 10,000 drink shops, Floor 4: 2,780 clothes and shoe shops, Floor 5: 2,780 makeup shops), each selling 7 to 1,000 items at real prices plus 8% sales tax | Playable |
 | Guess the Price: game show with real mall items; pick the right price and beat the CPU contestant | Playable |
 | Prize Machine: claw machine with plush toys, toys, coin bags and a golden crown | Playable |
 | Transport Modes, Dream Store, Brick Builder Shop | Coming soon |
@@ -42,7 +42,7 @@ js/games/baseball.js  Baseball
 js/games/mall.js      Shopping Mall
 js/games/guessprice.js Guess the Price
 js/games/prizemachine.js Prize Machine
-js/games/shops.js     shop catalog: 18 hand-made shops + generated shops up to 90,780 (food, drinks, clothes)
+js/games/shops.js     shop catalog: 18 hand-made shops + generated shops up to 93,560 (food, drinks, clothes, makeup)
 firestore.rules       security rules to publish in the Firebase console
 ```
 
@@ -73,7 +73,9 @@ Trevor's numbers live in the code (`OWNER_STATS` in `js/economy.js`), so changin
 $73,573,649,729,729,638,637,737,872 money, 67,243,852,825,918 coins, 72,673,674,787,374,873 points, level 653,763,
 87,963,845,395 games played and 75,375,285,572 won (split across Soccer, Pickleball, Baseball, Guess the Price and Prize Machine), 4,826,371,592,047 mall items owned, 90% win chance, and every badge.
 
-Other roles can still set `moneyBase`, `coinsBase`, `pointsBase`, `playedBase`, `winsBase` and `winChance` as **string** fields in their `roles` document.
+Uncle Si Wei (role `siwei`) gets $5,000 money and 100,000 coins, fixed in the code (`SIWEI_STATS` in `js/economy.js`), so changing them only needs a push. Give him the role in the console with `moneyBase` `5000` and `coinsBase` `100000` as **string** fields too, so his saved profile matches.
+
+Everyone else starts from zero: bonus numbers in a `roles` document for any other role are ignored by the code.
 
 The next time they open ROBLOC, their profile picks up the role, badge tag and starting balances. Players cannot write to `roles`, and nobody can write to anyone else's `users` document.
 

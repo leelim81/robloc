@@ -58,6 +58,18 @@ export const OWNER_STATS = {
   ownedBase: '4826371592047',             // 4,826,371,592,047 mall items owned
 };
 
+// Uncle Si Wei's stats (role "siwei"). Fixed in code like Trevor's, so changing them
+// only needs a code push: $5,000 money and 100,000 coins, everything else zero.
+export const SIWEI_STATS = {
+  moneyBase: '5000',    // $5,000
+  coinsBase: '100000',  // 100,000 coins
+  pointsBase: '0',
+  playedBase: '0',
+  winsBase: '0',
+  winChance: '0',
+  levelBase: 0,
+};
+
 // Played and won for one game, including the owner's bonus totals. Shown on the game cards and wins leaderboards.
 export function gameStats(p, id) {
   const st = p.stats?.[id] || {}, b = p.gamesBase?.[id] || {};
@@ -86,7 +98,11 @@ export function normalizeProfile(p) {
   const s = emptyStats();
   const st = p.stats || {};
   // The player named Trevor is the owner, as well as anyone given role "owner" in roles/{uid}.
+  // Uncle Si Wei (role "siwei") gets $5,000 and 100,000 coins. Everyone else starts from
+  // zero: any bonus numbers in a roles document for another role are ignored here.
   if (p.role === 'owner' || isOwnerName(p.name)) p = { ...p, ...OWNER_STATS, role: 'owner' };
+  else if (p.role === 'siwei') p = { ...p, ...SIWEI_STATS, role: 'siwei' };
+  else p = { ...p, moneyBase: '0', coinsBase: '0', pointsBase: '0', playedBase: '0', winsBase: '0', winChance: '0' };
   return {
     ...p,
     levelBase: p.levelBase || 0,
