@@ -507,7 +507,7 @@ const host = {
     } catch (e) {
       console.error(e);
       $('#results-save').textContent = e.code === 'permission-denied'
-        ? 'Rewards not saved: matches finished less than 20 seconds apart do not earn rewards.'
+        ? 'Rewards not saved: the Firebase rules need to be published again (see README).'
         : 'Could not save rewards: ' + (e.code || e.message);
     }
   },

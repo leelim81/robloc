@@ -53,7 +53,7 @@ Google sign-in on localhost works only if `localhost` is in Firebase → Authent
 ## Firebase setup
 
 1. `js/firebase-config.js` holds the web app config for project `robloc-d500b`.
-2. Publish the security rules: Firebase console → Firestore Database → **Rules** → paste `firestore.rules` → **Publish**. Until this is done, saving and the leaderboard fail with `permission-denied`.
+2. Publish the security rules: Firebase console → Firestore Database → **Rules** → paste `firestore.rules` → **Publish**. Until this is done, saving and the leaderboard fail with `permission-denied`. The rules are kept simple, so new game features do not need them published again.
 
 ## Special roles (Trevor and Si Wei)
 
@@ -79,7 +79,7 @@ The next time they open ROBLOC, their profile picks up the role, badge tag and s
 ## Rewards
 
 - Each finished match gives points and coins based on the result, goals or points scored, and difficulty (Rookie ×1, Pro ×1.5, Legend ×2).
-- Per-match caps: 600 points and 250 coins (the rules allow at most 1,000 and 500, and one reward every 20 seconds).
+- Per-match caps: 600 points and 250 coins.
 - Quitting a match from the pause menu gives no rewards.
 - Level *n* starts at 50·n·(n−1) points.
 
