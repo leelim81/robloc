@@ -187,9 +187,9 @@ function renderTopbar(animate = true) {
   $('#hub-money').textContent = money < 100000n ? formatBig(money) + '.' + String(cents % 100n).padStart(2, '0') : formatShort(money);
   $('#money-wrap').title = '$' + formatBig(money) + '.' + String(cents % 100n).padStart(2, '0');
   $('#badge-count').textContent = p.badges.length;
-  // The boss's earnings (sales tax from mall purchases): only Trevor sees this, and only once someone has bought something.
+  // The boss's earnings (sales tax from mall purchases): only Trevor sees this, and he always sees it, even at $0, so he can watch it grow.
   const boss = state.bossCents || 0, bossDollars = BigInt(Math.floor(boss)) / 100n, bossRem = BigInt(Math.floor(boss)) % 100n;
-  $('#boss-wrap').classList.toggle('hidden', p.role !== 'owner' || boss <= 0);
+  $('#boss-wrap').classList.toggle('hidden', p.role !== 'owner');
   $('#hub-boss').textContent = bossDollars < 100000n ? formatBig(bossDollars) + '.' + String(bossRem).padStart(2, '0') : formatShort(bossDollars);
   $('#boss-wrap').title = 'Boss earnings: sales tax from every mall purchase';
   const c = careerOf(p);

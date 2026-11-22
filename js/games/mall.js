@@ -104,14 +104,15 @@ function drawBays(ctx, camX, x0, W) {
   for (let i = first; i <= last; i++) {
     const x = X0 + i * BAY_W;
     ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(x + 6, 250); ctx.lineTo(x + 6, 520); ctx.moveTo(x + BAY_W - 6, 250); ctx.lineTo(x + BAY_W - 6, 520); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 6, 250); ctx.lineTo(x + 6, FLOOR); ctx.moveTo(x + BAY_W - 6, 250); ctx.lineTo(x + BAY_W - 6, FLOOR); ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = "900 26px 'Lilita One'";
     ctx.fillText('B' + (i + 1), x + BAY_W / 2, 215);
-    if (bayRand(i) < 0.75) drawCar(ctx, x + (BAY_W - 120) / 2, 505, 1, CAR_COLORS[Math.floor(bayRand(i + 1000) * CAR_COLORS.length)]);
+    // Cars park on the floor: the wheels (bottom of the car, y + 5) touch FLOOR.
+    if (bayRand(i) < 0.75) drawCar(ctx, x + (BAY_W - 120) / 2, FLOOR - 5, 1, CAR_COLORS[Math.floor(bayRand(i + 1000) * CAR_COLORS.length)]);
     else { ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.font = '900 16px Nunito'; ctx.fillText('EMPTY', x + BAY_W / 2, 400); }
   }
   ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.moveTo(X0, 520); ctx.lineTo(X0 + BAYS * BAY_W, 520); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(X0, FLOOR); ctx.lineTo(X0 + BAYS * BAY_W, FLOOR); ctx.stroke();
 }
 function drawElevator(ctx, x, floor, t, near) {
   ctx.fillStyle = '#475569'; ctx.fillRect(x - 115, 130, 230, FLOOR - 130);
@@ -371,7 +372,8 @@ function create(env) {
 
   function drawWallet(ctx) {
     const { moneyC, coins } = balances();
-    const text = `💵 ${fmtCents(moneyC)}   🪙 ${coins.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} coins` + (bossCents > 0 ? `   👑 Boss earned ${fmtCents(bossCents)}` : '');
+    // The boss's earnings show in the wallet too; Trevor always sees them, even at $0, so he can watch them grow.
+    const text = `💵 ${fmtCents(moneyC)}   🪙 ${coins.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} coins` + (bossCents > 0 || prof().role === 'owner' ? `   👑 Boss earned ${fmtCents(bossCents)}` : '');
     ctx.save(); ctx.font = '900 18px Nunito'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
     const w = Math.min(1100, ctx.measureText(text).width + 32);
     ctx.fillStyle = 'rgba(15,23,42,.88)'; rrect(ctx, 18, 14, w, 44, 14); ctx.fill();
@@ -487,7 +489,8 @@ function create(env) {
     const X = 390, Y = 50, W = 500, H = 620;
     panel(ctx, X, Y, W, H, '🛗 Elevator', '#0f766e');
     closeButton(ctx, X + W - 52, Y + 13, () => { S.mode = 'walk'; audio.play('back'); });
-    [5, 4, 3, 2, 1, 0].forEach((f, k) => {
+    // Floors top to bottom: 5, 4, 3, 2, 1, then B1 at the bottom, below 1.
+    [4, 3, 2, 1, 0, 5].forEach((f, k) => {
       const y = Y + 80 + k * 88, sel = S.liftSel === f, here = f === floor, sec = SECTIONS[f];
       ctx.fillStyle = sel ? '#14b8a6' : '#1e293b'; rrect(ctx, X + 30, y, W - 60, 84, 18); ctx.fill();
       if (sel) { ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4; rrect(ctx, X + 30, y, W - 60, 84, 18); ctx.stroke(); }
