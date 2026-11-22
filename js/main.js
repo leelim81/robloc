@@ -166,11 +166,12 @@ function renderTopbar(animate = true) {
   tag.textContent = p.role === 'owner' ? '👑 OWNER' : p.role === 'siwei' ? '✨ VIP' : '';
   const total = totalPoints(p);
   const li = levelInfo(total);
-  $('#hub-level').textContent = 'Lv ' + li.level;
+  $('#hub-level').textContent = 'Lv ' + formatShort(li.level);
   $('#hub-xp').style.width = (li.progress * 100).toFixed(1) + '%';
-  $('#hub-level').title = `${li.toNext} points to level ${li.level + 1}`;
+  $('#hub-level').title = `Level ${formatBig(li.level)} · ${formatBig(li.toNext)} points to level ${formatBig(li.level + 1)}`;
   const coins = coinsOf(p), pts = total;
-  rollNumber('#hub-points', shown.points, pts, animate, v => formatBig(v));
+  rollNumber('#hub-points', shown.points, pts, animate, v => formatShort(v));
+  $('#hub-points').parentElement.title = formatBig(pts) + ' points';
   rollNumber('#hub-coins', shown.coins, coins, animate, v => formatShort(v));
   $('#hub-coins').parentElement.title = formatBig(coins) + ' coins';
   shown = { points: pts, coins };
@@ -180,7 +181,7 @@ function renderTopbar(animate = true) {
   $('#money-wrap').title = '$' + formatBig(money);
   $('#badge-count').textContent = p.badges.length;
   const c = careerOf(p);
-  $('#career').innerHTML = `<span>🎮 <b>${formatBig(c.played)}</b> played</span><span>🏆 <b>${formatBig(c.wins)}</b> won</span><span>📈 <b>${c.rate}%</b> wins</span>`;
+  $('#career').innerHTML = `<span title="${formatBig(c.played)}">🎮 <b>${formatShort(c.played)}</b> played</span><span title="${formatBig(c.wins)}">🏆 <b>${formatShort(c.wins)}</b> won</span><span>📈 <b>${c.rate}%</b> wins</span>`;
 }
 function rollNumber(sel, from, to, animate, fmt) {
   const el = $(sel);
@@ -262,7 +263,7 @@ async function renderLeaderboard() {
   rows.slice(0, 3).forEach((r, i) => {
     const d = document.createElement('div');
     d.className = `pod p${i + 1}`; d.style.animationDelay = (0.1 + (2 - i) * 0.12) + 's';
-    d.innerHTML = `<canvas width="168" height="168"></canvas><div class="pod-name">${esc(r.name)} ${roleTag(r)}</div><div class="pod-val">${formatBig(r.value)} ${unit}</div><div class="pod-block">${i + 1}</div>`;
+    d.innerHTML = `<canvas width="168" height="168"></canvas><div class="pod-name">${esc(r.name)} ${roleTag(r)}</div><div class="pod-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</div><div class="pod-block">${i + 1}</div>`;
     drawPortrait(d.querySelector('canvas'), r.avatar, { bg: false });
     pod.appendChild(d);
   });
@@ -270,8 +271,8 @@ async function renderLeaderboard() {
     const li = document.createElement('li');
     li.className = 'lb-row' + (r.uid === state.user?.uid ? ' me' : ''); li.style.animationDelay = Math.min(i, 15) * 0.03 + 's';
     li.innerHTML = `<span class="lb-rank">${i + 1}</span><canvas width="88" height="88"></canvas>
-      <span class="lb-name">${esc(r.name)} ${roleTag(r)} ${state.lbKind !== 'points' ? `<small>Lv ${levelInfo(r.points).level}</small>` : ''}</span>
-      <span class="lb-val">${formatBig(r.value)} ${unit}</span>`;
+      <span class="lb-name">${esc(r.name)} ${roleTag(r)} ${state.lbKind !== 'points' ? `<small>Lv ${formatShort(levelInfo(r.points).level)}</small>` : ''}</span>
+      <span class="lb-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</span>`;
     drawPortrait(li.querySelector('canvas'), r.avatar);
     list.appendChild(li);
   });
