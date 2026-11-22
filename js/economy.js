@@ -118,6 +118,8 @@ export function normalizeProfile(p) {
     inventory: p.inventory && typeof p.inventory === 'object' ? p.inventory : {},
     moneySpentCents: p.moneySpentCents || '0',
     coinsSpent: p.coinsSpent || 0,
+    // Sales tax this player has paid in the mall: it all goes to Trevor, the boss.
+    bossPaidCents: p.bossPaidCents || '0',
     moneyEarnedCents: p.moneyEarnedCents || '0',
     role: p.role || 'player',
     // The owner (Trevor) has every badge unlocked. Everyone else starts with

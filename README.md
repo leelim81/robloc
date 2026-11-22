@@ -58,7 +58,7 @@ Google sign-in on localhost works only if `localhost` is in Firebase → Authent
 ## Firebase setup
 
 1. `js/firebase-config.js` holds the web app config for project `robloc-d500b`.
-2. Publish the security rules: Firebase console → Firestore Database → **Rules** → paste `firestore.rules` → **Publish**. Until this is done, saving and the leaderboard fail with `permission-denied`. The rules are kept simple; the one shared counter (boss earnings, see below) also lives in them, so publish again after pulling a rules change.
+2. Publish the security rules: Firebase console → Firestore Database → **Rules** → paste `firestore.rules` → **Publish**. Until this is done, saving and the leaderboard fail with `permission-denied`. The rules are kept simple, so new game features do not need them published again.
 
 ## Special roles (Trevor and Si Wei)
 
@@ -79,7 +79,7 @@ Everyone else starts from zero: bonus numbers in a `roles` document for any othe
 
 The next time they open ROBLOC, their profile picks up the role, badge tag and starting balances. Players cannot write to `roles`, and nobody can write to anyone else's `users` document.
 
-Trevor, the boss, also earns money from the mall: the 8% sales tax on every purchase goes to him. It is counted in one shared document, `boss/earnings` (field `cents`), which any signed-in player can only add to, never take from — see `firestore.rules`. His total shows in the mall wallet bar and, for him only, on the hub top bar.
+Trevor, the boss, also earns money from the mall: the 8% sales tax on every purchase goes to him. Each purchase saves the tax it paid on the buyer's own save (`bossPaidCents`), and his total is the sum of everyone's — so it works with the rules as they are, no extra step needed. His total shows in the mall wallet bar and, for him only, on the hub top bar.
 
 ## Rewards
 

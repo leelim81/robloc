@@ -218,12 +218,10 @@ function create(env) {
     if (!plan) { S.error = 'Not enough money or coins for this.'; S.errorT = 0; audio.play('fault'); return; }
     S.busy = true;
     try {
-      const res = await shop.buy(item, total);
+      const res = await shop.buy(item, total, total - item.cents);
       S.receipt = { item, total, plan, deviceOnly: !!res?.deviceOnly }; S.receiptT = 0;
       // The sales tax on this purchase goes to Trevor, the boss.
-      const tax = total - item.cents;
-      bossCents += tax;
-      if (shop.bossEarn) shop.bossEarn(tax).catch(() => {});
+      bossCents += total - item.cents;
       audio.play('coin'); fx.confetti(640, 360, 40);
     } catch (e) {
       console.error(e);

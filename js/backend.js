@@ -160,7 +160,8 @@ class FirebaseBackend {
   // Buying is instant: the item is saved on this device right away, then saved to Firebase in the
   // background. When Firebase confirms, the device copy is removed (Firebase has it now).
   // current: the profile the player sees now (already including device-only purchases).
-  async purchase(itemId, cents, current) {
+  // taxCents: the sales tax in this purchase, which goes to Trevor, the boss.
+  async purchase(itemId, cents, current, taxCents = 0) {
     const { runTransaction } = this.F;
     const uid = this.user.uid;
     const cur = normalizeProfile(current || {});
@@ -172,6 +173,7 @@ class FirebaseBackend {
       if (l.inventory[itemId] <= 0) delete l.inventory[itemId];
       l.moneySpentCents = String(BigInt(l.moneySpentCents || '0') + BigInt(sign * plan.money));
       l.coinsSpent = (l.coinsSpent || 0) + sign * plan.coins;
+      l.bossPaidCents = String(BigInt(l.bossPaidCents || '0') + BigInt(sign * taxCents));
       writeLocal(uid, l);
     };
     local(1);
@@ -179,29 +181,22 @@ class FirebaseBackend {
       const snap = await tx.get(this.userRef());
       if (!snap.exists()) throw new Error('Profile missing');
       const raw = normalizeProfile(snap.data());
-      tx.update(this.userRef(), spend(raw, itemId, cents, true));
+      tx.update(this.userRef(), spend(raw, itemId, cents, true, taxCents));
     })).then(() => local(-1)).catch(e => console.warn('Purchase kept on this device only', e));
     const inv = { ...cur.inventory, [itemId]: (cur.inventory[itemId] || 0) + 1 };
-    return { profile: { ...cur, inventory: inv, moneySpentCents: String(BigInt(cur.moneySpentCents) + BigInt(plan.money)), coinsSpent: cur.coinsSpent + plan.coins } };
+    return { profile: { ...cur, inventory: inv, moneySpentCents: String(BigInt(cur.moneySpentCents) + BigInt(plan.money)), coinsSpent: cur.coinsSpent + plan.coins, bossPaidCents: String(BigInt(cur.bossPaidCents || '0') + BigInt(taxCents)) } };
   }
 
-  // The boss's cut: the sales tax from a mall purchase goes to Trevor.
-  // One shared counter in boss/earnings (cents). It only ever goes up, and
-  // adding to it never blocks or fails a purchase: callers catch errors.
-  async bossEarn(cutCents) {
-    const { doc, runTransaction } = this.F;
-    const ref = doc(this.db, 'boss', 'earnings');
-    await runTransaction(this.db, async tx => {
-      const snap = await tx.get(ref);
-      const now = snap.exists() ? (snap.data().cents || 0) : 0;
-      tx.set(ref, { cents: now + Math.round(cutCents) });
-    });
-  }
+  // The boss's earnings: the sales tax every player has paid in the mall.
+  // It is counted from each player's own save, so no special rules or
+  // shared document is needed: anyone can buy, and Trevor can always read it.
   async bossTotal() {
-    const { doc, getDoc } = this.F;
+    const { collection, getDocs } = this.F;
     try {
-      const snap = await getDoc(doc(this.db, 'boss', 'earnings'));
-      return snap.exists() ? (snap.data().cents || 0) : 0;
+      const snaps = await getDocs(collection(this.db, 'users'));
+      let total = 0n;
+      for (const d of snaps.docs) total += BigInt(d.data().bossPaidCents || '0');
+      return Number(total);
     } catch { return 0; }
   }
 
@@ -241,10 +236,11 @@ function mergeLocal(uid, p) {
     ...p, inventory: inv,
     moneySpentCents: String(BigInt(p.moneySpentCents || '0') + BigInt(l.moneySpentCents || '0')),
     coinsSpent: (p.coinsSpent || 0) + (l.coinsSpent || 0),
+    bossPaidCents: String(BigInt(p.bossPaidCents || '0') + BigInt(l.bossPaidCents || '0')),
   });
 }
 
-function spend(p, itemId, cents, skipCheck = false) {
+function spend(p, itemId, cents, skipCheck = false, taxCents = 0) {
   // skipCheck: affordability was already checked including device-only purchases; pay with money if it covers it
   const plan = payPlan(p, cents) || (skipCheck ? { money: 0, coins: Math.ceil(cents / 100) } : null);
   if (!plan) { const e = new Error('Not enough money or coins'); e.code = 'not-enough'; throw e; }
@@ -252,6 +248,8 @@ function spend(p, itemId, cents, skipCheck = false) {
     inventory: { ...p.inventory, [itemId]: (p.inventory[itemId] || 0) + 1 },
     moneySpentCents: String(BigInt(p.moneySpentCents || '0') + BigInt(plan.money)),
     coinsSpent: (p.coinsSpent || 0) + plan.coins,
+    // The sales tax in this purchase goes to Trevor, the boss.
+    bossPaidCents: String(BigInt(p.bossPaidCents || '0') + BigInt(taxCents)),
   };
 }
 
@@ -290,18 +288,15 @@ class DemoBackend {
     this.write(profile);
     return { profile, reward, newBadges };
   }
-  async purchase(itemId, cents) {
+  async purchase(itemId, cents, current, taxCents = 0) {
     const p = normalizeProfile(this.read());
-    const profile = { ...p, ...spend(p, itemId, cents) };
+    const profile = { ...p, ...spend(p, itemId, cents, false, taxCents) };
     this.write(profile);
     return { profile };
   }
-  // Demo mode: the boss's cut lives on this device only.
-  async bossEarn(cutCents) {
-    try { localStorage.setItem('robloc_demo_boss_cents', String(Number(localStorage.getItem('robloc_demo_boss_cents') || '0') + Math.round(cutCents))); } catch {}
-  }
+  // Demo mode: only this device's player exists, so the boss total is the tax they paid.
   async bossTotal() {
-    try { return Number(localStorage.getItem('robloc_demo_boss_cents') || '0'); } catch { return 0; }
+    return Number(normalizeProfile(this.read()).bossPaidCents || '0');
   }
   async leaderboard(kind) {
     const p = this.read();

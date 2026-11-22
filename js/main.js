@@ -260,24 +260,11 @@ function startThumbs() {
 function stopThumbs() { cancelAnimationFrame(thumbRAF); }
 
 // ---------------- leaderboard ----------------
-// The Overall board mixes real players with ROBLOC All-Stars (computer players). The owner always stays #1:
-// every All-Star's points are a fixed share of the owner's points.
+// The Overall board shows real players only. Everybody starts from zero, so
+// nobody is given points: the owner always stays #1 (put in at #1 himself
+// when his online player is not found), and everyone else earns their place.
 const OWNER_POINTS_FALLBACK = BigInt(OWNER_STATS.pointsBase);   // Trevor's points if his profile is not loaded
 const WORLD_PLAYERS = 187_000_000;               // size of the pretend world used to estimate ranks
-const BOT_NAMES = ['NovaStriker', 'PixelPanda', 'TurboTaco', 'SkyDasher', 'CosmicKai', 'BlazeRunner', 'MangoMaverick', 'ZoomZara',
-  'FrostByte', 'LuckyLlama', 'RocketRae', 'ShadowFox', 'BubbleBoss', 'ThunderTom', 'JellyJet', 'NinjaNoodle', 'SunnySpark',
-  'MegaMilo', 'CrystalCat', 'DinoDash', 'ViperVee', 'GalaxyGus', 'PopcornPete', 'StormySam', 'WaffleWiz', 'AquaAce',
-  'BerryBlitz', 'CometCody', 'DizzyDuck'];   // 29 All-Stars + the owner = top 30
-function seeded(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
-const BOTS = BOT_NAMES.map((name, i) => {
-  const r = seeded(i * 7919 + 11);
-  const pick = a => a[(r() * a.length) | 0];
-  return {
-    uid: 'allstar-' + i, name, bot: true, role: 'player',
-    avatar: { skin: pick(SKINS), hair: pick(HAIRS), style: pick(HAIR_STYLES), shirt: pick(SHIRTS) },
-    share: 0.72 * Math.pow(0.9, i) * (1 - r() * 0.03),   // #2 has about 72% of the owner's points, then about 10% less each place
-  };
-});
 function clamp01(v) { return Math.max(0, Math.min(1, v)); }
 function estimateRank(points, anchor, floor) {
   const p = Number(points), top = Math.max(10, Number(anchor));
@@ -299,15 +286,10 @@ function buildOverall(rows) {
   }
   const owner = rows.find(r => r.role === 'owner');
   const anchor = owner ? BigInt(owner.value) : OWNER_POINTS_FALLBACK;
-  const bots = BOTS.map(b => {
-    const value = anchor * BigInt(Math.round(b.share * 1e6)) / 1000000n;
-    return { ...b, value, points: value };
-  });
-  const lowestBot = bots[bots.length - 1].value;
-  const top = [...rows.filter(r => BigInt(r.value) > lowestBot), ...bots].sort(cmpBig).slice(0, 30);
+  const top = [...rows].sort(cmpBig).slice(0, 30);
   top.forEach((r, i) => { r.rank = i + 1; });
   // Below the top 30 only the signed-in player's own row is shown, with their estimated world rank.
-  const rest = rows.filter(r => BigInt(r.value) <= lowestBot && r.uid === state.user?.uid);
+  const rest = rows.filter(r => !top.includes(r) && r.uid === state.user?.uid);
   // the signed-in player always appears, even before they score
   if (state.user && state.profile && ![...top, ...rest].some(r => r.uid === state.user.uid)) {
     const p = state.profile;
@@ -476,13 +458,11 @@ const host = {
     const boost = chance > 0 && Math.random() * 100 < chance;
     const shop = {
       profile: () => state.profile,
-      buy: async (item, cents) => {
-        const res = await backend.purchase(item.id, cents, state.profile);
+      buy: async (item, cents, tax = 0) => {
+        const res = await backend.purchase(item.id, cents, state.profile, tax);
         state.profile = normalizeProfile(res.profile);
         return res;
       },
-      // The sales tax from a mall purchase goes to Trevor, the boss. Never blocks buying.
-      bossEarn: async cut => { try { await backend.bossEarn(cut); } catch {} },
       bossTotal: () => backend.bossTotal(),
     };
     this.inst = this.game.create({ input, audio, fx: this.fx, options: { ...options, boost }, profile: state.profile, shop, end: r => this.finish(r), toast });
