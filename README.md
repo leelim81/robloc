@@ -92,5 +92,5 @@ Trevor, the boss, also earns money from the mall: the 8% sales tax on every purc
 - Sign in with Google, create a player, edit the name and look.
 - Soccer and Pickleball each start from PLAY, respond to keyboard and touch controls, and end with a results screen.
 - Rewards and new badges appear on the results screen and in the hub; reload and confirm they persist.
-- Leaderboard tabs (Overall, Soccer wins, Pickleball wins) list players and highlight your row.
+- Leaderboard tabs (Overall, Soccer wins, Pickleball wins) show the top 30 players, then only your own row last, with your estimated world rank. A plain player never appears in the top 30 list itself, even if they would rank there. Trevor is always #1.
 - On a phone or tablet in landscape: joystick moves smoothly, buttons respond, nothing is cut off.

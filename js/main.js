@@ -256,6 +256,9 @@ function stopThumbs() { cancelAnimationFrame(thumbRAF); }
 // The Overall board shows real players only. Everybody starts from zero, so
 // nobody is given points: the owner always stays #1 (put in at #1 himself
 // when his online player is not found), and everyone else earns their place.
+// The board shows the top 30, then only the viewing player's own row last,
+// with their estimated world rank. A plain player never appears in the top
+// 30 list, even if they would rank there.
 const OWNER_POINTS_FALLBACK = BigInt(OWNER_STATS.pointsBase);   // Trevor's points if his profile is not loaded
 function clamp01(v) { return Math.max(0, Math.min(1, v)); }
 // Estimate a player's world rank from their points. `world` is the real
@@ -280,14 +283,19 @@ function buildOverall(rows, world) {
   }
   const owner = rows.find(r => r.role === 'owner');
   const anchor = owner ? BigInt(owner.value) : OWNER_POINTS_FALLBACK;
-  const top = [...rows].sort(cmpBig).slice(0, 30);
+  const isOwnerViewer = state.user && state.profile?.role === 'owner';
+  // The top 30 are the leaders. A plain player never appears in that list:
+  // their own row always goes last, below the top 30, with their estimated
+  // world rank. The owner is the exception: his row is #1 in the top 30.
+  const pool = isOwnerViewer ? rows : rows.filter(r => r.uid !== state.user?.uid);
+  const top = [...pool].sort(cmpBig).slice(0, 30);
   top.forEach((r, i) => { r.rank = i + 1; });
   // Below the top 30 only the signed-in player's own row is shown, with their estimated world rank.
-  const rest = rows.filter(r => !top.includes(r) && r.uid === state.user?.uid);
-  // the signed-in player always appears, even before they score
-  if (state.user && state.profile && ![...top, ...rest].some(r => r.uid === state.user.uid)) {
+  const rest = [];
+  if (state.user && state.profile && !isOwnerViewer) {
     const p = state.profile;
-    rest.push({ uid: state.user.uid, name: p.name, avatar: p.avatar, role: p.role, value: totalPoints(p), points: totalPoints(p) });
+    const mine = rows.find(r => r.uid === state.user.uid);
+    rest.push(mine || { uid: state.user.uid, name: p.name, avatar: p.avatar, role: p.role, value: totalPoints(p), points: totalPoints(p) });
   }
   rest.sort(cmpBig);
   let last = top.length;
@@ -316,19 +324,23 @@ async function renderLeaderboard() {
   let top = rows, rest = [];
   if (overall) ({ top, rest } = buildOverall(rows, count || rows.length || 1));
   else {
-    // Wins tabs: top 30, then your own row at the bottom if you're not in it.
+    // Wins tabs: top 30, then your own row at the bottom. A plain player
+    // never appears in the top 30: their own row always goes last.
     // Trevor is always #1 here too: if his row is missing, put him in at #1
     // from his fixed per-game wins and push everyone else one rank down.
     if (!rows.some(r => r.role === 'owner')) {
       rows = [{ uid: 'owner', name: 'Trevor', avatar: { ...DEFAULT_AVATAR }, role: 'owner', value: OWNER_STATS.gamesBase[state.lbKind].wins, points: OWNER_POINTS_FALLBACK, level: OWNER_STATS.levelBase }, ...rows];
       rows.sort(cmpBig);
     }
-    rows.forEach((r, i) => { r.rank = i + 1; });
-    top = rows.slice(0, 30);
-    if (state.user && state.profile && !top.some(r => r.uid === state.user.uid)) {
+    const isOwnerViewer = state.user && state.profile?.role === 'owner';
+    const pool = isOwnerViewer ? rows : rows.filter(r => r.uid !== state.user?.uid);
+    pool.forEach((r, i) => { r.rank = i + 1; });
+    top = pool.slice(0, 30);
+    if (state.user && state.profile && !isOwnerViewer) {
       const mine = rows.find(r => r.uid === state.user.uid);
       const p = state.profile, wins = gameStats(p, state.lbKind).wins;
-      rest = [mine || { uid: state.user.uid, name: p.name, avatar: p.avatar, role: p.role, value: wins, points: totalPoints(p), level: playerLevel(p).level, rank: rows.length + 1 }];
+      rest = [mine || { uid: state.user.uid, name: p.name, avatar: p.avatar, role: p.role, value: wins, points: totalPoints(p), level: playerLevel(p).level }];
+      rest.forEach(r => { r.rank = pool.length + 1; });
     }
   }
   const unit = overall ? 'pts' : 'wins';
