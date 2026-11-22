@@ -87,8 +87,11 @@ class FirebaseBackend {
     const p = normalizeProfile(snap.data());
     const r = await this.readRole();
     await this.syncRole({ ...PLAYER_ROLE, ...snap.data() }, r);
+    // Only the owner gets role bonuses from roles/{uid}; everyone else starts
+    // from zero, so their role values are never applied on top.
+    const bonuses = r.role === 'owner' ? r : { ...PLAYER_ROLE };
     // Show the role bonuses locally even if saving them to the profile was refused.
-    return mergeLocal(this.user.uid, { ...p, ...r });
+    return mergeLocal(this.user.uid, { ...p, ...bonuses });
   }
   // Copies roles/{uid} into the player's profile so others see it on the leaderboard. Never blocks play.
   async syncRole(p, r) {
@@ -207,7 +210,7 @@ class FirebaseBackend {
     // Role holders can have bonus points that the points query does not see, so fetch them too.
     const [snaps, special, named] = await Promise.all([
       getDocs(q),
-      kind === 'points' ? getDocs(query(collection(this.db, 'users'), where('role', 'in', ['owner', 'siwei']))) : null,
+      kind === 'points' ? getDocs(query(collection(this.db, 'users'), where('role', '==', 'owner'))) : null,
       // the player named Trevor is the owner even without a roles document
       getDocs(query(collection(this.db, 'users'), where('name', 'in', OWNER_NAME_SPELLINGS))),
     ]);

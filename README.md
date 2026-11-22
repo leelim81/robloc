@@ -60,12 +60,12 @@ Google sign-in on localhost works only if `localhost` is in Firebase → Authent
 1. `js/firebase-config.js` holds the web app config for project `robloc-d500b`.
 2. Publish the security rules: Firebase console → Firestore Database → **Rules** → paste `firestore.rules` → **Publish**. Until this is done, saving and the leaderboard fail with `permission-denied`. The rules are kept simple, so new game features do not need them published again.
 
-## Special roles (Trevor and Si Wei)
+## Special roles (Trevor only)
 
 Roles are never granted by typing a name. After the person signs in and creates a player once:
 
 1. Firebase console → Firestore Database → `users` collection → find the document whose `name` is theirs. The document ID is their user ID.
-2. Create a collection `roles` and add a document with **that same ID** and a string field `role`: `owner` for Trevor, `siwei` for Si Wei.
+2. Create a collection `roles` and add a document with **that same ID** and a string field `role`: `owner` for Trevor.
 
 The player named **trevor** (any capitals) is always the owner, even without a `roles` document.
 
@@ -73,9 +73,7 @@ Trevor's numbers live in the code (`OWNER_STATS` in `js/economy.js`), so changin
 $73,573,649,729,729,638,637,737,872 money, 67,243,852,825,918 coins, 72,673,674,787,374,873 points, level 653,763,
 87,963,845,395 games played and 75,375,285,572 won (split across Soccer, Pickleball, Baseball, Guess the Price and Prize Machine), 4,826,371,592,047 mall items owned, 90% win chance, and every badge.
 
-Uncle Si Wei (role `siwei`) gets $5,000 money and 100,000 coins, fixed in the code (`SIWEI_STATS` in `js/economy.js`), so changing them only needs a push. Give him the role in the console with `moneyBase` `5000` and `coinsBase` `100000` as **string** fields too, so his saved profile matches.
-
-Everyone else starts from zero: bonus numbers in a `roles` document for any other role are ignored by the code. New players start with no badges at all.
+Everyone else starts from the beginning, like real games — including Uncle Si Wei, who used to get $5,000 and 100,000 coins and now starts from zero too. Bonus numbers in a `roles` document for any other role are ignored by the code, and the role itself is treated as a plain player. (If a `roles` document for Si Wei still has the old money and coin fields, they do nothing now and can be deleted.) New players start with no badges at all.
 
 The next time they open ROBLOC, their profile picks up the role, badge tag and starting balances. Players cannot write to `roles`, and nobody can write to anyone else's `users` document.
 

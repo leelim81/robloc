@@ -168,8 +168,8 @@ function renderTopbar(animate = true) {
   $('#hub-name').textContent = p.name;
   drawPortrait($('#chip-avatar'), p.avatar);
   const tag = $('#role-tag');
-  tag.className = 'role-tag' + (p.role === 'owner' ? ' owner' : p.role === 'siwei' ? ' siwei' : ' hidden');
-  tag.textContent = p.role === 'owner' ? '👑 OWNER' : p.role === 'siwei' ? '✨ VIP' : '';
+  tag.className = 'role-tag' + (p.role === 'owner' ? ' owner' : ' hidden');
+  tag.textContent = p.role === 'owner' ? '👑 OWNER' : '';
   const total = totalPoints(p);
   const li = playerLevel(p);
   $('#hub-level').textContent = 'Lv ' + formatShort(li.level);
@@ -333,7 +333,7 @@ async function renderLeaderboard() {
     }
   }
   const unit = overall ? 'pts' : 'wins';
-  const roleTag = r => r.role === 'owner' ? '<span class="role-tag owner">👑</span>' : r.role === 'siwei' ? '<span class="role-tag siwei">✨</span>' : '';
+  const roleTag = r => r.role === 'owner' ? '<span class="role-tag owner">👑</span>' : '';
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   top.slice(0, 3).forEach((r, i) => {
     const d = document.createElement('div');
