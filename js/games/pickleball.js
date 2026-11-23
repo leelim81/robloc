@@ -10,6 +10,7 @@ const DIFF = {
   pro: { speed: 4.3, react: 0.26, err: 0.9, q: 0.72, letOut: 0.7 },
   legend: { speed: 5.0, react: 0.16, err: 0.55, q: 0.88, letOut: 0.92 },
   boost: { speed: 2.4, react: 0.7, err: 2.6, q: 0.25, letOut: 0.05 },  // win-chance matches
+  tough: { speed: 5.8, react: 0.1, err: 0.35, q: 0.95, letOut: 0.98 },  // others: hard game, so they win about 25%
 };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -173,7 +174,7 @@ function drawPlayerAt(ctx, pl, t) {
 // ---------- game ----------
 function create(env) {
   const { input, audio, fx, options, profile } = env;
-  const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
+  const D = options.boost ? DIFF.boost : options.tough ? DIFF.tough : (DIFF[options.difficulty] || DIFF.rookie);
   // Superpowers: Speed = move 50% faster, Power = hit 50% harder.
   const SPD = options.power === 'speed' ? 1.5 : 1;
   const PWR = options.power === 'power' ? 1.5 : 1;

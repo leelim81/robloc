@@ -2,7 +2,7 @@ import { backend, validateName } from './backend.js';
 import { audio } from './audio.js';
 import { Input } from './input.js';
 import { FX } from './fx.js';
-import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, moneyCentsOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned, dreamItemsOwned, SUPERPOWERS } from './economy.js';
+import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, moneyCentsOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned, dreamItemsOwned, SUPERPOWERS, isOwnerName, OWNER_WIN_CHANCE, OTHER_WIN_CHANCE } from './economy.js';
 import { SKINS, HAIRS, SHIRTS, HAIR_STYLES, HAIR_STYLE_LABELS, DEFAULT_AVATAR, drawPortrait, drawAvatarFull } from './art.js';
 import soccer from './games/soccer.js';
 import pickleball from './games/pickleball.js';
@@ -566,9 +566,15 @@ const host = {
     input.enabled = true; input.reset(); input.setTapMode(false); input.setLabels(this.game.labels.a, this.game.labels.b);
     this.fx = new FX();
     this.paused = false; this.ended = false;
-    // Players with a win chance (set in roles/{uid}) get a weakened opponent in that share of matches.
-    const chance = Number(state.profile?.winChance || 0);
+    // Win rates (Trevor: "Trevor 90 present wins others 25 percent").
+    // Trevor gets the easy game (boost) in about 90% of matches, so he
+    // wins almost every match. Everyone else gets the hard game (tough)
+    // in about 75% of matches, so they win about 25%. The numbers are
+    // never shown in the game — no "90%" anywhere.
+    const isOwner = isOwnerName(state.profile?.name);
+    const chance = isOwner ? OWNER_WIN_CHANCE : 0;
     const boost = chance > 0 && Math.random() * 100 < chance;
+    const tough = !isOwner && Math.random() * 100 >= OTHER_WIN_CHANCE;
     const shop = {
       profile: () => state.profile,
       buy: async (item, cents, tax = 0) => {
@@ -586,7 +592,11 @@ const host = {
       },
       powerHeld: () => getPowerHeld(),
     };
-    this.inst = this.game.create({ input, audio, fx: this.fx, options: { ...options, boost }, profile: state.profile, shop, end: r => this.finish(r), toast });
+    // Test hook: records the win-rate flags for the game that just started,
+    // so a test can count how often Trevor gets the easy game and how
+    // often everyone else gets the hard game.
+    if (typeof window !== 'undefined') window.__lastGame = { game: this.game.id, boost, tough };
+    this.inst = this.game.create({ input, audio, fx: this.fx, options: { ...options, boost, tough }, profile: state.profile, shop, end: r => this.finish(r), toast });
     audio.music(this.game.music);
     cancelAnimationFrame(this.raf);
     this.last = performance.now();

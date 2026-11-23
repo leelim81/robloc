@@ -8,6 +8,7 @@ const DIFF = {
   pro: { grab: 0.6, slip: 0.22, reach: 40, aimTime: 12 },
   legend: { grab: 0.45, slip: 0.32, reach: 34, aimTime: 10 },
   boost: { grab: 0.95, slip: 0.03, reach: 58, aimTime: 18 },   // win-chance matches
+  tough: { grab: 0.3, slip: 0.45, reach: 28, aimTime: 7 },  // others: hard game, so they win about 25%
 };
 const PRIZES = [
   ['🧸', 'Teddy Bear', 'plush'], ['🐶', 'Puppy Plush', 'plush'], ['🐱', 'Kitty Plush', 'plush'], ['🦄', 'Unicorn Plush', 'plush'],
@@ -102,7 +103,7 @@ function drawClaw(ctx, x, y, open) {
 // ---------- game ----------
 function create(env) {
   const { input, audio, fx, options } = env;
-  const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
+  const D = options.boost ? DIFF.boost : options.tough ? DIFF.tough : (DIFF[options.difficulty] || DIFF.rookie);
   // Superpowers: Speed = claw moves 50% faster, Power = claw grips 50% stronger.
   const SPD = options.power === 'speed' ? 1.5 : 1;
   const PWR = options.power === 'power' ? 1.5 : 1;

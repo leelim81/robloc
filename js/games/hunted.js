@@ -16,6 +16,7 @@ const DIFF = {
   pro: { time: 50, target: 12, ghost: 175, boss: 225 },
   legend: { time: 40, target: 16, ghost: 200, boss: 250 },
   boost: { time: 75, target: 8, ghost: 140, boss: 190 },   // win-chance matches
+  tough: { time: 35, target: 18, ghost: 220, boss: 270 },  // others: hard game, so they win about 25%
 };
 const SWEET_KINDS = [
   { icon: '🍬', value: 100 },   // $1.00
@@ -42,7 +43,7 @@ const money = cents => '$' + (cents / 100).toFixed(2);
 
 function create(env) {
   const { input, audio, fx, options, profile } = env;
-  const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
+  const D = options.boost ? DIFF.boost : options.tough ? DIFF.tough : (DIFF[options.difficulty] || DIFF.rookie);
   // Superpowers: Speed = move 50% faster, Power = the ghost runs away
   // from you (you scare it!) instead of chasing you.
   const SPD = options.power === 'speed' ? 1.5 : 1;

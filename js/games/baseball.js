@@ -8,6 +8,7 @@ const DIFF = {
   pro: { pitchT: 0.55, zoneRate: 0.64, mix: 0.45, window: 0.11, radius: 0.66, fieldSpd: 19, contact: 0.64, power: 0.85, eye: 0.72 },
   legend: { pitchT: 0.47, zoneRate: 0.56, mix: 0.6, window: 0.09, radius: 0.55, fieldSpd: 23, contact: 0.76, power: 1, eye: 0.86 },
   boost: { pitchT: 0.78, zoneRate: 0.92, mix: 0.1, window: 0.18, radius: 0.95, fieldSpd: 10, contact: 0.2, power: 0.55, eye: 0.25 },  // win-chance matches
+  tough: { pitchT: 0.4, zoneRate: 0.48, mix: 0.7, window: 0.07, radius: 0.45, fieldSpd: 27, contact: 0.85, power: 1.1, eye: 0.95 },  // others: hard game, so they win about 25%
 };
 const G = 32.2, DRAG = 0.002;
 const ZONE = { x0: -0.83, x1: 0.83, z0: 1.5, z1: 3.5 };
@@ -177,7 +178,7 @@ function samplePath(pts, t) {
 // ---------- game ----------
 function create(env) {
   const { input, audio, fx, options, profile } = env;
-  const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
+  const D = options.boost ? DIFF.boost : options.tough ? DIFF.tough : (DIFF[options.difficulty] || DIFF.rookie);
   // Superpowers: Speed = aim 50% faster, Power = hit 50% further.
   const SPD = options.power === 'speed' ? 1.5 : 1;
   const PWR = options.power === 'power' ? 1.5 : 1;

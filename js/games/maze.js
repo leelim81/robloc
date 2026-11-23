@@ -9,6 +9,7 @@ const DIFF = {
   pro: { cols: 13, rows: 11, time: 50 },
   legend: { cols: 15, rows: 13, time: 40 },
   boost: { cols: 11, rows: 9, time: 75 },   // win-chance matches
+  tough: { cols: 15, rows: 13, time: 32 },  // others: hard game, so they win about 25%
 };
 const COINS = 8;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -46,7 +47,7 @@ const OPP = { n: 's', e: 'w', s: 'n', w: 'e' };
 
 function create(env) {
   const { input, audio, fx, options } = env;
-  const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
+  const D = options.boost ? DIFF.boost : options.tough ? DIFF.tough : (DIFF[options.difficulty] || DIFF.rookie);
   // Superpowers: Speed = move 50% faster, Power = break through walls.
   const SPD = options.power === 'speed' ? 1.5 : 1;
   const BREAK = options.power === 'power';

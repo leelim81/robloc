@@ -10,6 +10,7 @@ const DIFF = {
   pro: { speed: 0.93, tackle: 2.0, keeper: 0.66, shootSkill: 0.75, think: 0.3 },
   legend: { speed: 1.04, tackle: 2.8, keeper: 0.8, shootSkill: 0.9, think: 0.18 },
   boost: { speed: 0.55, tackle: 0.2, keeper: 0.12, shootSkill: 0.1, think: 1.2 },  // win-chance matches
+  tough: { speed: 1.15, tackle: 3.5, keeper: 0.92, shootSkill: 0.97, think: 0.12 },  // others: hard game, so they win about 25%
 };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const len = (x, y) => Math.hypot(x, y);
@@ -194,7 +195,7 @@ function pickOppColor(mine) {
 // ---------- game ----------
 function create(env) {
   const { input, audio, fx, options, profile } = env;
-  const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
+  const D = options.boost ? DIFF.boost : options.tough ? DIFF.tough : (DIFF[options.difficulty] || DIFF.rookie);
   // Superpowers: Speed = run 50% faster, Power = shoot 50% harder.
   const SPD = options.power === 'speed' ? 1.5 : 1;
   const PWR = options.power === 'power' ? 1.5 : 1;

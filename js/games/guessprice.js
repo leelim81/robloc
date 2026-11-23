@@ -9,6 +9,7 @@ const DIFF = {
   pro: { spread: [0.25, 0.75], time: 9, cpu: 0.6 },
   legend: { spread: [0.1, 0.35], time: 7, cpu: 0.75 },
   boost: { spread: [0.6, 2], time: 14, cpu: 0.15 },   // win-chance matches
+  tough: { spread: [0.05, 0.2], time: 5, cpu: 0.9 },  // others: hard game, so they win about 25%
 };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -88,7 +89,7 @@ function drawPodium(ctx, x, label, score, color, look, t, mood) {
 // ---------- game ----------
 function create(env) {
   const { input, audio, fx, options, profile } = env;
-  const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
+  const D = options.boost ? DIFF.boost : options.tough ? DIFF.tough : (DIFF[options.difficulty] || DIFF.rookie);
   // Superpowers: Speed = 50% more time to guess, Power = the wrong prices
   // are further from the real price, so the right one is easier to spot.
   const SPD = options.power === 'speed' ? 1.5 : 1;

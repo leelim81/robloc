@@ -78,6 +78,14 @@ export const MAZE_TREVOR_START_PLAYED = 82663;
 export const MAZE_TREVOR_START_WINS = 76769;
 
 // Trevor's (the owner's) stats. These override whatever roles/{uid} says, so changing them only needs a code push.
+// Win rates (Trevor: "Trevor 90 present wins others 25 percent").
+// Trevor wins about 90% of matches; everyone else wins about 25%.
+// The number 90 is NEVER shown in the game — Trevor wins "almost every
+// match". These are used by the host to pick the easy (boost) game for
+// Trevor and the hard (tough) game for everyone else.
+export const OWNER_WIN_CHANCE = 90;
+export const OTHER_WIN_CHANCE = 25;
+
 export const OWNER_STATS = {
   moneyBase: '73573649729729638637737872', // $73,573,649,729,729,638,637,737,872
   coinsBase: '67243852825918',            // 67,243,852,825,918 coins
