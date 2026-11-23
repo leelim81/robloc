@@ -82,8 +82,15 @@ export const OWNER_NAME = 'trevor';
 export const isOwnerName = name => String(name || '').trim().toLowerCase() === OWNER_NAME;
 // Uncle Si Wei, by name - like Trevor, he is recognized by his name, so
 // his starting balance shows even when no roles document exists for him.
+// Trevor calls him "Uncle Si Wei", so the name matches with a title in
+// front too: "Si Wei", "siwei", "Uncle Si Wei".
 // Only the first account named Si Wei can use that name (nameTaken).
-export const isSiweiName = name => String(name || '').toLowerCase().replace(/\s/g, '') === 'siwei';
+export const isSiweiName = name => {
+  const compact = String(name || '').toLowerCase().replace(/[^a-z]/g, '');
+  if (compact === 'siwei' || compact.endsWith('siwei')) return true;
+  const words = String(name || '').toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  return words.some((w, i) => w === 'si' && words[i + 1] === 'wei');
+};
 
 export function emptyStats() {
   return {

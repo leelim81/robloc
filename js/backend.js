@@ -5,7 +5,8 @@ import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwne
 
 const OWNER_NAME_SPELLINGS = ['trevor', 'Trevor', 'TREVOR', 'trevor ', 'Trevor '];
 // Spellings of Si Wei's name, so only the first account with that name can use it.
-const SIWEI_NAME_SPELLINGS = ['Si Wei', 'si wei', 'SI WEI', 'siwei', 'SiWei', 'SIWEI', 'Si Wei ', 'si wei '];
+// Trevor calls him "Uncle Si Wei", so that spelling is protected too.
+const SIWEI_NAME_SPELLINGS = ['Si Wei', 'si wei', 'SI WEI', 'siwei', 'SiWei', 'SIWEI', 'Si Wei ', 'si wei ', 'Uncle Si Wei', 'uncle si wei', 'UNCLE SI WEI', 'UncleSiWei', 'unclesiwei', 'Uncle Si Wei ', 'uncle si wei '];
 
 const FB_VERSION = '10.12.2';
 // Add ?demo to the URL to force local demo mode (handy for offline testing).
