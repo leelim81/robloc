@@ -15,7 +15,8 @@ Live site: https://leelim81.github.io/robloc
 | Guess the Price: game show with real mall items; pick the right price and beat the CPU contestant | Playable |
 | Prize Machine: claw machine with plush toys, toys, coin bags and a golden crown | Playable |
 | Maze: find your way through a new maze every game to the flag before the timer runs out — move with arrows, joystick, the on-screen D-pad or by tapping the cell next to you, collect coins on the way | Playable |
-| Dream Store, Brick Builder Shop | Coming soon |
+| Dream Store: a moonlit night shop with 12 dream things — Shooting Star, Star Lamp, Magic Wand, Moon Night Light, Dream Catcher, Sleepy Bear, Cloud Pillow, Rainbow Blanket, Unicorn Plush, Crystal Ball, Dream Carousel and Dream Bed — at real prices plus 8% sales tax (the tax goes to Trevor, the boss). Walk around, tap an item to see it, and BUY it with money ($) first or coins at 1 coin = $1. | Playable |
+| Brick Builder Shop | Coming soon |
 
 **ROBLOC Hunted** is a separate game on its own (not in the hub above): open `hunted.html` (or `?hunted=1`). Go to people's houses and collect sweets — don't get caught by the ghost! SNEAK: when the ghost is looking at you, he has a red triangle in front of him — if you are inside the triangle, he catches you. FREEZE outside the triangle (Shh!) — when he turns away, RUN. The Candy Boss appears after 4 sweets. Trevor starts with $8,788.37 in Hunted cash, 3740 Hunted points, 7635 played and 7273 won; everyone else starts from zero.
 

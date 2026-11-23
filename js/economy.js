@@ -116,6 +116,10 @@ export function gameStats(p, id) {
 export function itemsOwned(p) {
   return BigInt(p.ownedBase || '0') + BigInt(Object.values(p.inventory || {}).reduce((a, b) => a + b, 0));
 }
+// Dream Store items owned (inventory items whose id starts with 'dream_').
+export function dreamItemsOwned(p) {
+  return BigInt(Object.entries(p.inventory || {}).filter(([k]) => k.startsWith('dream_')).reduce((a, [, b]) => a + b, 0));
+}
 
 export const OWNER_NAME = 'trevor';
 export const isOwnerName = name => String(name || '').trim().toLowerCase() === OWNER_NAME;
@@ -140,6 +144,7 @@ export function emptyStats() {
     prize: { played: 0, wins: 0, prizes: 0, golden: 0, legendWins: 0 },
     maze: { played: 0, wins: 0, coins: 0, bestCoins: 0, bestTime: 0, legendWins: 0 },
     hunted: { played: 0, wins: 0, sweets: 0, cashCents: 0, points: 0, bestSweets: 0, bossWins: 0, legendWins: 0 },
+    dream: { played: 0, wins: 0, items: 0, spentCents: 0 },
     matches: 0,
   };
 }
