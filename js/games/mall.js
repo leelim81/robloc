@@ -708,10 +708,9 @@ function create(env) {
     fx.draw(ctx);
     drawWallet(ctx);
     if (S.mode === 'walk') {
-      button(ctx, 18, 68, 130, 44, '🗺️ MAP', '#7c3aed', openMap);
-      button(ctx, 158, 68, 250, 44, `🛗 ${FLOORS[floor].title}`, '#0f766e', openElevator);
-      button(ctx, 418, 68, 150, 44, '🔍 SEARCH', '#0ea5e9', openSearch);
-      button(ctx, 578, 68, 210, 44, '⚡ SUPERPOWERS', '#f59e0b', openPowers);
+      // The two search buttons sit first (left), then MAP and the floor button.
+      button(ctx, 398, 68, 130, 44, '🗺️ MAP', '#7c3aed', openMap);
+      button(ctx, 538, 68, 250, 44, `🛗 ${FLOORS[floor].title}`, '#0f766e', openElevator);
       if (ns < 0 && nearElevator()) prompt(ctx, `${input.touchMode ? 'Tap the elevator' : 'Press SPACE'} to change floors`, 1, '#fde68a');
       else if (ns >= 0) prompt(ctx, `${input.touchMode ? 'Tap the shop' : 'Press SPACE'} to go into ${shopInfo(ns).name}`, 1, '#fde68a');
       else prompt(ctx, input.touchMode ? 'Tap a shop to go in · MAP to jump to any shop' : 'Arrows to walk · SPACE enter a shop · SHIFT mall map · or click', 0.85);
@@ -725,6 +724,11 @@ function create(env) {
     if (S.mode === 'elevator') drawLift(ctx);
     if (S.receipt) drawReceipt(ctx);
     if (S.error) toastBar(ctx, S.error, '#fecaca');
+    // The two search buttons are always on the top, on every floor and in
+    // every mode (walking, inside a shop, map, elevator, search) — so they
+    // are there no matter what level you are at.
+    button(ctx, 18, 68, 150, 44, '🔍 SEARCH', '#0ea5e9', openSearch);
+    button(ctx, 178, 68, 210, 44, '⚡ SUPERPOWERS', '#f59e0b', openPowers);
   }
 
   function drawPerson(ctx, x, y, look, phase, moving, flip, bag) {
