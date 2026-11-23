@@ -10,12 +10,12 @@ import baseball from './games/baseball.js';
 import mall from './games/mall.js';
 import guessprice from './games/guessprice.js';
 import prizemachine from './games/prizemachine.js';
+import transport from './games/transport.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, mall];
+const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, transport, mall];
 const COMING = [
-  ['Transport Modes', '✈️', 'Fly planes, drive buses and run trains.'],
   ['Dream Store', '🌙', 'Explore a dreamy shop full of wonders.'],
   ['Brick Builder Shop', '🧱', 'Shop for building sets and create.'],
 ];
