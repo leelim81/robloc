@@ -1,4 +1,4 @@
-// ROBLOC Shopping Mall: walk a six-floor mall (five shop floors plus B1 car parks), enter shops and buy things at real-world prices.
+// ROBLOC Shopping Mall: walk a seven-floor mall (five shop floors plus B1 car parks and the RR Roof), enter shops and buy things at real-world prices.
 // Prices are in cents. Purchases are paid with money ($) first, or with coins at 1 coin = $1.
 // The 8% sales tax on every purchase goes to Trevor, the boss.
 import { drawHuman, shade, rrect, SKINS, HAIRS, HAIR_STYLES, SHIRTS } from '../art.js';
@@ -8,8 +8,9 @@ import { payPlan as planFor, coinsOf, moneyCentsOf, formatShort } from '../econo
 import { SHOP_COUNT, SECTIONS, shopInfo, shopItems, withTax, fmtCents, TAX_RATE } from './shops.js';
 
 const SHOP_W = 470, X0 = 260, FLOOR = 540;
-// The mall has 6 floors: 1 = shops, 2 = food, 3 = drinks, 4 = clothes, 5 = makeup, B1 = car parks (no shops).
+// The mall has 7 floors: 1 = shops, 2 = food, 3 = drinks, 4 = clothes, 5 = makeup, B1 = car parks (no shops), RR = Roof (no shops, 3 swimming pools).
 const B1_FLOOR = 5, BAYS = 120, BAY_W = 230;
+const ROOF_FLOOR = 6, ROOF_W = 2700;
 const FLOORS = [
   { name: 'Shops', title: 'Floor 1 · Shops', icon: '🛍️', wall: ['#e0e7ff', '#f8fafc'], tile: ['#e7e5e4', '#d6d3d1'] },
   { name: 'Food', title: 'Floor 2 · Food Court', icon: '🍔', wall: ['#ffedd5', '#fff7ed'], tile: ['#fef3c7', '#fde68a'] },
@@ -17,9 +18,10 @@ const FLOORS = [
   { name: 'Clothes', title: 'Floor 4 · Clothes & Shoes', icon: '👕', wall: ['#fce7f3', '#fdf2f8'], tile: ['#f5d0fe', '#e9d5ff'] },
   { name: 'Makeup', title: 'Floor 5 · Makeup', icon: '💄', wall: ['#fbcfe8', '#fff1f2'], tile: ['#f9a8d4', '#fda4af'] },
   { name: 'Car Parks', title: 'B1 · Car Parks', icon: '🅿️', wall: ['#94a3b8', '#e2e8f0'], tile: ['#78716c', '#a8a29e'] },
+  { name: 'Roof', title: 'RR · Roof', icon: '🏊', wall: ['#7dd3fc', '#e0f2fe'], tile: ['#fde68a', '#fef3c7'] },
 ];
 const floorOf = i => SECTIONS.findIndex(s => i >= s.from && i < s.to);
-const worldW = f => f === B1_FLOOR ? X0 * 2 + BAYS * BAY_W : X0 * 2 + (SECTIONS[f].to - SECTIONS[f].from) * SHOP_W;
+const worldW = f => f === B1_FLOOR ? X0 * 2 + BAYS * BAY_W : f === ROOF_FLOOR ? X0 * 2 + ROOF_W : X0 * 2 + (SECTIONS[f].to - SECTIONS[f].from) * SHOP_W;
 const ELEV_X = X0 - 130;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -66,6 +68,7 @@ function drawMall(ctx, view, camX, t, nearShop, floor = 0) {
     ctx.fillStyle = '#0f172a'; ctx.font = "26px 'Lilita One'"; ctx.textAlign = 'center'; ctx.fillText('ROBLOC MALL', ex, 172);
   }
   if (floor === B1_FLOOR) drawBays(ctx, camX, x0, W);
+  else if (floor === ROOF_FLOOR) drawRoof(ctx, camX, x0, W, t);
   else {
     const first = clamp(Math.floor((vis0 - X0) / SHOP_W), 0, count - 1), last = clamp(Math.ceil((vis1 - X0) / SHOP_W), 0, count - 1);
     for (let li = first; li <= last; li++) {
@@ -130,11 +133,80 @@ function drawBays(ctx, camX, x0, W) {
     else { ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.font = '900 16px Nunito'; ctx.fillText('EMPTY', x + BAY_W / 2 + shiftAt((TOP + BOT) / 2), (TOP + BOT) / 2); }
   }
 }
+// RR Roof: three swimming pools with sun chairs, umbrellas and palm trees.
+// No shops up here - just the open-air roof to walk around.
+const POOL_COLORS = ['#38bdf8', '#0ea5e9', '#0284c7'];
+const TOWEL_COLORS = ['#f43f5e', '#f59e0b', '#22c55e', '#a855f7', '#ec4899', '#0ea5e9'];
+function drawRoof(ctx, camX, x0, W, t) {
+  // Sun and clouds in the sky.
+  ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(X0 + 200, 90, 46, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fef08a'; ctx.beginPath(); ctx.arc(X0 + 200, 90, 32, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.9)';
+  for (const [cx, cy, s] of [[X0 + 900, 70, 1], [X0 + 1800, 110, 1.3], [X0 + 2600, 60, 0.9]]) {
+    ctx.beginPath(); ctx.ellipse(cx, cy, 70 * s, 22 * s, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + 40 * s, cy + 8 * s, 50 * s, 18 * s, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  // A "ROOF" sign on the back wall.
+  ctx.fillStyle = '#0f172a'; ctx.font = "900 34px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('☀️ ROOF · RR ☀️', X0 + ROOF_W / 2, 180);
+  for (let k = 0; k < 3; k++) {
+    const px = X0 + 50 + k * 900, pw = 700, top = FLOOR + 25, bot = FLOOR + 135;
+    // deck edge around the pool
+    ctx.fillStyle = '#fef9c3'; rrect(ctx, px - 14, top - 14, pw + 28, bot - top + 28, 18); ctx.fill();
+    // water
+    ctx.fillStyle = POOL_COLORS[k]; rrect(ctx, px, top, pw, bot - top, 14); ctx.fill();
+    // waves
+    ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 3;
+    for (let w = 0; w < 3; w++) {
+      const wy = top + 28 + w * 32;
+      ctx.beginPath();
+      for (let x = px + 20; x <= px + pw - 20; x += 20) {
+        const y = wy + Math.sin((x + t * 40 + k * 50) * 0.02) * 5;
+        if (x === px + 20) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    // beach ball floating on the water
+    const bx = px + 160 + Math.sin(t * 0.7 + k * 2) * 70, by = top + 55;
+    ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.arc(bx, by, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(bx, by); ctx.arc(bx, by, 22, -Math.PI / 2, Math.PI / 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.moveTo(bx, by); ctx.arc(bx, by, 22, Math.PI / 2, Math.PI); ctx.closePath(); ctx.fill();
+    // pool label
+    ctx.fillStyle = '#fff'; ctx.font = "900 22px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('POOL ' + (k + 1), px + pw / 2, bot - 20);
+  }
+  // Sun chairs and umbrellas in the gaps between pools and at the far end.
+  const spots = [X0 + 50 + 700 + 100, X0 + 50 + 900 + 700 + 100, X0 + 50 + 1800 + 700 + 100];
+  spots.forEach((sx, k) => {
+    // umbrella: pole + striped canopy
+    ctx.strokeStyle = '#92400e'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(sx, FLOOR + 150); ctx.lineTo(sx, FLOOR + 70); ctx.stroke();
+    ctx.fillStyle = TOWEL_COLORS[k % TOWEL_COLORS.length];
+    ctx.beginPath(); ctx.moveTo(sx - 55, FLOOR + 78); ctx.quadraticCurveTo(sx, FLOOR + 18, sx + 55, FLOOR + 78); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.moveTo(sx - 18, FLOOR + 78); ctx.quadraticCurveTo(sx, FLOOR + 30, sx + 18, FLOOR + 78); ctx.closePath(); ctx.fill();
+    // sun chair: lounger with a towel
+    const cx = sx - 110;
+    ctx.fillStyle = '#78716c'; rrect(ctx, cx - 55, FLOOR + 150, 110, 14, 6); ctx.fill();
+    ctx.fillStyle = '#78716c'; ctx.save(); ctx.translate(cx - 45, FLOOR + 150); ctx.rotate(-0.5); rrect(ctx, -6, -34, 12, 36, 5); ctx.fill(); ctx.restore();
+    ctx.fillStyle = TOWEL_COLORS[(k + 3) % TOWEL_COLORS.length]; rrect(ctx, cx - 45, FLOOR + 146, 90, 8, 4); ctx.fill();
+  });
+  // Palm tree at the far end of the roof.
+  const tx = X0 + ROOF_W - 120;
+  ctx.strokeStyle = '#92400e'; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(tx, FLOOR + 160); ctx.quadraticCurveTo(tx + 20, FLOOR + 80, tx + 55, FLOOR + 40); ctx.stroke();
+  ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 8;
+  for (let a = 0; a < 5; a++) {
+    const ang = Math.PI * (0.15 + a * 0.18);
+    ctx.beginPath(); ctx.moveTo(tx + 55, FLOOR + 40);
+    ctx.quadraticCurveTo(tx + 55 + Math.cos(ang) * 50, FLOOR + 40 - Math.sin(ang) * 40, tx + 55 + Math.cos(ang) * 85, FLOOR + 40 - Math.sin(ang) * 20 + 22); ctx.stroke();
+  }
+  ctx.fillStyle = '#92400e'; ctx.beginPath(); ctx.arc(tx + 55, FLOOR + 44, 12, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#78350f'; ctx.beginPath(); ctx.arc(tx + 48, FLOOR + 50, 7, 0, Math.PI * 2); ctx.arc(tx + 62, FLOOR + 50, 7, 0, Math.PI * 2); ctx.fill();
+}
 function drawElevator(ctx, x, floor, t, near) {
   ctx.fillStyle = '#475569'; ctx.fillRect(x - 115, 130, 230, FLOOR - 130);
   ctx.fillStyle = '#0f172a'; ctx.fillRect(x - 70, 144, 140, 44);
   ctx.fillStyle = '#f87171'; ctx.font = "30px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(`${['▲▼', '▲▼', '▲▼', '▲▼', '▼', '▲'][floor]} ${['1', '2', '3', '4', '5', 'B1'][floor]}`, x, 168);
+  ctx.fillText(`${['▲▼', '▲▼', '▲▼', '▲▼', '▲▼', '▲', '▼'][floor]} ${['1', '2', '3', '4', '5', 'B1', 'RR'][floor]}`, x, 168);
   const open = near ? 0.35 + Math.sin(t * 3) * 0.05 : 0;
   const dg = ctx.createLinearGradient(x - 90, 0, x + 90, 0);
   dg.addColorStop(0, '#cbd5e1'); dg.addColorStop(0.5, '#f1f5f9'); dg.addColorStop(1, '#94a3b8');
@@ -265,7 +337,7 @@ function create(env) {
     }
   }
   const enterShop = i => { S.mode = 'shop'; S.shop = i; S.sel = 0; S.top = 0; S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined; me.vx = 0; audio.play('select'); };
-  const openMap = () => { S.mode = 'map'; S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined; const ns = nearShop(); const sec = SECTIONS[floor]; S.mapSel = Math.max(0, ns >= 0 ? ns : floor === B1_FLOOR ? SHOP_COUNT - 1 : clamp(sec.from + Math.floor((me.x - X0) / SHOP_W), sec.from, sec.to - 1)); audio.play('select'); };
+  const openMap = () => { S.mode = 'map'; S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined; const ns = nearShop(); const sec = SECTIONS[floor]; S.mapSel = Math.max(0, ns >= 0 ? ns : floor === B1_FLOOR || floor === ROOF_FLOOR ? SHOP_COUNT - 1 : clamp(sec.from + Math.floor((me.x - X0) / SHOP_W), sec.from, sec.to - 1)); audio.play('select'); };
   const goToShop = i => {
     if (floorOf(i) !== floor) { floor = floorOf(i); S.floorBanner = 0; for (const n of npcs) n.x = doorX(i) + rand(-1200, 1200); }
     me.x = doorX(i); me.y = FLOOR + 70; me.vx = 0; camX = clamp(me.x - 640, 0, WW() - 1280); S.mode = 'walk'; S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined; audio.play('whoosh'); fx.dust(640, FLOOR + 70, 8);
@@ -399,7 +471,7 @@ function create(env) {
       else if (ns >= 0) prompt(ctx, `${input.touchMode ? 'Tap the shop' : 'Press SPACE'} to go into ${shopInfo(ns).name}`, 1, '#fde68a');
       else prompt(ctx, input.touchMode ? 'Tap a shop to go in · MAP to jump to any shop' : 'Arrows to walk · SPACE enter a shop · SHIFT mall map · or click', 0.85);
       if (S.intro < 2) drawBanner(ctx, 'ROBLOC MALL', 640, 300, S.intro, { size: 96, color: '#fbcfe8', glow: '#db2777', sub: FLOORS[floor].title });
-      else if (S.floorBanner !== undefined && S.floorBanner < 1.8) drawBanner(ctx, floor === B1_FLOOR ? 'B1' : `FLOOR ${floor + 1}`, 640, 300, S.floorBanner, { size: 96, color: '#a5f3fc', glow: '#0891b2', sub: `${FLOORS[floor].icon} ${FLOORS[floor].name}` });
+      else if (S.floorBanner !== undefined && S.floorBanner < 1.8) drawBanner(ctx, floor === B1_FLOOR ? 'B1' : floor === ROOF_FLOOR ? 'RR' : `FLOOR ${floor + 1}`, 640, 300, S.floorBanner, { size: 96, color: '#a5f3fc', glow: '#0891b2', sub: `${FLOORS[floor].icon} ${FLOORS[floor].name}` });
     }
     if (S.mode === 'shop') drawShop(ctx);
     if (S.mode === 'map') drawMap(ctx);
@@ -581,21 +653,21 @@ function create(env) {
   }
 
   function drawLift(ctx) {
-    const X = 390, Y = 50, W = 500, H = 620;
+    const X = 390, Y = 30, W = 500, H = 660;
     panel(ctx, X, Y, W, H, '🛗 Elevator', '#0f766e');
     closeButton(ctx, X + W - 52, Y + 13, () => { S.mode = 'walk'; audio.play('back'); });
-    // Floors top to bottom: 5, 4, 3, 2, 1, then B1 at the bottom, below 1.
-    [4, 3, 2, 1, 0, 5].forEach((f, k) => {
-      const y = Y + 80 + k * 88, sel = S.liftSel === f, here = f === floor, sec = SECTIONS[f];
-      ctx.fillStyle = sel ? '#14b8a6' : '#1e293b'; rrect(ctx, X + 30, y, W - 60, 84, 18); ctx.fill();
-      if (sel) { ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4; rrect(ctx, X + 30, y, W - 60, 84, 18); ctx.stroke(); }
-      ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(X + 90, y + 42, 30, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fde68a'; ctx.font = "30px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(f === B1_FLOOR ? 'B1' : String(f + 1), X + 90, y + 44);
-      ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = "26px 'Lilita One'"; ctx.fillText(`${FLOORS[f].icon} ${FLOORS[f].name}`, X + 146, y + 32);
-      ctx.font = '800 13px Nunito'; ctx.fillStyle = '#cbd5e1';
-      ctx.fillText(f === B1_FLOOR ? 'B1 · 120 parking bays' : `Shops ${(sec.from + 1).toLocaleString()}–${sec.to.toLocaleString()} · ${(sec.to - sec.from).toLocaleString()} shops`, X + 146, y + 58);
-      if (here) { ctx.fillStyle = '#facc15'; ctx.font = '900 12px Nunito'; ctx.fillText('YOU ARE HERE', X + 146, y + 76); }
-      hit(X + 30, y, W - 60, 84, () => ride(f));
+    // Floors top to bottom: RR (the Roof), 5, 4, 3, 2, 1, then B1 at the bottom, below 1.
+    [6, 4, 3, 2, 1, 0, 5].forEach((f, k) => {
+      const y = Y + 80 + k * 80, sel = S.liftSel === f, here = f === floor, sec = SECTIONS[f];
+      ctx.fillStyle = sel ? '#14b8a6' : '#1e293b'; rrect(ctx, X + 30, y, W - 60, 78, 18); ctx.fill();
+      if (sel) { ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4; rrect(ctx, X + 30, y, W - 60, 78, 18); ctx.stroke(); }
+      ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(X + 90, y + 39, 28, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fde68a'; ctx.font = "28px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(f === ROOF_FLOOR ? 'RR' : f === B1_FLOOR ? 'B1' : String(f + 1), X + 90, y + 41);
+      ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = "24px 'Lilita One'"; ctx.fillText(`${FLOORS[f].icon} ${FLOORS[f].name}`, X + 146, y + 28);
+      ctx.font = '800 12px Nunito'; ctx.fillStyle = '#cbd5e1';
+      ctx.fillText(f === ROOF_FLOOR ? 'Roof · 3 swimming pools' : f === B1_FLOOR ? 'B1 · 120 parking bays' : `Shops ${(sec.from + 1).toLocaleString()}–${sec.to.toLocaleString()} · ${(sec.to - sec.from).toLocaleString()} shops`, X + 146, y + 52);
+      if (here) { ctx.fillStyle = '#facc15'; ctx.font = '900 11px Nunito'; ctx.fillText('YOU ARE HERE', X + 146, y + 68); }
+      hit(X + 30, y, W - 60, 78, () => ride(f));
     });
   }
 
@@ -651,15 +723,15 @@ function drawThumb(ctx, w, h, t, view) {
 export default {
   id: 'mall',
   title: 'Shopping Mall',
-  tagline: '6 floors: shops, food, drinks, clothes, makeup, B1 car parks',
-  desc: 'Walk the ROBLOC Mall: 10,000 shops (toys, pets, phones, cars, houses, jets…), 68,000 food places, 10,000 drink shops, 2,780 clothes and shoe shops and 2,780 makeup shops on 5 floors, plus 120 car park bays on B1, with real prices and sales tax.',
+  tagline: '7 floors: shops, food, drinks, clothes, makeup, B1 car parks, RR roof',
+  desc: 'Walk the ROBLOC Mall: 10,000 shops (toys, pets, phones, cars, houses, jets…), 68,000 food places, 10,000 drink shops, 2,780 clothes and shoe shops and 2,780 makeup shops on 5 floors, plus 120 car park bays on B1 and 3 swimming pools with sun chairs on the RR Roof, with real prices and sales tax.',
   music: 'mall',
   noDifficulty: true,
   playLabel: 'ENTER MALL',
   labels: { a: 'ENTER', b: 'MAP' },
   options: [],
   howto: `<ul>
-    <li>The mall has <b>6 floors</b>: Floor 1 shops, Floor 2 food court, Floor 3 drinks, Floor 4 clothes &amp; shoes, Floor 5 makeup, and <b>B1 car parks</b> with 120 parking bays. Ride the 🛗 elevator at the start of each floor, or tap the floor button at the top.</li>
+    <li>The mall has <b>7 floors</b>: Floor 1 shops, Floor 2 food court, Floor 3 drinks, Floor 4 clothes &amp; shoes, Floor 5 makeup, <b>B1 car parks</b> with 120 parking bays, and the <b>RR Roof</b> at the very top with 3 swimming pools, sun chairs and umbrellas. Ride the 🛗 elevator at the start of each floor, or tap the floor button at the top.</li>
     <li><b>Walk</b> by tapping where you want to go, or with the arrows. Tap a shop (or press <b>ENTER</b> / <kbd>Space</kbd> at its door) to go in.</li>
     <li><b>MAP</b> (<kbd>Shift</kbd>) opens the directory of all 93,560 shops: 1–10,000 sell all kinds of things, 10,001–78,000 are food, 78,001–88,000 are drinks, 88,001–90,780 are clothes and shoes and 90,781–93,560 are makeup. Flip pages left and right (hold to go faster) and jump to any shop. The 🅿️ B1 button takes you down to the car parks.</li>
     <li>Every shop sells 7 to 1,000 things. Hold up or down in a shop to scroll faster.</li>

@@ -256,6 +256,9 @@ export const SECTIONS = [
   { name: 'Makeup', from: MAKEUP_FROM, to: 93560 },
   // B1 has no shops (from == to): 120 car park bays instead, drawn by the mall itself.
   { name: 'Car Parks', from: 93560, to: 93560 },
+  // RR (the Roof) has no shops either: 3 swimming pools, sun chairs and
+  // umbrellas instead, drawn by the mall itself.
+  { name: 'Roof', from: 93560, to: 93560 },
 ];
 export const sectionOf = i => SECTIONS.find(s => i >= s.from && i < s.to) || SECTIONS[0];
 
