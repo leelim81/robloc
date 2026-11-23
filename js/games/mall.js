@@ -491,6 +491,17 @@ function create(env) {
   const WW = () => worldW(floor);
   const doorX = i => X0 + (i - SECTIONS[floor].from) * SHOP_W + SHOP_W / 2;
   const nearElevator = () => Math.abs(me.x - ELEV_X) < 110;
+  // Pools on floor R: the water rect of the pool feature at x (null if not in a pool).
+  // A pool feature k has water x [X0+50+k*500, X0+50+k*500+430], y [FLOOR+25, FLOOR+135].
+  const poolAt = x => {
+    if (floor !== ROOF_FLOOR) return null;
+    const k = Math.floor((x - X0 - 50) / ROOF_SLOT);
+    if (k < 0 || k >= ROOF_FEATURES.length || ROOF_FEATURES[k] !== 'pool') return null;
+    const px = X0 + 50 + k * ROOF_SLOT;
+    if (x < px || x > px + ROOF_FEAT_W) return null;
+    return { px, pw: ROOF_FEAT_W, top: FLOOR + 25, bot: FLOOR + 135 };
+  };
+  const poolKs = () => { const ks = []; for (let k = 0; k < ROOF_FEATURES.length; k++) if (ROOF_FEATURES[k] === 'pool') ks.push(k); return ks; };
   const npcs = Array.from({ length: 14 }, () => ({
     x: rand(X0, X0 + 6 * SHOP_W), y: rand(FLOOR + 40, FLOOR + 150), dir: Math.random() < 0.5 ? -1 : 1, speed: rand(50, 110), phase: rand(0, 6),
     look: { skin: SKINS[(Math.random() * SKINS.length) | 0], hair: HAIRS[(Math.random() * 7) | 0], style: HAIR_STYLES[(Math.random() * 5) | 0], shirt: SHIRTS[(Math.random() * SHIRTS.length) | 0] },
@@ -537,7 +548,17 @@ function create(env) {
   function openElevator() { S.mode = 'elevator'; S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined; me.vx = 0; S.liftSel = floor; audio.play('select'); }
   function ride(f) {
     floor = f; me.x = X0 - 40; me.vx = 0; camX = 0; S.mode = 'walk'; S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined;
-    for (const n of npcs) n.x = rand(X0, X0 + 5 * SHOP_W);
+    if (f === ROOF_FLOOR) {
+      // On the Roof, spread people along the whole floor and put some in the
+      // pools so they swim (the rest walk around the other activities).
+      const pks = poolKs();
+      npcs.forEach((n, i) => {
+        if (i < 7 && pks.length) {
+          const k = pks[(Math.random() * pks.length) | 0], px = X0 + 50 + k * ROOF_SLOT;
+          n.x = rand(px + 60, px + ROOF_FEAT_W - 60);
+        } else n.x = rand(X0, X0 + ROOF_W);
+      });
+    } else for (const n of npcs) n.x = rand(X0, X0 + 5 * SHOP_W);
     S.floorBanner = 0; audio.play('go'); fx.dust(640, FLOOR + 70, 8);
   }
 
@@ -615,13 +636,23 @@ function create(env) {
     // shoppers
     for (const n of npcs) {
       if (n.pause > 0) { n.pause -= dt; continue; }
-      n.x += n.dir * n.speed * dt; n.phase += n.speed * dt * 0.06;
-      if (n.x < X0 - 40 || n.x > WW() - X0 + 40) n.dir *= -1;
+      // In a pool, people swim (slower, doing laps); outside a pool they walk.
+      const pool = poolAt(n.x);
+      const sp = pool ? n.speed * 0.45 : n.speed;
+      n.x += n.dir * sp * dt; n.phase += sp * dt * 0.06;
+      n.swim = !!pool;
+      if (pool) {
+        // Swimmers turn around at the pool's edges and stay in the water.
+        if (n.x < pool.px + 50 || n.x > pool.px + pool.pw - 50) n.dir *= -1;
+      } else if (n.x < X0 - 40 || n.x > WW() - X0 + 40) n.dir *= -1;
       if (Math.abs(n.x - me.x) > 1600) { n.x = me.x + (Math.random() < 0.5 ? -1 : 1) * rand(700, 1400); n.dir = n.x > me.x ? -1 : 1; }
       if (Math.random() < dt * 0.08) n.pause = rand(1, 3);
     }
     if (S.mode === 'walk') {
-      const sp = 430;
+      // In a pool you swim (slower); outside a pool you walk.
+      const inPool = poolAt(me.x);
+      const sp = inPool ? 430 * 0.45 : 430;
+      me.swim = !!inPool;
       let mx = input.mx;
       if (mx || input.my) { S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined; }
       else if (S.walkTo !== null && S.walkTo !== undefined) {
@@ -699,10 +730,10 @@ function create(env) {
       hit(ELEV_X - 115 - camX, 130, 230, FLOOR - 130, () => { S.walkTo = ELEV_X; S.autoShop = 'elevator'; S.walkPrev = undefined; audio.play('tick'); });
     }
     // people, back to front
-    const people = npcs.map(n => ({ y: n.y, d: () => drawPerson(ctx, n.x - camX, n.y, n.look, n.phase, n.pause > 0 ? 0 : 1, n.dir < 0, n.bag) }));
+    const people = npcs.map(n => ({ y: n.y, d: () => drawPerson(ctx, n.x - camX, n.y, n.look, n.phase, n.pause > 0 ? 0 : 1, n.dir < 0, n.bag, n.swim) }));
     people.push({ y: me.y, d: () => {
-      drawPerson(ctx, me.x - camX, me.y, { skin: av.skin, hair: av.hair, style: av.style, shirt: av.shirt || '#2563eb' }, me.phase, Math.min(1, Math.abs(me.vx) / 200), me.flip, null);
-      ctx.strokeStyle = 'rgba(34,211,238,.85)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(me.x - camX, me.y + 2, 40, 12, 0, 0, Math.PI * 2); ctx.stroke();
+      drawPerson(ctx, me.x - camX, me.y, { skin: av.skin, hair: av.hair, style: av.style, shirt: av.shirt || '#2563eb' }, me.phase, Math.min(1, Math.abs(me.vx) / 200), me.flip, null, me.swim);
+      ctx.strokeStyle = 'rgba(34,211,238,.85)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(me.x - camX, (me.swim ? FLOOR + 62 : me.y) + 2, 40, 12, 0, 0, Math.PI * 2); ctx.stroke();
     } });
     people.sort((a, b) => a.y - b.y).forEach(p => p.d());
     fx.draw(ctx);
@@ -731,7 +762,18 @@ function create(env) {
     button(ctx, 178, 68, 210, 44, '⚡ SUPERPOWERS', '#f59e0b', openPowers);
   }
 
-  function drawPerson(ctx, x, y, look, phase, moving, flip, bag) {
+  function drawPerson(ctx, x, y, look, phase, moving, flip, bag, swim) {
+    if (swim) {
+      // Swimming: flat in the water just below the surface, head up, no bag.
+      const wy = FLOOR + 60;
+      drawHuman(ctx, x, wy, 1.15, { view: 'side', flip, phase, moving, pose: 'swim', shadow: false, ...look, shorts: '#1e293b' });
+      // splash where the arms hit the water
+      ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      const sp = Math.sin(phase) * 10;
+      ctx.beginPath(); ctx.arc(x + (flip ? -32 : 32) + sp, wy - 10, 10, Math.PI, 0); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x - (flip ? -32 : 32) - sp, wy - 6, 7, Math.PI, 0); ctx.stroke();
+      return;
+    }
     const s = 1.15 + (y - FLOOR) / 160 * 0.3;
     drawHuman(ctx, x, y, s, { view: 'side', flip, phase, moving, pose: 'run', ...look, shorts: '#1e293b' });
     if (bag) {
