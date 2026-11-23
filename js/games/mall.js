@@ -89,6 +89,10 @@ function drawMall(ctx, view, camX, t, nearShop, floor = 0) {
 // B1 car park: numbered bays along the hallway, most with a parked car (same car in the same bay every time).
 function bayRand(i) { let s = (i * 2654435761 + 97) >>> 0; s ^= s >>> 15; s = (s * 2246822519) >>> 0; return ((s ^ (s >>> 13)) >>> 0) / 4294967296; }
 const CAR_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#64748b', '#eab308'];
+// The cars are bigger than their bays (Trevor: "make the cars bigger than
+// the paper") - a parked car is 240 wide in a 230-wide bay, so it sticks
+// out past the bay's painted lines on both sides.
+const CAR_S = 2;
 function drawCar(ctx, x, y, s, color) {
   ctx.fillStyle = color; rrect(ctx, x, y - 46 * s, 120 * s, 34 * s, 10); ctx.fill();
   ctx.fillStyle = shade(color, 0.25); rrect(ctx, x + 22 * s, y - 68 * s, 62 * s, 26 * s, 8); ctx.fill();
@@ -119,9 +123,10 @@ function drawBays(ctx, camX, x0, W) {
     // Bay number painted on the floor at the front of the bay.
     ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = "900 24px 'Lilita One'";
     ctx.fillText('B' + (i + 1), x + BAY_W / 2 + SLANT, BOT - 20);
-    // The car parks inside its bay on the floor (wheels touch the ground).
+    // The car parks inside its bay on the floor (wheels touch the ground),
+    // but it is bigger than the bay - it sticks out past the bay's lines.
     const carY = FLOOR + 60;
-    if (bayRand(i) < 0.75) drawCar(ctx, x + (BAY_W - 120) / 2 + shiftAt(carY), carY, 1, CAR_COLORS[Math.floor(bayRand(i + 1000) * CAR_COLORS.length)]);
+    if (bayRand(i) < 0.75) drawCar(ctx, x + (BAY_W - 120 * CAR_S) / 2 + shiftAt(carY), carY, CAR_S, CAR_COLORS[Math.floor(bayRand(i + 1000) * CAR_COLORS.length)]);
     else { ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.font = '900 16px Nunito'; ctx.fillText('EMPTY', x + BAY_W / 2 + shiftAt((TOP + BOT) / 2), (TOP + BOT) / 2); }
   }
 }
