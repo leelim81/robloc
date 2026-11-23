@@ -84,6 +84,7 @@ Trevor, the boss, also earns money from the mall: the 8% sales tax on every purc
 - Each finished match gives points, coins and dollars based on the result, goals or points scored, and difficulty (Rookie ×1, Pro ×1.5, Legend ×2).
 - Per-match caps: 600 points and 250 coins.
 - Dollars: 75¢ for every coin earned, plus $5 for a win ($2 for a draw). Spend them in the Shopping Mall.
+- The home screen shows what you earned by playing in total — ⭐ points earned, 🪙 coins earned, 💰 dollars earned — next to games played and won. The big totals at the top barely move for the owner (his starting fortune is huge), so the earned row is where you see your winnings grow after every match.
 - **Dollars and coins buy superpowers**: before a match, spend dollars AND coins on a superpower for that match, like a real game — 🛡️ Shield ($25 + 25 coins, lose but still earn the draw reward), ⚡ Speed ($50 + 50 coins, run and move 50% faster), 💪 Power ($75 + 75 coins, shots and hits 50% stronger), ⭐ Double Points ($100 + 100 coins, earn double points), 🍀 Double Coins ($150 + 150 coins, earn double coins). Every power has its own dollar price and coin price. Pick one on the screen before you press PLAY, or tap the ⚡ SUPERPOWERS button in the mall to buy one — it is held for your next match. The dollars and coins are spent when the match starts. Trevor still wins about 90% of his matches and stays #1.
 - Quitting a match from the pause menu gives no rewards.
 - Level *n* starts at 50·n·(n−1) points.

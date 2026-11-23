@@ -193,7 +193,17 @@ function renderTopbar(animate = true) {
   $('#money-wrap').title = '$' + formatBig(money) + '.' + String(cents % 100n).padStart(2, '0');
   $('#badge-count').textContent = p.badges.length;
   const c = careerOf(p);
-  $('#career').innerHTML = `<span title="${formatBig(c.played)}">🎮 <b>${formatShort(c.played)}</b> played</span><span title="${formatBig(c.wins)}">🏆 <b>${formatShort(c.wins)}</b> won</span>`;
+  // What you earned by playing: the big topbar totals barely move for the
+  // owner (his starting fortune is huge), so show the match earnings
+  // themselves — they go up every match and prove you are earning.
+  const earnedPts = p.points || 0;
+  const earnedCoins = p.coinsEarned || 0;
+  const earnedCents = BigInt(p.moneyEarnedCents || '0');
+  const earnedDollars = earnedCents / 100n;
+  const earnedMoney = earnedDollars < 100000n
+    ? '$' + formatBig(earnedDollars) + '.' + String(earnedCents % 100n).padStart(2, '0')
+    : '$' + formatShort(earnedDollars);
+  $('#career').innerHTML = `<span title="${formatBig(c.played)}">🎮 <b>${formatShort(c.played)}</b> played</span><span title="${formatBig(c.wins)}">🏆 <b>${formatShort(c.wins)}</b> won</span><span title="${formatBig(BigInt(earnedPts))} points earned from matches">⭐ <b>${formatShort(earnedPts)}</b> pts earned</span><span title="${formatBig(BigInt(earnedCoins))} coins earned from matches">🪙 <b>${formatShort(earnedCoins)}</b> coins earned</span><span title="${earnedMoney} earned from matches">💰 <b>${earnedMoney}</b> earned</span>`;
 }
 function rollNumber(sel, from, to, animate, fmt) {
   const el = $(sel);
