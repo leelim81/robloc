@@ -118,6 +118,14 @@ function buildSwatches() {
 }
 function markSwatches() {
   $$('.swatches').forEach(w => w.querySelectorAll('.swatch').forEach(b => b.classList.toggle('active', b.dataset.v === state.avatar[w.dataset.key])));
+  // Show which shade is picked, so two shades are easy to tell apart:
+  // "Skin 3 of 6" — tap another circle and the number (and your big
+  // player on the left) changes right away.
+  const groups = { skin: SKINS, hair: HAIRS, shirt: SHIRTS, style: HAIR_STYLES };
+  for (const [key, list] of Object.entries(groups)) {
+    const el = $('#pick-' + key);
+    if (el) el.textContent = (list.indexOf(state.avatar[key]) + 1) + ' of ' + list.length;
+  }
 }
 let previewRAF = 0;
 function startAvatarPreview() {

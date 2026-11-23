@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261123205303">
+  <link rel="stylesheet" href="css/style.css?v=20261123210818">
 </head>
 <body>
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -49,15 +49,15 @@
     <div class="panel setup-panel">
       <h2 class="panel-title" id="setup-title">Create your player</h2>
       <div class="setup-grid">
-        <div class="avatar-stage"><canvas id="avatar-preview" width="240" height="300"></canvas></div>
+        <div class="avatar-stage"><canvas id="avatar-preview" width="300" height="375"></canvas></div>
         <div class="setup-form">
           <label class="field-label" for="name-input">Player name</label>
           <input id="name-input" class="text-input" maxlength="16" autocomplete="off" placeholder="Type your name">
           <p class="field-hint">2–16 letters, numbers or spaces. Shown on the leaderboard.</p>
-          <div class="swatch-group"><span class="field-label">Skin</span><div class="swatches" data-key="skin"></div></div>
-          <div class="swatch-group"><span class="field-label">Hair</span><div class="swatches" data-key="hair"></div></div>
-          <div class="swatch-group"><span class="field-label">Hair style</span><div class="swatches style-swatches" data-key="style"></div></div>
-          <div class="swatch-group"><span class="field-label">Jersey</span><div class="swatches" data-key="shirt"></div></div>
+          <div class="swatch-group"><span class="field-label">Skin <span class="swatch-pick" id="pick-skin"></span></span><div class="swatches" data-key="skin"></div></div>
+          <div class="swatch-group"><span class="field-label">Hair <span class="swatch-pick" id="pick-hair"></span></span><div class="swatches" data-key="hair"></div></div>
+          <div class="swatch-group"><span class="field-label">Hair style <span class="swatch-pick" id="pick-style"></span></span><div class="swatches style-swatches" data-key="style"></div></div>
+          <div class="swatch-group"><span class="field-label">Jersey <span class="swatch-pick" id="pick-shirt"></span></span><div class="swatches" data-key="shirt"></div></div>
           <p id="setup-error" class="auth-error hidden"></p>
           <button id="btn-setup-done" class="btn btn-primary btn-lg">Let's play!</button>
         </div>
@@ -214,27 +214,27 @@
   <script type="importmap">
   {
     "imports": {
-      "./js/art.js": "./js/art.js?v=20261123205303",
-      "./js/audio.js": "./js/audio.js?v=20261123205303",
-      "./js/backend.js": "./js/backend.js?v=20261123205303",
-      "./js/economy.js": "./js/economy.js?v=20261123205303",
-      "./js/firebase-config.js": "./js/firebase-config.js?v=20261123205303",
-      "./js/fx.js": "./js/fx.js?v=20261123205303",
-      "./js/games/baseball.js": "./js/games/baseball.js?v=20261123205303",
-      "./js/games/guessprice.js": "./js/games/guessprice.js?v=20261123205303",
-      "./js/games/hunted.js": "./js/games/hunted.js?v=20261123205303",
-      "./js/games/mall.js": "./js/games/mall.js?v=20261123205303",
-      "./js/games/maze.js": "./js/games/maze.js?v=20261123205303",
-      "./js/games/pickleball.js": "./js/games/pickleball.js?v=20261123205303",
-      "./js/games/prizemachine.js": "./js/games/prizemachine.js?v=20261123205303",
-      "./js/games/shops.js": "./js/games/shops.js?v=20261123205303",
-      "./js/games/soccer.js": "./js/games/soccer.js?v=20261123205303",
-      "./js/input.js": "./js/input.js?v=20261123205303",
-      "./js/main.js": "./js/main.js?v=20261123205303"
+      "./js/art.js": "./js/art.js?v=20261123210818",
+      "./js/audio.js": "./js/audio.js?v=20261123210818",
+      "./js/backend.js": "./js/backend.js?v=20261123210818",
+      "./js/economy.js": "./js/economy.js?v=20261123210818",
+      "./js/firebase-config.js": "./js/firebase-config.js?v=20261123210818",
+      "./js/fx.js": "./js/fx.js?v=20261123210818",
+      "./js/games/baseball.js": "./js/games/baseball.js?v=20261123210818",
+      "./js/games/guessprice.js": "./js/games/guessprice.js?v=20261123210818",
+      "./js/games/hunted.js": "./js/games/hunted.js?v=20261123210818",
+      "./js/games/mall.js": "./js/games/mall.js?v=20261123210818",
+      "./js/games/maze.js": "./js/games/maze.js?v=20261123210818",
+      "./js/games/pickleball.js": "./js/games/pickleball.js?v=20261123210818",
+      "./js/games/prizemachine.js": "./js/games/prizemachine.js?v=20261123210818",
+      "./js/games/shops.js": "./js/games/shops.js?v=20261123210818",
+      "./js/games/soccer.js": "./js/games/soccer.js?v=20261123210818",
+      "./js/input.js": "./js/input.js?v=20261123210818",
+      "./js/main.js": "./js/main.js?v=20261123210818"
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=20261123205303"></script>
+  <script type="module" src="js/main.js?v=20261123210818"></script>
   <!-- /versioned-scripts -->
 </body>
 </html>
