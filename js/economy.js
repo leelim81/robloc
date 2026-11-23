@@ -67,10 +67,15 @@ export const HUNTED_TREVOR_START_CENTS = 878837;
 // Hunted: Trevor starts with 3740 Hunted points, everyone else starts
 // from 0. Hunted points only grow, so it is set once, when it is 0.
 export const HUNTED_TREVOR_START_POINTS = 3740;
-// Hunted: Trevor starts with 7635 played and 7273 won, everyone else
+// Hunted: Trevor starts with 23487 played and 18389 won, everyone else
 // starts from 0. These only grow, so they are set once, when they are 0.
-export const HUNTED_TREVOR_START_PLAYED = 7635;
-export const HUNTED_TREVOR_START_WINS = 7273;
+// (Trevor's numbers, given 2026-11-23: played 23487, won 18389.)
+export const HUNTED_TREVOR_START_PLAYED = 23487;
+export const HUNTED_TREVOR_START_WINS = 18389;
+// Maze: Trevor starts with 82663 played and 76769 won, everyone else
+// starts from 0. (Trevor's numbers, given 2026-11-23.)
+export const MAZE_TREVOR_START_PLAYED = 82663;
+export const MAZE_TREVOR_START_WINS = 76769;
 
 // Trevor's (the owner's) stats. These override whatever roles/{uid} says, so changing them only needs a code push.
 export const OWNER_STATS = {
@@ -231,9 +236,15 @@ export function normalizeProfile(p) {
   if (isOwnerName(p.name) && !(stats.hunted.cashCents > 0)) stats.hunted.cashCents = HUNTED_TREVOR_START_CENTS;
   // Hunted: Trevor starts with 3740 Hunted points, everyone else from 0.
   if (isOwnerName(p.name) && !(stats.hunted.points > 0)) stats.hunted.points = HUNTED_TREVOR_START_POINTS;
-  // Hunted: Trevor starts with 7635 played and 7273 won, everyone else 0.
-  if (isOwnerName(p.name) && !(stats.hunted.played > 0)) stats.hunted.played = HUNTED_TREVOR_START_PLAYED;
-  if (isOwnerName(p.name) && !(stats.hunted.wins > 0)) stats.hunted.wins = HUNTED_TREVOR_START_WINS;
+  // Hunted: Trevor starts with 23487 played and 18389 won, everyone else 0.
+  // Maze: Trevor starts with 82663 played and 76769 won, everyone else 0.
+  // "Bump up if below the start" (not just "set when 0"): Trevor's stored
+  // numbers may already be above 0 from an earlier start, so a plain
+  // when-0 check would never lift them to the new numbers he gave.
+  if (isOwnerName(p.name) && (stats.hunted.played || 0) < HUNTED_TREVOR_START_PLAYED) stats.hunted.played = HUNTED_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.hunted.wins || 0) < HUNTED_TREVOR_START_WINS) stats.hunted.wins = HUNTED_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.maze.played || 0) < MAZE_TREVOR_START_PLAYED) stats.maze.played = MAZE_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.maze.wins || 0) < MAZE_TREVOR_START_WINS) stats.maze.wins = MAZE_TREVOR_START_WINS;
   // A plain player cannot keep things bought with money they never earned.
   // Lifetime spending (money + coins at $1 each) can never pass lifetime
   // earnings; when it does, the items came from an old owner-era save, so
