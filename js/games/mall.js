@@ -3,7 +3,7 @@
 // The 8% sales tax on every purchase goes to Trevor, the boss.
 import { drawHuman, shade, rrect, SKINS, HAIRS, HAIR_STYLES, SHIRTS } from '../art.js';
 import { drawBanner } from '../fx.js';
-import { payPlan as planFor, coinsOf, moneyCentsOf, formatShort } from '../economy.js';
+import { payPlan as planFor, coinsOf, moneyCentsOf, formatShort, SUPERPOWERS } from '../economy.js';
 
 import { SHOP_COUNT, SECTIONS, shopInfo, shopItems, withTax, fmtCents, TAX_RATE } from './shops.js';
 
@@ -496,7 +496,7 @@ function create(env) {
     look: { skin: SKINS[(Math.random() * SKINS.length) | 0], hair: HAIRS[(Math.random() * 7) | 0], style: HAIR_STYLES[(Math.random() * 5) | 0], shirt: SHIRTS[(Math.random() * SHIRTS.length) | 0] },
     bag: Math.random() < 0.6 ? shopInfo((Math.random() * 60) | 0).color : null, pause: 0,
   }));
-  const S = { t: 0, mode: 'walk', shop: -1, sel: 0, navT: 0, navHeld: 0, lastNav: '', busy: false, receipt: null, receiptT: 0, error: null, mapSel: 0, labelKey: '', intro: 0, searchQ: '', searchList: [], searchCount: 0, searchQPrev: null, keysDown: null };
+  const S = { t: 0, mode: 'walk', shop: -1, sel: 0, navT: 0, navHeld: 0, lastNav: '', busy: false, receipt: null, receiptT: 0, error: null, mapSel: 0, labelKey: '', intro: 0, searchQ: '', searchList: [], searchCount: 0, searchQPrev: null, keysDown: null, powerSel: 0, powerMsg: '', powerMsgT: 0 };
   let camX = 0;
   const prof = () => shop.profile() || profile;
   const balances = () => ({ moneyC: moneyCentsOf(prof()), coins: coinsOf(prof()) });
@@ -560,6 +560,27 @@ function create(env) {
   };
   // Shop search: tap the letters and every shop with those letters shows up.
   const openSearch = () => { S.mode = 'search'; S.searchQ = ''; S.searchList = []; S.searchCount = 0; S.searchQPrev = null; audio.play('select'); };
+  // Superpower search: a list of superpowers, each with its own coin price.
+  // Tap one to buy it with coins — it is held for your next match.
+  const openPowers = () => { S.mode = 'powers'; S.powerSel = 0; S.powerMsg = ''; S.powerMsgT = 0; audio.play('select'); };
+  async function buyPower(power) {
+    if (S.busy) return;
+    const coins = Number(coinsOf(prof()));
+    if (power.cost > coins) { S.error = 'Not enough coins for this superpower.'; S.errorT = 0; audio.play('fault'); return; }
+    S.busy = true;
+    try {
+      await shop.buyPower(power);
+      S.powerMsg = `${power.icon} ${power.name} is ready for your next match!`;
+      S.powerMsgT = 0;
+      audio.play('coin'); fx.confetti(640, 360, 40);
+    } catch (e) {
+      console.error(e);
+      S.error = e.code === 'not-enough' ? 'Not enough coins for this superpower.' : 'Could not buy the superpower.';
+      S.errorT = 0;
+      audio.play('fault');
+    }
+    S.busy = false;
+  }
   const searchKey = ch => {
     if (ch === '⌫') S.searchQ = S.searchQ.slice(0, -1);
     else if (ch === '✕') S.searchQ = '';
@@ -588,7 +609,7 @@ function create(env) {
     const labelKey = S.mode;
     if (labelKey !== S.labelKey) {
       S.labelKey = labelKey;
-      const L = { walk: ['ENTER', 'MAP'], shop: ['BUY', 'LEAVE'], map: ['GO', 'CLOSE'], elevator: ['GO', 'CLOSE'], search: ['OPEN', 'CLOSE'] }[labelKey];
+      const L = { walk: ['ENTER', 'MAP'], shop: ['BUY', 'LEAVE'], map: ['GO', 'CLOSE'], elevator: ['GO', 'CLOSE'], search: ['OPEN', 'CLOSE'], powers: ['BUY', 'CLOSE'] }[labelKey];
       input.setLabels(L[0], L[1]);
     }
     // shoppers
@@ -653,6 +674,13 @@ function create(env) {
       runSearch();
       if (input.a.pressed && S.searchList.length) { const i = S.searchList[0]; goToShop(i); enterShop(i); }
       if (input.b.pressed) { S.mode = 'walk'; audio.play('back'); }
+    } else if (S.mode === 'powers') {
+      // up/down pick a superpower, A buys it with coins
+      if (S.powerMsg) S.powerMsgT += dt;
+      const powers = SUPERPOWERS.filter(p => p.id !== 'none');
+      nav((dx, dy) => { S.powerSel = clamp((S.powerSel || 0) + dy, 0, powers.length - 1); });
+      if (input.a.pressed) { const p = powers[S.powerSel || 0]; if (p && p.id !== (shop.powerHeld ? shop.powerHeld() : '')) buyPower(p); }
+      if (input.b.pressed) { S.mode = 'walk'; audio.play('back'); }
     }
     camX += (clamp(me.x - 640, ELEV_X - 260, WW() - 1280) - camX) * Math.min(1, dt * 6);
     if (S.floorBanner !== undefined) S.floorBanner += dt;
@@ -683,6 +711,7 @@ function create(env) {
       button(ctx, 18, 68, 130, 44, '🗺️ MAP', '#7c3aed', openMap);
       button(ctx, 158, 68, 250, 44, `🛗 ${FLOORS[floor].title}`, '#0f766e', openElevator);
       button(ctx, 418, 68, 150, 44, '🔍 SEARCH', '#0ea5e9', openSearch);
+      button(ctx, 578, 68, 210, 44, '⚡ SUPERPOWERS', '#f59e0b', openPowers);
       if (ns < 0 && nearElevator()) prompt(ctx, `${input.touchMode ? 'Tap the elevator' : 'Press SPACE'} to change floors`, 1, '#fde68a');
       else if (ns >= 0) prompt(ctx, `${input.touchMode ? 'Tap the shop' : 'Press SPACE'} to go into ${shopInfo(ns).name}`, 1, '#fde68a');
       else prompt(ctx, input.touchMode ? 'Tap a shop to go in · MAP to jump to any shop' : 'Arrows to walk · SPACE enter a shop · SHIFT mall map · or click', 0.85);
@@ -692,6 +721,7 @@ function create(env) {
     if (S.mode === 'shop') drawShop(ctx);
     if (S.mode === 'map') drawMap(ctx);
     if (S.mode === 'search') drawSearch(ctx);
+    if (S.mode === 'powers') drawPowers(ctx);
     if (S.mode === 'elevator') drawLift(ctx);
     if (S.receipt) drawReceipt(ctx);
     if (S.error) toastBar(ctx, S.error, '#fecaca');
@@ -865,6 +895,43 @@ function create(env) {
         ctx.fillText(`${s.section} · ${s.count.toLocaleString()} items`, x + w - 12, y + 19);
         hit(x, y, w, 36, () => { goToShop(i); enterShop(i); });
       });
+    }
+  }
+
+  // Superpower search: "Superpowers" at the top, every superpower with its
+  // own coin price. Tap one to buy it with coins — it is held for the next match.
+  function drawPowers(ctx) {
+    const X = 190, Y = 30, W = 900, H = 660;
+    const powers = SUPERPOWERS.filter(p => p.id !== 'none');
+    const held = shop.powerHeld ? shop.powerHeld() : '';
+    const coins = Number(coinsOf(prof()));
+    panel(ctx, X, Y, W, H, '⚡ Superpowers', '#f59e0b');
+    closeButton(ctx, X + W - 52, Y + 13, () => { S.mode = 'walk'; audio.play('back'); });
+    // your coins
+    ctx.textAlign = 'center'; ctx.fillStyle = '#fde68a'; ctx.font = '900 22px Nunito';
+    ctx.fillText(`You have ${formatShort(coins)} 🪙`, X + W / 2, Y + 78);
+    ctx.fillStyle = '#cbd5e1'; ctx.font = '800 15px Nunito';
+    ctx.fillText('Tap a superpower to buy it with coins. It is ready for your next match.', X + W / 2, Y + 108);
+    // one row per superpower: icon, name, what it does, and its own coin price
+    powers.forEach((p, k) => {
+      const x = X + 30, y = Y + 140 + k * 84, w = W - 60;
+      const isHeld = p.id === held;
+      const afford = p.cost <= coins || isHeld;
+      ctx.fillStyle = isHeld ? '#78350f' : '#1e293b'; rrect(ctx, x, y, w, 76, 12); ctx.fill();
+      if (isHeld) { ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 3; rrect(ctx, x, y, w, 76, 12); ctx.stroke(); }
+      ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = '900 26px Nunito';
+      ctx.fillText(`${p.icon} ${p.name}`, x + 16, y + 28);
+      ctx.fillStyle = '#cbd5e1'; ctx.font = '800 15px Nunito';
+      ctx.fillText(p.desc, x + 16, y + 56);
+      ctx.textAlign = 'right';
+      if (isHeld) { ctx.fillStyle = '#fbbf24'; ctx.font = '900 20px Nunito'; ctx.fillText('✓ READY', x + w - 16, y + 40); }
+      else { ctx.fillStyle = afford ? '#fde68a' : '#64748b'; ctx.font = '900 22px Nunito'; ctx.fillText(`${p.cost} 🪙`, x + w - 16, y + 40); }
+      if (!isHeld) hit(x, y, w, 76, () => buyPower(p));
+    });
+    // bought it just now
+    if (S.powerMsg && S.powerMsgT < 3) {
+      ctx.textAlign = 'center'; ctx.fillStyle = '#86efac'; ctx.font = '900 20px Nunito';
+      ctx.fillText(S.powerMsg, X + W / 2, Y + 140 + powers.length * 84 + 28);
     }
   }
 

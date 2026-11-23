@@ -23,6 +23,13 @@ const COMING = [
 const state = { user: null, profile: null, view: 'games', lbKind: 'points', editing: false, avatar: { ...DEFAULT_AVATAR } };
 const input = new Input();
 
+// A superpower bought in the mall search is held for the next match.
+// It lives on this device, keyed by the player's name, so it survives a reload.
+const powerHeldKey = () => 'robloc_power_held_' + String(state.profile?.name || 'local').toLowerCase().replace(/[^a-z0-9]/g, '');
+const getPowerHeld = () => { try { return localStorage.getItem(powerHeldKey()) || ''; } catch { return ''; } };
+const setPowerHeld = id => { try { localStorage.setItem(powerHeldKey(), id); } catch {} };
+const clearPowerHeld = () => { try { localStorage.removeItem(powerHeldKey()); } catch {} };
+
 // ---------------- boot ----------------
 function show(id) {
   $$('.screen').forEach(s => s.classList.toggle('active', s.id === id));
@@ -512,6 +519,14 @@ const host = {
         return res;
       },
       bossTotal: () => backend.bossTotal(),
+      // Superpowers: buy one with coins in the mall search, hold it for the next match.
+      buyPower: async power => {
+        const res = await backend.spendCoins(power.cost);
+        state.profile = normalizeProfile(res.profile);
+        setPowerHeld(power.id);
+        return res;
+      },
+      powerHeld: () => getPowerHeld(),
     };
     this.inst = this.game.create({ input, audio, fx: this.fx, options: { ...options, boost }, profile: state.profile, shop, end: r => this.finish(r), toast });
     audio.music(this.game.music);
@@ -560,8 +575,11 @@ const host = {
     setTimeout(() => $('#results').classList.remove('hidden'), 900);
     audio.play(result.outcome === 'win' ? 'win' : result.outcome === 'draw' ? 'draw' : 'lose');
     try {
-      // The Double Points superpower doubles the points for this match.
+      // Superpowers: Double Points doubles the points, Double Coins doubles
+      // the coins, Shield pays the draw reward even when you lose.
       if (this.options.power === 'double') result.match.doublePoints = true;
+      if (this.options.power === 'lucky') result.match.doubleCoins = true;
+      if (this.options.power === 'shield') result.match.shield = true;
       const res = await backend.recordMatch(result.match);
       state.profile = normalizeProfile(res.profile);
       setTimeout(() => {
@@ -613,11 +631,12 @@ function openPregame(g) {
   powerBlock.classList.toggle('hidden', !!g.noDifficulty);
   if (!g.noDifficulty) {
     const coins = Number(coinsOf(state.profile || {}));
+    const held = getPowerHeld();
     $('#power-coins').textContent = `· you have ${formatShort(coins)} 🪙`;
     powerSeg.innerHTML = SUPERPOWERS.map(p =>
-      `<button data-v="${p.id}" class="${p.id === 'none' ? 'active' : ''}" ${p.cost > coins ? 'disabled' : ''}>${p.icon} ${p.name}<small>${p.cost === 0 ? 'free' : p.cost + ' coins'}</small></button>`).join('');
-    const showDesc = id => { $('#power-desc').textContent = SUPERPOWERS.find(p => p.id === id)?.desc || ''; };
-    showDesc('none');
+      `<button data-v="${p.id}" class="${p.id === (held || 'none') ? 'active' : ''}" ${p.cost > coins && p.id !== held ? 'disabled' : ''}>${p.icon} ${p.name}<small>${p.id === held ? 'ready!' : p.cost === 0 ? 'free' : p.cost + ' coins'}</small></button>`).join('');
+    const showDesc = id => { const p = SUPERPOWERS.find(x => x.id === id); $('#power-desc').textContent = (p?.desc || '') + (id === held && held ? ' Ready — already paid!' : ''); };
+    showDesc(held || 'none');
     powerSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
       if (b.disabled) return;
       powerSeg.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
@@ -639,19 +658,25 @@ $('#btn-play').addEventListener('click', async () => {
   host.lastDiff = opts.difficulty;
   $$('#extra-opt .seg').forEach(seg => opts[seg.dataset.opt] = seg.querySelector('.active').dataset.v);
   // Superpower: spend the coins now, so the power is paid for even if the
-  // player quits the match early.
+  // player quits the match early. A power bought in the mall search is
+  // already paid for — use it without charging again.
   const powerBtn = $('#power-seg .active');
   const power = powerBtn ? powerBtn.dataset.v : 'none';
   if (power && power !== 'none') {
     const sp = SUPERPOWERS.find(p => p.id === power);
     if (sp && sp.cost > 0) {
-      try {
-        const res = await backend.spendCoins(sp.cost);
-        state.profile = normalizeProfile(res.profile);
+      if (power === getPowerHeld()) {
         opts.power = power;
-      } catch (e) {
-        toast(e.code === 'not-enough' ? 'Not enough coins for that superpower!' : 'Could not buy the superpower.');
-        return;
+        clearPowerHeld();
+      } else {
+        try {
+          const res = await backend.spendCoins(sp.cost);
+          state.profile = normalizeProfile(res.profile);
+          opts.power = power;
+        } catch (e) {
+          toast(e.code === 'not-enough' ? 'Not enough coins for that superpower!' : 'Could not buy the superpower.');
+          return;
+        }
       }
     }
   }

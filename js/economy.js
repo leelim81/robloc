@@ -6,13 +6,17 @@ export const MAX_POINTS_PER_MATCH = 600;   // keep in sync with firestore.rules 
 export const MAX_COINS_PER_MATCH = 250;    // keep in sync with firestore.rules (limit 500)
 
 // Superpowers: coins are for superpowers. Spend coins before a match to get
-// a power for that match. Speed = move 50% faster. Power = shots and hits
-// 50% stronger. Double Points = earn double points from the match.
+// a power for that match. Every power costs a different number of coins.
+// Shield = lose but still earn the draw reward. Speed = move 50% faster.
+// Power = shots and hits 50% stronger. Double Points = earn double points.
+// Double Coins = earn double coins.
 export const SUPERPOWERS = [
   { id: 'none',   name: 'None',          icon: '🚫', cost: 0,   desc: 'No superpower.' },
+  { id: 'shield', name: 'Shield',        icon: '🛡️', cost: 25,  desc: 'Lose a match but still earn the draw reward.' },
   { id: 'speed',  name: 'Speed',         icon: '⚡', cost: 50,  desc: 'Run and move 50% faster.' },
-  { id: 'power',  name: 'Power',         icon: '💪', cost: 50,  desc: 'Shots and hits 50% stronger.' },
+  { id: 'power',  name: 'Power',         icon: '💪', cost: 75,  desc: 'Shots and hits 50% stronger.' },
   { id: 'double', name: 'Double Points', icon: '⭐', cost: 100, desc: 'Earn double points this match.' },
+  { id: 'lucky',  name: 'Double Coins',  icon: '🍀', cost: 150, desc: 'Earn double coins this match.' },
 ];
 
 export const BADGES = [
@@ -288,29 +292,33 @@ export function levelInfo(points) {
 
 export function computeRewards(match) {
   const m = DIFF_MULT[match.difficulty] || 1;
+  // The Shield superpower: lose, but still earn the draw reward.
+  const draw = match.draw || (match.shield && !match.won && !match.draw);
   let pts = 0, coins = 0;
   if (match.game === 'soccer') {
-    pts = 50 + (match.won ? 120 : match.draw ? 50 : 0) + match.goalsFor * 25 + (match.won && match.goalsAgainst === 0 ? 40 : 0);
-    coins = 10 + (match.won ? 35 : match.draw ? 12 : 0) + match.goalsFor * 6;
+    pts = 50 + (match.won ? 120 : draw ? 50 : 0) + match.goalsFor * 25 + (match.won && match.goalsAgainst === 0 ? 40 : 0);
+    coins = 10 + (match.won ? 35 : draw ? 12 : 0) + match.goalsFor * 6;
   } else if (match.game === 'pickleball') {
-    pts = 50 + (match.won ? 130 : 0) + match.scoreFor * 6 + Math.min(match.longestRally, 30) * 2;
-    coins = 10 + (match.won ? 40 : 0) + match.scoreFor * 2 + match.aces * 3;
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.scoreFor * 6 + Math.min(match.longestRally, 30) * 2;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.scoreFor * 2 + match.aces * 3;
   } else if (match.game === 'prize') {
-    pts = 50 + (match.won ? 120 : 0) + match.prizes * 30 + match.golden * 100;
-    coins = 10 + (match.won ? 30 : 0) + match.prizes * 6 + match.coinBags * 20 + match.golden * 50;
+    pts = 50 + (match.won ? 120 : draw ? 50 : 0) + match.prizes * 30 + match.golden * 100;
+    coins = 10 + (match.won ? 30 : draw ? 12 : 0) + match.prizes * 6 + match.coinBags * 20 + match.golden * 50;
   } else if (match.game === 'price') {
-    pts = 50 + (match.won ? 130 : match.draw ? 50 : 0) + match.correct * 15 + match.bestStreak * 5;
-    coins = 10 + (match.won ? 40 : match.draw ? 12 : 0) + match.correct * 3;
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.correct * 15 + match.bestStreak * 5;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.correct * 3;
   } else if (match.game === 'baseball') {
-    pts = 50 + (match.won ? 130 : match.draw ? 50 : 0) + match.runsFor * 18 + match.homers * 30 + match.strikeouts * 8;
-    coins = 10 + (match.won ? 40 : match.draw ? 12 : 0) + match.runsFor * 4 + match.homers * 8;
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.runsFor * 18 + match.homers * 30 + match.strikeouts * 8;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.runsFor * 4 + match.homers * 8;
   }
   pts = Math.min(MAX_POINTS_PER_MATCH, Math.round(pts * m));
   coins = Math.min(MAX_COINS_PER_MATCH, Math.round(coins * m));
   // The Double Points superpower doubles the points (up to twice the cap).
   if (match.doublePoints) pts = Math.min(MAX_POINTS_PER_MATCH * 2, pts * 2);
+  // The Double Coins superpower doubles the coins (up to twice the cap).
+  if (match.doubleCoins) coins = Math.min(MAX_COINS_PER_MATCH * 2, coins * 2);
   // Dollars: 75¢ for every coin, plus $5 for a win (or $2 for a draw), with a few random cents like a real paycheck.
-  const cents = coins * 75 + (match.won ? 500 : match.draw ? 200 : 0) + Math.floor(Math.random() * 100);
+  const cents = coins * 75 + (match.won ? 500 : draw ? 200 : 0) + Math.floor(Math.random() * 100);
   return { points: pts, coins, cents };
 }
 
