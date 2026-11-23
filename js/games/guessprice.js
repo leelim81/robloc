@@ -89,6 +89,11 @@ function drawPodium(ctx, x, label, score, color, look, t, mood) {
 function create(env) {
   const { input, audio, fx, options, profile } = env;
   const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
+  // Superpowers: Speed = 50% more time to guess, Power = the wrong prices
+  // are further from the real price, so the right one is easier to spot.
+  const SPD = options.power === 'speed' ? 1.5 : 1;
+  const TIME = D.time * SPD;
+  const SPREAD = options.power === 'power' ? [D.spread[0] * 1.6, D.spread[1] * 1.6] : D.spread;
   const rounds = +(options.rounds || 10);
   const av = profile?.avatar || {};
   const myLook = { skin: av.skin, hair: av.hair, style: av.style, shirt: av.shirt || '#2563eb' };
@@ -98,7 +103,7 @@ function create(env) {
   function nextRound() {
     S.round++;
     const { item, shop } = pickItem();
-    S.q = { item, shop, choices: makeChoices(item.cents, D.spread), mine: -1, cpu: -1, cpuAt: rand(D.time * 0.25, D.time * 0.8), myTime: 0 };
+    S.q = { item, shop, choices: makeChoices(item.cents, SPREAD), mine: -1, cpu: -1, cpuAt: rand(D.time * 0.25, D.time * 0.8), myTime: 0 };
     S.phase = 'ask'; S.t = 0; S.sel = 0; S.msg = null;
     audio.play('select');
   }
@@ -159,7 +164,7 @@ function create(env) {
       S.lastNav = key;
       if (S.q.cpu < 0 && S.t >= S.q.cpuAt) cpuPick();
       if ((input.a.pressed || input.b.pressed) && S.t > 0.3) { S.q.mine = S.sel; S.q.myTime = S.t; audio.play('click'); reveal(); }
-      else if (S.t >= D.time) reveal();
+      else if (S.t >= TIME) reveal();
     } else if (S.phase === 'reveal') {
       if (S.t > 2.4) { if (S.round >= rounds) endGame(); else nextRound(); }
     }

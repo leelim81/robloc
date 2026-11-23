@@ -103,6 +103,11 @@ function drawClaw(ctx, x, y, open) {
 function create(env) {
   const { input, audio, fx, options } = env;
   const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
+  // Superpowers: Speed = claw moves 50% faster, Power = claw grips 50% stronger.
+  const SPD = options.power === 'speed' ? 1.5 : 1;
+  const PWR = options.power === 'power' ? 1.5 : 1;
+  const GRAB = Math.min(0.98, D.grab * PWR);
+  const SLIP = D.slip / PWR;
   const tries = +(options.tries || 10), target = Math.max(1, Math.ceil(tries * 0.3));
   const pile = makePile();
   const claw = { x: HOME, y: RAIL + 24, tx: HOME, open: 1, held: null };
@@ -162,9 +167,9 @@ function create(env) {
     settle(dt);
     if (S.phase === 'intro') { if (S.t > 1.5) { S.phase = 'aim'; S.t = 0; } return; }
     if (S.phase === 'end') { if (S.t > 2.6 && !S.reported) { S.reported = true; report(); } return; }
-    const sp = 300;
+    const sp = 300 * SPD;
     if (S.phase === 'aim') {
-      if (input.mx) claw.tx = clamp(claw.x + input.mx * 60, GLASS.x0 + 30, GLASS.x1 - 30);
+      if (input.mx) claw.tx = clamp(claw.x + input.mx * 60 * SPD, GLASS.x0 + 30, GLASS.x1 - 30);
       claw.x += clamp(claw.tx - claw.x, -sp * dt, sp * dt);
       if (input.a.pressed || input.b.pressed || S.t > D.aimTime) drop();
     } else if (S.phase === 'down') {
@@ -178,7 +183,7 @@ function create(env) {
         const p = S.target;
         if (p) {
           const off = Math.abs(p.x - claw.x) / D.reach;
-          const chance = D.grab * (1 - off * 0.55) * (p.kind === 'gold' ? 0.6 : 1);
+          const chance = GRAB * (1 - off * 0.55) * (p.kind === 'gold' ? 0.6 : 1);
           if (Math.random() < chance) { claw.held = p; p.state = 'held'; audio.play('catch'); }
           else { say('MISSED!', '#fca5a5'); audio.play('fault'); p.rot += rand(-0.3, 0.3); }
         } else say('NOTHING THERE', '#fca5a5');
@@ -188,7 +193,7 @@ function create(env) {
       if (S.phase === 'up') { claw.y = Math.max(RAIL + 24, claw.y - 240 * dt); if (claw.y <= RAIL + 24) { S.phase = 'carry'; S.t = 0; } }
       else { claw.x += clamp(HOME - claw.x, -sp * dt, sp * dt); if (Math.abs(claw.x - HOME) < 2) { S.phase = 'release'; S.t = 0; } }
       // a held prize can slip
-      if (claw.held && Math.random() < D.slip * dt * 0.9) {
+      if (claw.held && Math.random() < SLIP * dt * 0.9) {
         const p = claw.held; claw.held = null; p.state = 'fall'; p.vy = 0;
         if (p.x > CHUTE.x1 + 10) { say('SO CLOSE!', '#fca5a5'); audio.play('aww'); } else { p.state = 'chute'; }
       }

@@ -195,6 +195,9 @@ function pickOppColor(mine) {
 function create(env) {
   const { input, audio, fx, options, profile } = env;
   const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
+  // Superpowers: Speed = run 50% faster, Power = shoot 50% harder.
+  const SPD = options.power === 'speed' ? 1.5 : 1;
+  const PWR = options.power === 'power' ? 1.5 : 1;
   const matchLen = +(options.length || 150);
   const av = profile?.avatar || {};
   const myColor = av.shirt || '#2563eb';
@@ -267,7 +270,7 @@ function create(env) {
         tx = gx; ty = hitY + (clampedY - hitY) * assist;
       } else { tx = p.x + aimX * 400; ty = p.y + aimY * 400; }
     }
-    const speed = 470 + 560 * charge;
+    const speed = (470 + 560 * charge) * (p.human ? PWR : 1);
     let vz = 70 + 300 * charge * charge;
     if (p.human && options.difficulty === 'rookie') vz = Math.min(vz, 250);
     kick(p, tx - p.x, ty - p.y, speed, vz, 'shot');
@@ -299,7 +302,7 @@ function create(env) {
     // sprint on B when not holding ball and teammate doesn't have it
     p.sprinting = !has && !mateHas && input.b.down && p.stamina > 0.05 && (mx || my);
     if (p.sprinting) p.stamina = Math.max(0, p.stamina - dt * 0.45); else p.stamina = Math.min(1, p.stamina + dt * 0.2);
-    let sp = 215 * (p.sprinting ? 1.38 : 1) * (has ? 0.82 : 1);
+    let sp = 215 * SPD * (p.sprinting ? 1.38 : 1) * (has ? 0.82 : 1);
     if (p.tackleT > 0) { mx = p.fx; my = p.fy; sp = 430; }
     else if (p.tackleT < 0) sp *= 0.35;
     p.target.vx = mx * sp; p.target.vy = my * sp;

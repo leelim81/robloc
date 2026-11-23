@@ -178,6 +178,9 @@ function samplePath(pts, t) {
 function create(env) {
   const { input, audio, fx, options, profile } = env;
   const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
+  // Superpowers: Speed = aim 50% faster, Power = hit 50% further.
+  const SPD = options.power === 'speed' ? 1.5 : 1;
+  const PWR = options.power === 'power' ? 1.5 : 1;
   const innings = +(options.innings || 3);
   const rookie = options.difficulty === 'rookie' || options.boost;
   const av = profile?.avatar || {};
@@ -477,7 +480,7 @@ function create(env) {
 
     // reticle movement (bat aim or pitch target)
     if (S.phase === 'windup' || S.phase === 'pitch' || S.phase === 'aim') {
-      const sp = 3.6;
+      const sp = 3.6 * SPD;
       ret.x = clamp(ret.x + input.mx * sp * dt, -1.6, 1.6);
       ret.z = clamp(ret.z - input.my * sp * dt, 0.9, 4.2);
     }
@@ -511,7 +514,7 @@ function create(env) {
           const b = ballAt(1), dist = hyp(b.x - ret.x, (b.z - ret.z) * 0.9);
           if (Math.abs(err) < W && dist < R) {
             const q = (1 - dist / R) * 0.6 + (1 - Math.abs(err) / W) * 0.4;
-            const ev = 62 + 50 * q + (swing.power ? 10 : 0) + rand(-3, 3);
+            const ev = (62 + 50 * q + (swing.power ? 10 : 0) + rand(-3, 3)) * PWR;
             const la = clamp(21 + (b.z - ret.z) * 48 + rand(-7, 7), -25, 65);
             const spray = (err / W) * 52 + (b.x - ret.x) * 12 + rand(-6, 6);
             if (q < 0.12) resolveContact(ev * 0.7, la, Math.sign(spray || 1) * rand(46, 70), 'me');

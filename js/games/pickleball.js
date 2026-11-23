@@ -174,6 +174,9 @@ function drawPlayerAt(ctx, pl, t) {
 function create(env) {
   const { input, audio, fx, options, profile } = env;
   const D = options.boost ? DIFF.boost : (DIFF[options.difficulty] || DIFF.rookie);
+  // Superpowers: Speed = move 50% faster, Power = hit 50% harder.
+  const SPD = options.power === 'speed' ? 1.5 : 1;
+  const PWR = options.power === 'power' ? 1.5 : 1;
   const target = +(options.target || 11);
   const autoSwing = (options.assist || 'auto') === 'auto';
   const av = profile?.avatar || {};
@@ -264,7 +267,7 @@ function create(env) {
     } else { // drive
       const depth = rand(5.0, 6.4);
       tx = aimXw; ty = toFar ? netY - depth : netY + depth;
-      const speed = 11 + quality * 5;
+      const speed = (11 + quality * 5) * (who === 'me' ? PWR : 1);
       T = hyp(tx - ball.x, ty - ball.y) / speed;
       tx += gauss() * 1.7 * errK; ty += gauss() * 2.0 * errK; minClear = 0.12;
       if (Math.random() < (1 - quality) * 0.22) minClear = -0.35; // mishit into the net
@@ -376,7 +379,7 @@ function create(env) {
 
     // human movement
     const canMove = !(S.phase === 'serve' && S.server === 'me') && S.phase !== 'point' && S.phase !== 'end';
-    const spd = 4.6;
+    const spd = 4.6 * SPD;
     const tvx = canMove ? input.mx * spd : 0, tvy = canMove ? input.my * spd * 0.9 : 0;
     me.vx += (tvx - me.vx) * Math.min(1, dt * 9); me.vy += (tvy - me.vy) * Math.min(1, dt * 9);
     if (S.phase === 'serve' && S.server === 'me') { me.vx = input.mx * 1.2; me.vy = 0; }
