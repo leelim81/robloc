@@ -997,7 +997,7 @@ function create(env) {
       ctx.fillStyle = '#fde68a'; ctx.font = "28px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(f === ROOF_FLOOR ? 'R' : f === B1_FLOOR ? 'B1' : String(f + 1), X + 90, y + 41);
       ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = "24px 'Lilita One'"; ctx.fillText(`${FLOORS[f].icon} ${FLOORS[f].name}`, X + 146, y + 28);
       ctx.font = '800 12px Nunito'; ctx.fillStyle = '#cbd5e1';
-      ctx.fillText(f === ROOF_FLOOR ? 'Roof · 10 things · 10 pools · 5 golf' : f === B1_FLOOR ? 'B1 · 120 parking bays' : `Shops ${(sec.from + 1).toLocaleString()}–${sec.to.toLocaleString()} · ${(sec.to - sec.from).toLocaleString()} shops`, X + 146, y + 52);
+      ctx.fillText(f === ROOF_FLOOR ? 'Roof · 70 outdoor things · pools, golf, play + more' : f === B1_FLOOR ? 'B1 · 120 parking bays' : `Shops ${(sec.from + 1).toLocaleString()}–${sec.to.toLocaleString()} · ${(sec.to - sec.from).toLocaleString()} shops`, X + 146, y + 52);
       if (here) { ctx.fillStyle = '#facc15'; ctx.font = '900 11px Nunito'; ctx.fillText('YOU ARE HERE', X + 146, y + 68); }
       hit(X + 30, y, W - 60, 78, () => ride(f));
     });
