@@ -31,9 +31,16 @@ service cloud.firestore {
                && d.get('winsBase', '0') == roleStr(uid, 'winsBase')
                && d.get('winChance', '0') == roleStr(uid, 'winChance'));
     }
+    // A plain player starts with 10 points, $10 and 10 coins. Older saves
+    // still have 0 for those three fields, so both 0 and 10 are allowed
+    // here — the game upgrades old saves to 10 the next time they load.
+    // Anything bigger (like Si Wei's $700,000) is not a plain player.
     function isPlayer(d) {
-      return d.get('role', 'player') == 'player' && d.get('moneyBase', '0') == '0' && d.get('coinsBase', '0') == '0'
-          && d.get('pointsBase', '0') == '0' && d.get('playedBase', '0') == '0'
+      return d.get('role', 'player') == 'player'
+          && (d.get('moneyBase', '0') == '0' || d.get('moneyBase', '0') == '10')
+          && (d.get('coinsBase', '0') == '0' || d.get('coinsBase', '0') == '10')
+          && (d.get('pointsBase', '0') == '0' || d.get('pointsBase', '0') == '10')
+          && d.get('playedBase', '0') == '0'
           && d.get('winsBase', '0') == '0' && d.get('winChance', '0') == '0';
     }
 

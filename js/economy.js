@@ -5,18 +5,20 @@ export const DIFF_MULT = { rookie: 1, pro: 1.5, legend: 2 };
 export const MAX_POINTS_PER_MATCH = 600;   // keep in sync with firestore.rules (limit 1000)
 export const MAX_COINS_PER_MATCH = 250;    // keep in sync with firestore.rules (limit 500)
 
-// Superpowers: coins are for superpowers. Spend coins before a match to get
-// a power for that match. Every power costs a different number of coins.
+// Superpowers: dollars AND coins buy a power for a match, like a real
+// game. Every power has its own dollar price and its own coin price, and
+// the two are the same number (1 coin = $1 in this game). Spend both
+// before a match to get a power for that match.
 // Shield = lose but still earn the draw reward. Speed = move 50% faster.
 // Power = shots and hits 50% stronger. Double Points = earn double points.
 // Double Coins = earn double coins.
 export const SUPERPOWERS = [
-  { id: 'none',   name: 'None',          icon: '🚫', cost: 0,   desc: 'No superpower.' },
-  { id: 'shield', name: 'Shield',        icon: '🛡️', cost: 25,  desc: 'Lose a match but still earn the draw reward.' },
-  { id: 'speed',  name: 'Speed',         icon: '⚡', cost: 50,  desc: 'Run and move 50% faster.' },
-  { id: 'power',  name: 'Power',         icon: '💪', cost: 75,  desc: 'Shots and hits 50% stronger.' },
-  { id: 'double', name: 'Double Points', icon: '⭐', cost: 100, desc: 'Earn double points this match.' },
-  { id: 'lucky',  name: 'Double Coins',  icon: '🍀', cost: 150, desc: 'Earn double coins this match.' },
+  { id: 'none',   name: 'None',          icon: '🚫', cost: 0,   dollars: 0,   desc: 'No superpower.' },
+  { id: 'shield', name: 'Shield',        icon: '🛡️', cost: 25,  dollars: 25,  desc: 'Lose a match but still earn the draw reward.' },
+  { id: 'speed',  name: 'Speed',         icon: '⚡', cost: 50,  dollars: 50,  desc: 'Run and move 50% faster.' },
+  { id: 'power',  name: 'Power',         icon: '💪', cost: 75,  dollars: 75,  desc: 'Shots and hits 50% stronger.' },
+  { id: 'double', name: 'Double Points', icon: '⭐', cost: 100, dollars: 100, desc: 'Earn double points this match.' },
+  { id: 'lucky',  name: 'Double Coins',  icon: '🍀', cost: 150, dollars: 150, desc: 'Earn double coins this match.' },
 ];
 
 export const BADGES = [
@@ -177,10 +179,14 @@ export function normalizeProfile(p) {
   // written down. The owner amounts come from OWNER_STATS in the code,
   // by the name "trevor" alone - the same way Si Wei's amounts come from
   // SIWEI_STATS by his name, so no document can ever hand them out.
-  // Everyone else starts from the beginning, like real games: any bonus
-  // numbers in a roles document for another role are ignored here, and the
-  // role itself becomes a plain player. Every owner bonus is zeroed for
-  // plain players, including level, owned items and per-game wins.
+  // Everyone else starts from the beginning, like real games — but not
+  // at zero: every new player starts with 10 points, $10 and 10 coins,
+  // so they have something to get going with. Everything else is still
+  // zero at the start: no badges, no trophies, no wins, no games played,
+  // no items, Lv 1. Any bonus numbers in a roles document for another
+  // role are ignored here, and the role itself becomes a plain player.
+  // Every owner bonus is zeroed for plain players, including level,
+  // owned items and per-game wins.
   // The one exception is Uncle Si Wei (named "Si Wei", or role "siwei" in
   // roles/{uid}): he is not the owner, but he starts with $700,000 and
   // 10,000 coins. Nothing else is special for him - no points, level,
@@ -190,7 +196,7 @@ export function normalizeProfile(p) {
   // even when no roles document exists for him yet.
   if (isOwnerName(p.name)) p = { ...p, ...OWNER_STATS, role: 'owner' };
   else if (p.role === 'siwei' || isSiweiName(p.name)) p = { ...p, ...SIWEI_STATS, role: 'siwei' };
-  else p = { ...p, moneyBase: '0', coinsBase: '0', pointsBase: '0', playedBase: '0', winsBase: '0', winChance: '0', ownedBase: '0', levelBase: 0, gamesBase: {}, role: 'player' };
+  else p = { ...p, moneyBase: '10', coinsBase: '10', pointsBase: '10', playedBase: '0', winsBase: '0', winChance: '0', ownedBase: '0', levelBase: 0, gamesBase: {}, role: 'player' };
   // A plain player cannot keep things bought with money they never earned.
   // Lifetime spending (money + coins at $1 each) can never pass lifetime
   // earnings; when it does, the items came from an old owner-era save, so

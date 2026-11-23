@@ -3,7 +3,7 @@
 // The 8% sales tax on every purchase goes to Trevor, the boss.
 import { drawHuman, shade, rrect, SKINS, HAIRS, HAIR_STYLES, SHIRTS } from '../art.js';
 import { drawBanner } from '../fx.js';
-import { payPlan as planFor, coinsOf, moneyCentsOf, formatShort, SUPERPOWERS } from '../economy.js';
+import { payPlan as planFor, coinsOf, moneyOf, moneyCentsOf, formatShort, SUPERPOWERS } from '../economy.js';
 
 import { SHOP_COUNT, SECTIONS, shopInfo, shopItems, withTax, fmtCents, TAX_RATE } from './shops.js';
 
@@ -581,13 +581,13 @@ function create(env) {
   };
   // Shop search: tap the letters and every shop with those letters shows up.
   const openSearch = () => { S.mode = 'search'; S.searchQ = ''; S.searchList = []; S.searchCount = 0; S.searchQPrev = null; audio.play('select'); };
-  // Superpower search: a list of superpowers, each with its own coin price.
-  // Tap one to buy it with coins — it is held for your next match.
+  // Superpower search: a list of superpowers, each with its own dollar price
+  // and coin price. Tap one to buy it with dollars and coins — it is held for your next match.
   const openPowers = () => { S.mode = 'powers'; S.powerSel = 0; S.powerMsg = ''; S.powerMsgT = 0; audio.play('select'); };
   async function buyPower(power) {
     if (S.busy) return;
     const coins = Number(coinsOf(prof()));
-    if (power.cost > coins) { S.error = 'Not enough coins for this superpower.'; S.errorT = 0; audio.play('fault'); return; }
+    if (power.cost > coins || BigInt(power.dollars || 0) * 100n > moneyCentsOf(prof())) { S.error = 'Not enough money or coins for this superpower.'; S.errorT = 0; audio.play('fault'); return; }
     S.busy = true;
     try {
       await shop.buyPower(power);
@@ -596,7 +596,7 @@ function create(env) {
       audio.play('coin'); fx.confetti(640, 360, 40);
     } catch (e) {
       console.error(e);
-      S.error = e.code === 'not-enough' ? 'Not enough coins for this superpower.' : 'Could not buy the superpower.';
+      S.error = e.code === 'not-enough' ? 'Not enough money or coins for this superpower.' : 'Could not buy the superpower.';
       S.errorT = 0;
       audio.play('fault');
     }
@@ -945,24 +945,25 @@ function create(env) {
   }
 
   // Superpower search: "Superpowers" at the top, every superpower with its
-  // own coin price. Tap one to buy it with coins — it is held for the next match.
+  // own dollar price and coin price. Tap one to buy it with dollars and coins — it is held for the next match.
   function drawPowers(ctx) {
     const X = 190, Y = 30, W = 900, H = 660;
     const powers = SUPERPOWERS.filter(p => p.id !== 'none');
     const held = shop.powerHeld ? shop.powerHeld() : '';
     const coins = Number(coinsOf(prof()));
+    const dollars = Number(moneyOf(prof()));
     panel(ctx, X, Y, W, H, '⚡ Superpowers', '#f59e0b');
     closeButton(ctx, X + W - 52, Y + 13, () => { S.mode = 'walk'; audio.play('back'); });
-    // your coins
+    // your dollars and coins
     ctx.textAlign = 'center'; ctx.fillStyle = '#fde68a'; ctx.font = '900 22px Nunito';
-    ctx.fillText(`You have ${formatShort(coins)} 🪙`, X + W / 2, Y + 78);
+    ctx.fillText(`You have $${formatShort(dollars)} · ${formatShort(coins)} 🪙`, X + W / 2, Y + 78);
     ctx.fillStyle = '#cbd5e1'; ctx.font = '800 15px Nunito';
-    ctx.fillText('Tap a superpower to buy it with coins. It is ready for your next match.', X + W / 2, Y + 108);
-    // one row per superpower: icon, name, what it does, and its own coin price
+    ctx.fillText('Tap a superpower to buy it with dollars and coins. It is ready for your next match.', X + W / 2, Y + 108);
+    // one row per superpower: icon, name, what it does, and its dollar price and coin price
     powers.forEach((p, k) => {
       const x = X + 30, y = Y + 140 + k * 84, w = W - 60;
       const isHeld = p.id === held;
-      const afford = p.cost <= coins || isHeld;
+      const afford = (p.cost <= coins && p.dollars <= dollars) || isHeld;
       ctx.fillStyle = isHeld ? '#78350f' : '#1e293b'; rrect(ctx, x, y, w, 76, 12); ctx.fill();
       if (isHeld) { ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 3; rrect(ctx, x, y, w, 76, 12); ctx.stroke(); }
       ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = '900 26px Nunito';
@@ -971,7 +972,7 @@ function create(env) {
       ctx.fillText(p.desc, x + 16, y + 56);
       ctx.textAlign = 'right';
       if (isHeld) { ctx.fillStyle = '#fbbf24'; ctx.font = '900 20px Nunito'; ctx.fillText('✓ READY', x + w - 16, y + 40); }
-      else { ctx.fillStyle = afford ? '#fde68a' : '#64748b'; ctx.font = '900 22px Nunito'; ctx.fillText(`${p.cost} 🪙`, x + w - 16, y + 40); }
+      else { ctx.fillStyle = afford ? '#fde68a' : '#64748b'; ctx.font = '900 22px Nunito'; ctx.fillText(`$${p.dollars} + ${p.cost} 🪙`, x + w - 16, y + 40); }
       if (!isHeld) hit(x, y, w, 76, () => buyPower(p));
     });
     // bought it just now

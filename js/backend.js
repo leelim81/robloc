@@ -1,7 +1,7 @@
 // Persistence layer. Uses Firebase (Google sign-in + Firestore) when configured,
 // otherwise falls back to a local demo mode backed by localStorage.
 import { firebaseConfig } from './firebase-config.js';
-import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwnerName, isSiweiName, gameStats, SIWEI_STATS, coinsOf } from './economy.js';
+import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwnerName, isSiweiName, gameStats, SIWEI_STATS, coinsOf, moneyCentsOf } from './economy.js';
 
 const OWNER_NAME_SPELLINGS = ['trevor', 'Trevor', 'TREVOR', 'trevor ', 'Trevor '];
 // Spellings of Si Wei's name, so only the first account with that name can use it.
@@ -36,10 +36,11 @@ function roleValue(v) {
   const s = String(v ?? '0').replace(/[,\s$]/g, '');
   return /^\d+$/.test(s) ? s : '0';
 }
-const PLAYER_ROLE = { role: 'player', moneyBase: '0', coinsBase: '0', pointsBase: '0', playedBase: '0', winsBase: '0', winChance: '0' };
-// Everything a plain player starts with: all numbers zero, no badges, no
-// items. Used by "Start over" in Settings. The role fields are plain-player
-// values, so writing them is always allowed by the rules.
+const PLAYER_ROLE = { role: 'player', moneyBase: '10', coinsBase: '10', pointsBase: '10', playedBase: '0', winsBase: '0', winChance: '0' };
+// Everything a plain player starts with: 10 points, $10 and 10 coins to
+// get going with, and nothing else — no badges, no items. Used by
+// "Start over" in Settings. The role fields are plain-player values, so
+// writing them is always allowed by the rules.
 const ZERO_PROFILE = {
   ...PLAYER_ROLE,
   levelBase: 0, ownedBase: '0', gamesBase: {},
@@ -102,12 +103,14 @@ class FirebaseBackend {
   // only his starting money and coins (the amounts in the code, so an old
   // roles document can never under-pay him), whether his role comes from
   // the roles document or from his name - so he gets the balance even when
-  // no roles document exists for him yet. Everyone else starts from zero.
+  // no roles document exists for him yet. He gets ALL of SIWEI_STATS, so
+  // his points stay 0 even though a plain player now starts with 10.
+  // Everyone else starts with 10 points, $10 and 10 coins.
   // p is the player's own profile, already normalized, so its role already
   // reflects the name.
   bonusesFor(r, p) {
     if (r.role === 'owner' && isOwnerName(p?.name)) return r;
-    if (r.role === 'siwei' || p?.role === 'siwei') return { ...PLAYER_ROLE, role: 'siwei', moneyBase: SIWEI_STATS.moneyBase, coinsBase: SIWEI_STATS.coinsBase };
+    if (r.role === 'siwei' || p?.role === 'siwei') return { ...PLAYER_ROLE, ...SIWEI_STATS, role: 'siwei' };
     return { ...PLAYER_ROLE };
   }
 
@@ -208,16 +211,21 @@ class FirebaseBackend {
     }));
   }
 
-  // Spend coins on a superpower. Throws { code: 'not-enough' } when the
-  // player cannot afford it.
-  async spendCoins(amount) {
+  // Spend dollars AND coins on a superpower, like a real game. Throws
+  // { code: 'not-enough' } when the player cannot afford either price.
+  async spendPower(power) {
     const { runTransaction, serverTimestamp } = this.F;
     return this.withRepair(() => runTransaction(this.db, async tx => {
       const snap = await tx.get(this.userRef());
       if (!snap.exists()) throw new Error('Profile missing');
       const p = normalizeProfile(snap.data());
-      if (coinsOf(p) < BigInt(amount)) { const e = new Error('Not enough coins'); e.code = 'not-enough'; throw e; }
-      const next = { coinsSpent: (p.coinsSpent || 0) + amount, lastAward: serverTimestamp() };
+      const dollarsCents = BigInt(power.dollars || 0) * 100n;
+      if (moneyCentsOf(p) < dollarsCents || coinsOf(p) < BigInt(power.cost)) { const e = new Error('Not enough money or coins'); e.code = 'not-enough'; throw e; }
+      const next = {
+        moneySpentCents: String(BigInt(p.moneySpentCents || '0') + dollarsCents),
+        coinsSpent: (p.coinsSpent || 0) + power.cost,
+        lastAward: serverTimestamp(),
+      };
       tx.update(this.userRef(), next);
       return { profile: mergeLocal(this.user.uid, { ...p, ...next }) };
     }));
@@ -377,12 +385,17 @@ class DemoBackend {
     this.write(profile);
     return { profile, reward, newBadges };
   }
-  // Spend coins on a superpower. Throws { code: 'not-enough' } when the
-  // player cannot afford it.
-  async spendCoins(amount) {
+  // Spend dollars AND coins on a superpower, like a real game. Throws
+  // { code: 'not-enough' } when the player cannot afford either price.
+  async spendPower(power) {
     const p = normalizeProfile(this.read());
-    if (coinsOf(p) < BigInt(amount)) { const e = new Error('Not enough coins'); e.code = 'not-enough'; throw e; }
-    const profile = { ...p, coinsSpent: (p.coinsSpent || 0) + amount };
+    const dollarsCents = BigInt(power.dollars || 0) * 100n;
+    if (moneyCentsOf(p) < dollarsCents || coinsOf(p) < BigInt(power.cost)) { const e = new Error('Not enough money or coins'); e.code = 'not-enough'; throw e; }
+    const profile = {
+      ...p,
+      moneySpentCents: String(BigInt(p.moneySpentCents || '0') + dollarsCents),
+      coinsSpent: (p.coinsSpent || 0) + power.cost,
+    };
     this.write(profile);
     return { profile };
   }

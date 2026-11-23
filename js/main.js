@@ -519,9 +519,9 @@ const host = {
         return res;
       },
       bossTotal: () => backend.bossTotal(),
-      // Superpowers: buy one with coins in the mall search, hold it for the next match.
+      // Superpowers: buy one with dollars AND coins in the mall search, hold it for the next match.
       buyPower: async power => {
-        const res = await backend.spendCoins(power.cost);
+        const res = await backend.spendPower(power);
         state.profile = normalizeProfile(res.profile);
         setPowerHeld(power.id);
         return res;
@@ -626,15 +626,16 @@ function openPregame(g) {
   $('#diff-seg').parentElement.classList.toggle('hidden', !!g.noDifficulty);
   $('#btn-play').textContent = g.playLabel || 'PLAY';
   $$('#diff-seg button').forEach(b => b.classList.toggle('active', b.dataset.v === (host.lastDiff || 'rookie')));
-  // Superpowers: coins buy a power for this match. Hidden for the mall.
+  // Superpowers: dollars AND coins buy a power for this match, like a real game. Hidden for the mall.
   const powerBlock = $('#power-block'), powerSeg = $('#power-seg');
   powerBlock.classList.toggle('hidden', !!g.noDifficulty);
   if (!g.noDifficulty) {
     const coins = Number(coinsOf(state.profile || {}));
+    const dollars = Number(moneyOf(state.profile || {}));
     const held = getPowerHeld();
-    $('#power-coins').textContent = `· you have ${formatShort(coins)} 🪙`;
+    $('#power-coins').textContent = `· you have $${formatShort(dollars)} · ${formatShort(coins)} 🪙`;
     powerSeg.innerHTML = SUPERPOWERS.map(p =>
-      `<button data-v="${p.id}" class="${p.id === (held || 'none') ? 'active' : ''}" ${p.cost > coins && p.id !== held ? 'disabled' : ''}>${p.icon} ${p.name}<small>${p.id === held ? 'ready!' : p.cost === 0 ? 'free' : p.cost + ' coins'}</small></button>`).join('');
+      `<button data-v="${p.id}" class="${p.id === (held || 'none') ? 'active' : ''}" ${(p.cost > coins || p.dollars > dollars) && p.id !== held ? 'disabled' : ''}>${p.icon} ${p.name}<small>${p.id === held ? 'ready!' : p.cost === 0 ? 'free' : '$' + p.dollars + ' + ' + p.cost + ' coins'}</small></button>`).join('');
     const showDesc = id => { const p = SUPERPOWERS.find(x => x.id === id); $('#power-desc').textContent = (p?.desc || '') + (id === held && held ? ' Ready — already paid!' : ''); };
     showDesc(held || 'none');
     powerSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
@@ -657,7 +658,7 @@ $('#btn-play').addEventListener('click', async () => {
   const opts = { difficulty: $('#diff-seg .active').dataset.v };
   host.lastDiff = opts.difficulty;
   $$('#extra-opt .seg').forEach(seg => opts[seg.dataset.opt] = seg.querySelector('.active').dataset.v);
-  // Superpower: spend the coins now, so the power is paid for even if the
+  // Superpower: spend the dollars AND coins now, so the power is paid for even if the
   // player quits the match early. A power bought in the mall search is
   // already paid for — use it without charging again.
   const powerBtn = $('#power-seg .active');
@@ -670,11 +671,11 @@ $('#btn-play').addEventListener('click', async () => {
         clearPowerHeld();
       } else {
         try {
-          const res = await backend.spendCoins(sp.cost);
+          const res = await backend.spendPower(sp);
           state.profile = normalizeProfile(res.profile);
           opts.power = power;
         } catch (e) {
-          toast(e.code === 'not-enough' ? 'Not enough coins for that superpower!' : 'Could not buy the superpower.');
+          toast(e.code === 'not-enough' ? 'Not enough money or coins for that superpower!' : 'Could not buy the superpower.');
           return;
         }
       }
