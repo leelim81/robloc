@@ -37,7 +37,7 @@ export function drawShadow(ctx, x, y, rx, ry, alpha = 0.35) {
 
 /**
  * o: { view: 'front'|'back'|'side', flip, phase, moving, skin, hair, style, shirt, shorts, socks, shoes,
- *      number, pose: 'run'|'kick'|'swing'|'celebrate'|'dive'|'ready'|'swim', poseT, paddle, gloves, alpha, shadow }
+ *      number, pose: 'run'|'kick'|'swing'|'celebrate'|'dive'|'ready'|'swim'|'lie', poseT, paddle, gloves, alpha, shadow }
  */
 export function drawHuman(ctx, x, y, s, o) {
   const view = o.view || 'front';
@@ -58,6 +58,12 @@ export function drawHuman(ctx, x, y, s, o) {
   }
   if (pose === 'swim') {
     // Front crawl: body flat in the water, head up at the front (leading).
+    ctx.translate(0, -30);
+    ctx.rotate(1.35);
+    ctx.translate(0, 30);
+  }
+  if (pose === 'lie') {
+    // Lying flat on your back (sunbathing): body flat, arms and legs relaxed.
     ctx.translate(0, -30);
     ctx.rotate(1.35);
     ctx.translate(0, 30);
@@ -98,6 +104,7 @@ export function drawHuman(ctx, x, y, s, o) {
     if (pose === 'kick') { const k = Math.sin(Math.min(1, pt) * Math.PI); a1 = -0.4 + 1.9 * k - 0.5 * (1 - pt); b1 = 0.9 * (1 - k); a2 = -0.25; b2 = 0.1; }
     if (pose === 'dive') { a1 = 0.5; a2 = 0.2; b1 = 0.4; b2 = 0.6; }
     if (pose === 'swim') { a1 = 0.25 + Math.sin(ph * 2) * 0.3; a2 = 0.25 - Math.sin(ph * 2) * 0.3; b1 = 0.25; b2 = 0.25; }
+    if (pose === 'lie') { a1 = 0.12; a2 = 0.12; b1 = 0.08; b2 = 0.08; }
     if (pose === 'ready') { a1 = 0.25; a2 = -0.25; b1 = 0.35; b2 = 0.35; }
     drawLegSide(a2, b2, false);
     drawLegSide(a1, b1, true);
@@ -151,6 +158,7 @@ export function drawHuman(ctx, x, y, s, o) {
   if (pose === 'celebrate') { aL = Math.PI - 0.5 + Math.sin(ph * 3) * 0.15; aR = Math.PI + 0.5 - Math.sin(ph * 3) * 0.15; }
   if (pose === 'dive') { aL = Math.PI - 0.15; aR = Math.PI + 0.15; }
   if (pose === 'swim') { aL = 0.6 + Math.sin(ph) * 1.1; aR = 0.6 - Math.sin(ph) * 1.1; }
+  if (pose === 'lie') { aL = 0.35; aR = 0.35; }
   if (pose === 'kick') { aL = -0.9; aR = 0.9; }
   const hasPaddle = !!o.paddle;
   const swingT = Math.min(1, pt), sw = o.swingDir || 1;

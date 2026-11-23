@@ -502,10 +502,41 @@ function create(env) {
     return { px, pw: ROOF_FEAT_W, top: FLOOR + 25, bot: FLOOR + 135 };
   };
   const poolKs = () => { const ks = []; for (let k = 0; k < ROOF_FEATURES.length; k++) if (ROOF_FEATURES[k] === 'pool') ks.push(k); return ks; };
+  // Which outdoor thing is at this x on the Roof (pool, golf, play, garden,
+  // sport, picnic, sun, fountain, skate, gym) — and, for a sports court,
+  // which sport it is (basketball, tennis and football rotate).
+  const SPORT_KINDS = ['BASKETBALL', 'TENNIS', 'FOOTBALL'];
+  const featureAt = x => {
+    if (floor !== ROOF_FLOOR) return null;
+    const k = Math.floor((x - X0 - 50) / ROOF_SLOT);
+    if (k < 0 || k >= ROOF_FEATURES.length) return null;
+    const px = X0 + 50 + k * ROOF_SLOT;
+    if (x < px || x > px + ROOF_FEAT_W) return null;
+    const kind = ROOF_FEATURES[k];
+    let sport = null;
+    if (kind === 'sport') {
+      let count = 0;
+      for (let j = 0; j <= k; j++) if (ROOF_FEATURES[j] === 'sport') count++;
+      sport = SPORT_KINDS[(count - 1) % 3];
+    }
+    return { kind, k, px, pw: ROOF_FEAT_W, sport };
+  };
+  // A good spot to stand to do the activity in this feature.
+  const featureSpot = f => {
+    if (f.kind === 'picnic') return f.px + 295; // by the picnic table
+    if (f.kind === 'sun') return f.px + 70; // on a sun chair
+    if (f.kind === 'gym') return f.px + 110; // under the pull-up bar
+    if (f.kind === 'play') return f.px + 120; // by the swings
+    return f.px + f.pw / 2;
+  };
   const npcs = Array.from({ length: 14 }, () => ({
     x: rand(X0, X0 + 6 * SHOP_W), y: rand(FLOOR + 40, FLOOR + 150), dir: Math.random() < 0.5 ? -1 : 1, speed: rand(50, 110), phase: rand(0, 6),
     look: { skin: SKINS[(Math.random() * SKINS.length) | 0], hair: HAIRS[(Math.random() * 7) | 0], style: HAIR_STYLES[(Math.random() * 5) | 0], shirt: SHIRTS[(Math.random() * SHIRTS.length) | 0] },
     bag: Math.random() < 0.6 ? shopInfo((Math.random() * 60) | 0).color : null, pause: 0,
+    // On the Roof, act is the outdoor activity this person is doing
+    // (golf, play, garden, sport, picnic, sun, fountain, skate, gym);
+    // actT is how long they keep doing it. Pools use swim instead.
+    act: null, actT: 0, sport: null,
   }));
   const S = { t: 0, mode: 'walk', shop: -1, sel: 0, navT: 0, navHeld: 0, lastNav: '', busy: false, receipt: null, receiptT: 0, error: null, mapSel: 0, labelKey: '', intro: 0, searchQ: '', searchList: [], searchCount: 0, searchQPrev: null, keysDown: null, powerSel: 0, powerMsg: '', powerMsgT: 0 };
   let camX = 0;
@@ -549,16 +580,39 @@ function create(env) {
   function ride(f) {
     floor = f; me.x = X0 - 40; me.vx = 0; camX = 0; S.mode = 'walk'; S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined;
     if (f === ROOF_FLOOR) {
-      // On the Roof, spread people along the whole floor and put some in the
-      // pools so they swim (the rest walk around the other activities).
+      // On the Roof, people do the activities: some swim in the pools,
+      // and one person does each of the other outdoor things (golf,
+      // playground, garden, sport, picnic, sunbathing, fountain, skate,
+      // gym), so every activity has someone doing it when you arrive.
       const pks = poolKs();
+      const kinds = ['golf', 'play', 'garden', 'sport', 'picnic', 'sun', 'fountain', 'skate', 'gym'];
+      const kindKs = {};
+      for (const kd of kinds) {
+        const ks = [];
+        for (let k = 0; k < ROOF_FEATURES.length; k++) if (ROOF_FEATURES[k] === kd) ks.push(k);
+        kindKs[kd] = ks;
+      }
       npcs.forEach((n, i) => {
-        if (i < 7 && pks.length) {
+        n.act = null; n.actT = 0; n.sport = null;
+        if (i < 5 && pks.length) {
           const k = pks[(Math.random() * pks.length) | 0], px = X0 + 50 + k * ROOF_SLOT;
           n.x = rand(px + 60, px + ROOF_FEAT_W - 60);
-        } else n.x = rand(X0, X0 + ROOF_W);
+        } else {
+          const kd = kinds[(i - 5) % kinds.length], ks = kindKs[kd];
+          const k = ks[(Math.random() * ks.length) | 0], px = X0 + 50 + k * ROOF_SLOT;
+          const f = { kind: kd, k, px, pw: ROOF_FEAT_W, sport: null };
+          if (kd === 'sport') {
+            let count = 0;
+            for (let j = 0; j <= k; j++) if (ROOF_FEATURES[j] === 'sport') count++;
+            f.sport = SPORT_KINDS[(count - 1) % 3];
+          }
+          n.x = featureSpot(f);
+          n.act = kd; n.actT = rand(15, 25); n.sport = f.sport;
+          if (kd === 'skate') { n.actPx = f.px; n.actPw = f.pw; }
+          if (kd === 'sun') n.y = FLOOR + 120; // lying on a sun chair
+        }
       });
-    } else for (const n of npcs) n.x = rand(X0, X0 + 5 * SHOP_W);
+    } else for (const n of npcs) { n.x = rand(X0, X0 + 5 * SHOP_W); n.act = null; n.actT = 0; n.sport = null; }
     S.floorBanner = 0; audio.play('go'); fx.dust(640, FLOOR + 70, 8);
   }
 
@@ -637,9 +691,33 @@ function create(env) {
     }
     // shoppers
     for (const n of npcs) {
-      if (n.pause > 0) { n.pause -= dt; continue; }
-      // In a pool, people swim (slower, doing laps); outside a pool they walk.
+      // On the Roof, a person doing an activity keeps doing it (and keeps
+      // animating) even through a pause; the pause only stops them walking.
+      const doing = floor === ROOF_FLOOR && !!n.act;
+      if (n.pause > 0) {
+        n.pause -= dt;
+        if (doing) { n.phase += dt * 2.2; n.actT -= dt; if (n.actT <= 0) n.act = null; }
+        continue;
+      }
       const pool = poolAt(n.x);
+      if (doing && n.act !== 'skate') {
+        // Doing an activity: stay put and do it until the time runs out.
+        n.phase += dt * 2.2;
+        n.actT -= dt; n.swim = false;
+        if (n.actT <= 0) n.act = null;
+        continue;
+      }
+      if (doing && n.act === 'skate') {
+        // Skateboard: ride back and forth inside the skate park.
+        n.phase += dt * 2.2;
+        n.actT -= dt; n.swim = false;
+        const ssp = n.speed * 1.4;
+        n.x += n.dir * ssp * dt;
+        if (n.x < (n.actPx || 0) + 40 || n.x > (n.actPx || 0) + (n.actPw || ROOF_FEAT_W) - 40) n.dir *= -1;
+        if (n.actT <= 0) n.act = null;
+        continue;
+      }
+      // In a pool, people swim (slower, doing laps); outside a pool they walk.
       const sp = pool ? n.speed * 0.45 : n.speed;
       n.x += n.dir * sp * dt; n.phase += sp * dt * 0.06;
       n.swim = !!pool;
@@ -647,8 +725,19 @@ function create(env) {
         // Swimmers turn around at the pool's edges and stay in the water.
         if (n.x < pool.px + 50 || n.x > pool.px + pool.pw - 50) n.dir *= -1;
       } else if (n.x < X0 - 40 || n.x > WW() - X0 + 40) n.dir *= -1;
-      if (Math.abs(n.x - me.x) > 1600) { n.x = me.x + (Math.random() < 0.5 ? -1 : 1) * rand(700, 1400); n.dir = n.x > me.x ? -1 : 1; }
+      if (Math.abs(n.x - me.x) > 1600) { n.x = me.x + (Math.random() < 0.5 ? -1 : 1) * rand(700, 1400); n.dir = n.x > me.x ? -1 : 1; n.act = null; n.actT = 0; }
       if (Math.random() < dt * 0.08) n.pause = rand(1, 3);
+      // On the Roof, when someone walks into an outdoor activity (not a
+      // pool), they stop and do that activity for a while.
+      if (floor === ROOF_FLOOR && !pool && !n.act) {
+        const f = featureAt(n.x);
+        if (f && f.kind !== 'pool' && Math.random() < dt * 1.5) {
+          n.act = f.kind; n.actT = rand(8, 16); n.sport = f.sport;
+          n.x = featureSpot(f);
+          if (f.kind === 'skate') { n.actPx = f.px; n.actPw = f.pw; }
+          if (f.kind === 'sun') n.y = FLOOR + 120; // lying on a sun chair
+        }
+      }
     }
     if (S.mode === 'walk') {
       // In a pool you swim (slower); outside a pool you walk.
@@ -731,8 +820,9 @@ function create(env) {
       for (let li = first; li <= last; li++) { const i = from + li; hit(X0 + li * SHOP_W + 12 - camX, 122, SHOP_W - 24, FLOOR - 122, () => { S.walkTo = doorX(i); S.autoShop = i; S.walkPrev = undefined; audio.play('tick'); }); }
       hit(ELEV_X - 115 - camX, 130, 230, FLOOR - 130, () => { S.walkTo = ELEV_X; S.autoShop = 'elevator'; S.walkPrev = undefined; audio.play('tick'); });
     }
-    // people, back to front
-    const people = npcs.map(n => ({ y: n.y, d: () => drawPerson(ctx, n.x - camX, n.y, n.look, n.phase, n.pause > 0 ? 0 : 1, n.dir < 0, n.bag, n.swim) }));
+    // people, back to front (no shopping bags on the Roof — up here
+    // everyone is here for the outdoor activities, not for shopping)
+    const people = npcs.map(n => ({ y: n.y, d: () => drawPerson(ctx, n.x - camX, n.y, n.look, n.phase, n.pause > 0 ? 0 : 1, n.dir < 0, floor === ROOF_FLOOR ? null : n.bag, n.swim, n.act, n.sport) }));
     people.push({ y: me.y, d: () => {
       drawPerson(ctx, me.x - camX, me.y, { skin: av.skin, hair: av.hair, style: av.style, shirt: av.shirt || '#2563eb' }, me.phase, Math.min(1, Math.abs(me.vx) / 200), me.flip, null, me.swim);
       ctx.strokeStyle = 'rgba(34,211,238,.85)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(me.x - camX, (me.swim ? FLOOR + 62 : me.y) + 2, 40, 12, 0, 0, Math.PI * 2); ctx.stroke();
@@ -764,7 +854,7 @@ function create(env) {
     button(ctx, 178, 68, 210, 44, '⚡ SUPERPOWERS', '#f59e0b', openPowers);
   }
 
-  function drawPerson(ctx, x, y, look, phase, moving, flip, bag, swim) {
+  function drawPerson(ctx, x, y, look, phase, moving, flip, bag, swim, act, sport) {
     if (swim) {
       // Swimming: flat in the water just below the surface, head up, no bag.
       const wy = FLOOR + 60;
@@ -777,6 +867,101 @@ function create(env) {
       return;
     }
     const s = 1.15 + (y - FLOOR) / 160 * 0.3;
+    const dir = flip ? -1 : 1;
+    // Doing an outdoor activity on the Roof: the pose and prop show it.
+    if (act) {
+      const cyc = (Math.sin(phase * 1.1) + 1) / 2; // smooth 0..1..0 swing cycle
+      if (act === 'sun') {
+        // Sunbathing: lying flat on a sun chair, arms relaxed.
+        drawHuman(ctx, x, y, s, { view: 'side', flip, phase, moving: 0, pose: 'lie', shadow: false, ...look, shorts: '#1e293b' });
+        return;
+      }
+      if (act === 'skate') {
+        // Skateboarding: riding along on a board.
+        drawHuman(ctx, x, y, s, { view: 'side', flip, phase, moving: 1, pose: 'run', ...look, shorts: '#1e293b' });
+        ctx.fillStyle = '#334155'; rrect(ctx, x - 22 * s, y - 4 * s, 44 * s, 7 * s, 3.5); ctx.fill();
+        ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(x - 14 * s, y + 2 * s, 3.5, 0, Math.PI * 2); ctx.arc(x + 14 * s, y + 2 * s, 3.5, 0, Math.PI * 2); ctx.fill();
+        return;
+      }
+      if (act === 'golf') {
+        // Golf: swinging a club at a ball on the green.
+        drawHuman(ctx, x, y, s, { view: 'side', flip, phase, moving: 0, pose: 'swing', poseT: cyc, ...look, shorts: '#1e293b' });
+        const hx = x + dir * 18 * s, hy = y - 72 * s; // hands
+        const ang = -0.5 + cyc * 1.6; // the club swings back and through
+        const bx = x + dir * 42 * s, by = y - 6 * s; // the ball on the ground
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(bx, by, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#92400e'; ctx.lineWidth = 4 * s; ctx.beginPath();
+        ctx.moveTo(hx, hy);
+        ctx.lineTo(hx + Math.sin(ang) * 55 * s * dir, hy + Math.cos(ang) * 55 * s);
+        ctx.stroke();
+        return;
+      }
+      if (act === 'sport') {
+        if (sport === 'FOOTBALL') {
+          // Football: kicking the ball.
+          drawHuman(ctx, x, y, s, { view: 'side', flip, phase, moving: 0, pose: 'kick', poseT: cyc, ...look, shorts: '#1e293b' });
+          const bx = x + dir * (30 + cyc * 26) * s, by = y - 12 * s;
+          ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(bx, by, 11, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(bx, by, 4, 0, Math.PI * 2); ctx.fill();
+          return;
+        }
+        if (sport === 'TENNIS') {
+          // Tennis: hitting with a racket.
+          drawHuman(ctx, x, y, s, { view: 'side', flip, phase, moving: 0, pose: 'swing', poseT: cyc, paddle: true, paddleColor: '#facc15', ...look, shorts: '#1e293b' });
+          const bx = x + dir * (34 + cyc * 30) * s, by = y - (60 + Math.sin(cyc * Math.PI) * 26) * s;
+          ctx.fillStyle = '#d9f99d'; ctx.beginPath(); ctx.arc(bx, by, 8, 0, Math.PI * 2); ctx.fill();
+          return;
+        }
+        // Basketball: shooting a hoop.
+        drawHuman(ctx, x, y, s, { view: 'side', flip, phase, moving: 0, pose: 'swing', poseT: cyc, ...look, shorts: '#1e293b' });
+        const bx = x + dir * 26 * s, by = y - (70 + Math.sin(cyc * Math.PI) * 46) * s;
+        ctx.fillStyle = '#f97316'; ctx.beginPath(); ctx.arc(bx, by, 11, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(bx, by, 11, 0, Math.PI * 2); ctx.stroke();
+        return;
+      }
+      if (act === 'garden') {
+        // Gardening: watering the flowers.
+        drawHuman(ctx, x, y, s, { view: 'side', flip, phase, moving: 0, pose: 'ready', ...look, shorts: '#1e293b' });
+        const cx = x + dir * 26 * s, cy = y - 52 * s; // the watering can
+        ctx.fillStyle = '#38bdf8'; rrect(ctx, cx - 12 * s, cy - 8 * s, 24 * s, 16 * s, 4); ctx.fill();
+        ctx.strokeStyle = '#0284c7'; ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.moveTo(cx + dir * 12 * s, cy); ctx.lineTo(cx + dir * 26 * s, cy + 10 * s); ctx.stroke();
+        ctx.fillStyle = 'rgba(56,189,248,.9)'; // water drops falling on the flowers
+        for (let d = 0; d < 3; d++) {
+          const dx = cx + dir * (30 + d * 8) * s, dy = y - 34 * s + ((d * 13 + phase * 30) % 26) * s;
+          ctx.beginPath(); ctx.arc(dx, dy, 3, 0, Math.PI * 2); ctx.fill();
+        }
+        return;
+      }
+      if (act === 'picnic') {
+        // Picnic: eating at the picnic table.
+        drawHuman(ctx, x, y, s, { view: 'side', flip, phase, moving: 0, pose: 'ready', ...look, shorts: '#1e293b' });
+        const fx = x + dir * 20 * s, fy = y - 62 * s; // an apple in hand
+        ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(fx, fy, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#16a34a'; ctx.beginPath(); ctx.ellipse(fx + 3, fy - 8, 4, 2.5, 0.6, 0, Math.PI * 2); ctx.fill();
+        return;
+      }
+      if (act === 'fountain') {
+        // Playing in the fountain: arms up, splashing.
+        drawHuman(ctx, x, y, s, { view: 'side', flip, phase, moving: 0, pose: 'celebrate', ...look, shorts: '#1e293b' });
+        ctx.strokeStyle = 'rgba(186,230,253,.95)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        for (let d = 0; d < 3; d++) {
+          const dx = x + (d - 1) * 26 * s, dy = y - 30 * s - Math.abs(Math.sin(phase + d * 2)) * 22 * s;
+          ctx.beginPath(); ctx.arc(dx, dy, 6, Math.PI, 0); ctx.stroke();
+        }
+        return;
+      }
+      if (act === 'play') {
+        // Playground: jumping and playing, arms up.
+        drawHuman(ctx, x, y, s, { view: 'side', flip, phase, moving: 0, pose: 'celebrate', ...look, shorts: '#1e293b' });
+        return;
+      }
+      if (act === 'gym') {
+        // Outdoor gym: exercising, arms up (pull-ups / stretches).
+        drawHuman(ctx, x, y, s, { view: 'side', flip, phase, moving: 0, pose: 'celebrate', ...look, shorts: '#1e293b' });
+        return;
+      }
+    }
+    // Walking (or standing): the normal run pose, plus their shopping bag.
     drawHuman(ctx, x, y, s, { view: 'side', flip, phase, moving, pose: 'run', ...look, shorts: '#1e293b' });
     if (bag) {
       const bx = x + (flip ? -14 : 14) * s, by = y - 46 * s;
