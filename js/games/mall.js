@@ -241,9 +241,9 @@ function create(env) {
     const li = Math.floor((me.x - X0) / SHOP_W), n = SECTIONS[floor].to - SECTIONS[floor].from, i = SECTIONS[floor].from + li;
     return li >= 0 && li < n && Math.abs(me.x - doorX(i)) < SHOP_W / 2 - 12 ? i : -1;
   }
-  function openElevator() { S.mode = 'elevator'; S.walkTo = null; S.autoShop = -1; S.liftSel = floor; audio.play('select'); }
+  function openElevator() { S.mode = 'elevator'; S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined; me.vx = 0; S.liftSel = floor; audio.play('select'); }
   function ride(f) {
-    floor = f; me.x = X0 - 40; me.vx = 0; camX = 0; S.mode = 'walk';
+    floor = f; me.x = X0 - 40; me.vx = 0; camX = 0; S.mode = 'walk'; S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined;
     for (const n of npcs) n.x = rand(X0, X0 + 5 * SHOP_W);
     S.floorBanner = 0; audio.play('go'); fx.dust(640, FLOOR + 70, 8);
   }
@@ -259,11 +259,11 @@ function create(env) {
       }
     }
   }
-  const enterShop = i => { S.mode = 'shop'; S.shop = i; S.sel = 0; S.top = 0; S.walkTo = null; S.autoShop = -1; audio.play('select'); };
-  const openMap = () => { S.mode = 'map'; S.walkTo = null; S.autoShop = -1; const ns = nearShop(); const sec = SECTIONS[floor]; S.mapSel = Math.max(0, ns >= 0 ? ns : floor === B1_FLOOR ? SHOP_COUNT - 1 : clamp(sec.from + Math.floor((me.x - X0) / SHOP_W), sec.from, sec.to - 1)); audio.play('select'); };
+  const enterShop = i => { S.mode = 'shop'; S.shop = i; S.sel = 0; S.top = 0; S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined; me.vx = 0; audio.play('select'); };
+  const openMap = () => { S.mode = 'map'; S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined; const ns = nearShop(); const sec = SECTIONS[floor]; S.mapSel = Math.max(0, ns >= 0 ? ns : floor === B1_FLOOR ? SHOP_COUNT - 1 : clamp(sec.from + Math.floor((me.x - X0) / SHOP_W), sec.from, sec.to - 1)); audio.play('select'); };
   const goToShop = i => {
     if (floorOf(i) !== floor) { floor = floorOf(i); S.floorBanner = 0; for (const n of npcs) n.x = doorX(i) + rand(-1200, 1200); }
-    me.x = doorX(i); me.y = FLOOR + 70; me.vx = 0; camX = clamp(me.x - 640, 0, WW() - 1280); S.mode = 'walk'; audio.play('whoosh'); fx.dust(640, FLOOR + 70, 8);
+    me.x = doorX(i); me.y = FLOOR + 70; me.vx = 0; camX = clamp(me.x - 640, 0, WW() - 1280); S.mode = 'walk'; S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined; audio.play('whoosh'); fx.dust(640, FLOOR + 70, 8);
   };
   // Shop search: tap the letters and every shop with those letters shows up.
   const openSearch = () => { S.mode = 'search'; S.searchQ = ''; S.searchList = []; S.searchCount = 0; S.searchQPrev = null; audio.play('select'); };
@@ -309,16 +309,19 @@ function create(env) {
     if (S.mode === 'walk') {
       const sp = 430;
       let mx = input.mx;
-      if (mx || input.my) { S.walkTo = null; S.autoShop = -1; }
+      if (mx || input.my) { S.walkTo = null; S.autoShop = -1; S.walkPrev = undefined; }
       else if (S.walkTo !== null && S.walkTo !== undefined) {
-        // walking to where the player tapped; enter the shop if they tapped one
+        // walking to where the player tapped; enter the shop if they tapped one.
+        // Stop dead at the door: zero the speed so he never slides past it,
+        // and count it as arrived if he walked past the door (a slow screen
+        // can jump over the 18px window in one frame).
         const d = S.walkTo - me.x;
-        if (Math.abs(d) < 18) {
-          S.walkTo = null;
+        if (Math.abs(d) < 18 || (S.walkPrev !== undefined && d !== 0 && Math.sign(d) !== Math.sign(S.walkPrev))) {
+          S.walkTo = null; S.walkPrev = undefined; me.vx = 0;
           if (S.autoShop >= 0) { const i = S.autoShop; S.autoShop = -1; enterShop(i); return; }
           if (S.autoShop === 'elevator') { S.autoShop = -1; openElevator(); return; }
         }
-        else mx = clamp(d / 120, -1, 1);
+        else { mx = clamp(d / 120, -1, 1); S.walkPrev = d; }
       }
       me.vx += (mx * sp - me.vx) * Math.min(1, dt * 10);
       me.x = clamp(me.x + me.vx * dt, ELEV_X - 60, WW() - X0 + 120);
@@ -368,11 +371,11 @@ function create(env) {
     drawMall(ctx, view, camX, S.t, ns >= 0 ? ns : S.mode === 'walk' && nearElevator() ? 'elevator' : -1, floor);
     if (S.mode === 'walk') {
       // tap the floor to walk there, or a shop front to walk in
-      hit(-view.ox, -view.oy, view.W, view.H, t => { S.walkTo = clamp(t.x + camX, ELEV_X - 60, WW() - X0 + 120); S.autoShop = -1; });
+      hit(-view.ox, -view.oy, view.W, view.H, t => { S.walkTo = clamp(t.x + camX, ELEV_X - 60, WW() - X0 + 120); S.autoShop = -1; S.walkPrev = undefined; });
       const from = SECTIONS[floor].from, n = SECTIONS[floor].to - from;
       const first = Math.max(0, Math.floor((camX - view.ox - X0) / SHOP_W)), last = Math.min(n - 1, Math.ceil((camX - view.ox + view.W - X0) / SHOP_W));
-      for (let li = first; li <= last; li++) { const i = from + li; hit(X0 + li * SHOP_W + 12 - camX, 122, SHOP_W - 24, FLOOR - 122, () => { S.walkTo = doorX(i); S.autoShop = i; audio.play('tick'); }); }
-      hit(ELEV_X - 115 - camX, 130, 230, FLOOR - 130, () => { S.walkTo = ELEV_X; S.autoShop = 'elevator'; audio.play('tick'); });
+      for (let li = first; li <= last; li++) { const i = from + li; hit(X0 + li * SHOP_W + 12 - camX, 122, SHOP_W - 24, FLOOR - 122, () => { S.walkTo = doorX(i); S.autoShop = i; S.walkPrev = undefined; audio.play('tick'); }); }
+      hit(ELEV_X - 115 - camX, 130, 230, FLOOR - 130, () => { S.walkTo = ELEV_X; S.autoShop = 'elevator'; S.walkPrev = undefined; audio.play('tick'); });
     }
     // people, back to front
     const people = npcs.map(n => ({ y: n.y, d: () => drawPerson(ctx, n.x - camX, n.y, n.look, n.phase, n.pause > 0 ? 0 : 1, n.dir < 0, n.bag) }));
@@ -476,7 +479,7 @@ function create(env) {
     button(ctx, X + W - 224, by + 12, 180, 56, S.busy ? 'PAYING…' : plan ? `BUY ${fmtShortCents(total)}` : 'CAN\'T AFFORD', plan ? '#16a34a' : '#475569', () => buy(it));
   }
   function fmtShortCents(c) { return c >= 100000000 ? '$' + formatShort(BigInt(c) / 100n) : fmtCents(c); }
-  function leaveShop() { if (!S.busy) { S.mode = 'walk'; audio.play('back'); } }
+  function leaveShop() { if (!S.busy) { S.mode = 'walk'; me.vx = 0; S.walkPrev = undefined; audio.play('back'); } }
   // A rounded button drawn on the canvas that also responds to taps.
   function button(ctx, x, y, w, h, label, color, fn) {
     ctx.fillStyle = color; rrect(ctx, x, y, w, h, 14); ctx.fill();
