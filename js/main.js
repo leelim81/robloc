@@ -11,10 +11,11 @@ import mall from './games/mall.js';
 import guessprice from './games/guessprice.js';
 import prizemachine from './games/prizemachine.js';
 import maze from './games/maze.js';
+import hunted from './games/hunted.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, maze, mall];
+const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, maze, hunted, mall];
 const COMING = [
   ['Dream Store', '🌙', 'Explore a dreamy shop full of wonders.'],
   ['Brick Builder Shop', '🧱', 'Shop for building sets and create.'],

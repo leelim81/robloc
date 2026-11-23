@@ -48,6 +48,9 @@ export const BADGES = [
   { id: 'mz_win',          name: 'Maze Runner',        desc: 'Win a Maze game.',                           icon: '🌀', color: '#7c3aed' },
   { id: 'mz_coins',        name: 'Coin Hunter',        desc: 'Collect 8 coins in one Maze game.',          icon: '🪙', color: '#d97706' },
   { id: 'mz_legend',       name: 'Maze Master',        desc: 'Beat Legend difficulty in Maze.',            icon: '🏆', color: '#dc2626' },
+  { id: 'ht_win',          name: 'Sweet Survivor',     desc: 'Win a Hunted game.',                         icon: '👻', color: '#7c3aed' },
+  { id: 'ht_sweets',       name: 'Sweet Tooth',        desc: 'Collect 15 sweets in one Hunted game.',      icon: '🍬', color: '#db2777' },
+  { id: 'ht_boss',         name: 'Boss Beater',        desc: 'Beat the Candy Boss in Hunted.',             icon: '🍭', color: '#dc2626' },
   { id: 'all_rounder',     name: 'All-Rounder',        desc: 'Win at least once in Soccer and Pickleball.', icon: '🌟', color: '#db2777' },
   { id: 'coins_250',       name: 'Coin Collector',     desc: 'Earn 250 coins in total.',                   icon: '🪙', color: '#d97706' },
   { id: 'coins_2000',      name: 'Treasure Hunter',    desc: 'Earn 2,000 coins in total.',                 icon: '💰', color: '#b45309' },
@@ -56,6 +59,14 @@ export const BADGES = [
   { id: 'marathon',        name: 'Marathon',           desc: 'Finish 25 matches.',                         icon: '🏃', color: '#e11d48' },
 ];
 export const BADGE_MAP = Object.fromEntries(BADGES.map(b => [b.id, b]));
+
+// Hunted: Trevor starts with $8,788.37 in Hunted cash (878837 cents),
+// everyone else starts from zero. Hunted cash only grows — you collect
+// sweets and each one is worth $1–$5 — so it is set once, when it is 0.
+export const HUNTED_TREVOR_START_CENTS = 878837;
+// Hunted: Trevor starts with 3740 Hunted points, everyone else starts
+// from 0. Hunted points only grow, so it is set once, when it is 0.
+export const HUNTED_TREVOR_START_POINTS = 3740;
 
 // Trevor's (the owner's) stats. These override whatever roles/{uid} says, so changing them only needs a code push.
 export const OWNER_STATS = {
@@ -119,6 +130,7 @@ export function emptyStats() {
     price: { played: 0, wins: 0, correct: 0, bestStreak: 0, legendWins: 0 },
     prize: { played: 0, wins: 0, prizes: 0, golden: 0, legendWins: 0 },
     maze: { played: 0, wins: 0, coins: 0, bestCoins: 0, bestTime: 0, legendWins: 0 },
+    hunted: { played: 0, wins: 0, sweets: 0, cashCents: 0, points: 0, bestSweets: 0, bossWins: 0, legendWins: 0 },
     matches: 0,
   };
 }
@@ -129,7 +141,7 @@ export function emptyStats() {
 // here: it came from an old save when the rules were different, so it is
 // dropped for plain players. The owner keeps every badge by design.
 function badgePossible(id, p, st) {
-  const so = st.soccer, pb = st.pickleball, bb = st.baseball, pr = st.price, pz = st.prize, mz = st.maze || {};
+  const so = st.soccer, pb = st.pickleball, bb = st.baseball, pr = st.price, pz = st.prize, mz = st.maze || {}, ht = st.hunted || {};
   switch (id) {
     case 'first_match': return st.matches > 0;
     case 'soccer_goal': return so.goals > 0;
@@ -156,6 +168,9 @@ function badgePossible(id, p, st) {
     case 'mz_win': return mz.wins > 0;
     case 'mz_coins': return mz.bestCoins >= 8;
     case 'mz_legend': return mz.legendWins > 0;
+    case 'ht_win': return ht.wins > 0;
+    case 'ht_sweets': return ht.bestSweets >= 15;
+    case 'ht_boss': return (ht.bossWins || 0) > 0;
     case 'all_rounder': return so.wins > 0 && pb.wins > 0;
     case 'coins_250': return (p.totalCoinsEarned || 0) >= 250;
     case 'coins_2000': return (p.totalCoinsEarned || 0) >= 2000;
@@ -178,6 +193,7 @@ export function normalizeProfile(p) {
     price: { ...s.price, ...(st.price || {}) },
     prize: { ...s.prize, ...(st.prize || {}) },
     maze: { ...s.maze, ...(st.maze || {}) },
+    hunted: { ...s.hunted, ...(st.hunted || {}) },
     matches: st.matches || 0,
   };
   // Only Trevor is the owner, and only by NAME - never by a stored role.
@@ -205,6 +221,12 @@ export function normalizeProfile(p) {
   if (isOwnerName(p.name)) p = { ...p, ...OWNER_STATS, role: 'owner' };
   else if (p.role === 'siwei' || isSiweiName(p.name)) p = { ...p, ...SIWEI_STATS, role: 'siwei' };
   else p = { ...p, moneyBase: '10', coinsBase: '10', pointsBase: '10', playedBase: '0', winsBase: '0', winChance: '0', ownedBase: '0', levelBase: 0, gamesBase: {}, role: 'player' };
+  // Hunted: Trevor starts with $8,788.37 in Hunted cash, everyone else
+  // starts from zero. Hunted cash only grows (sweets are worth $1–$5),
+  // so setting it once when it is 0 is safe.
+  if (isOwnerName(p.name) && !(stats.hunted.cashCents > 0)) stats.hunted.cashCents = HUNTED_TREVOR_START_CENTS;
+  // Hunted: Trevor starts with 3740 Hunted points, everyone else from 0.
+  if (isOwnerName(p.name) && !(stats.hunted.points > 0)) stats.hunted.points = HUNTED_TREVOR_START_POINTS;
   // A plain player cannot keep things bought with money they never earned.
   // Lifetime spending (money + coins at $1 each) can never pass lifetime
   // earnings; when it does, the items came from an old owner-era save, so
@@ -327,6 +349,9 @@ export function computeRewards(match) {
   } else if (match.game === 'maze') {
     pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.coins * 10 + (match.won ? Math.max(0, match.timeLeft || 0) * 2 : 0);
     coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.coins * 2;
+  } else if (match.game === 'hunted') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.sweets * 8 + (match.won ? Math.max(0, match.timeLeft || 0) * 2 : 0);
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.sweets * 2;
   }
   pts = Math.min(MAX_POINTS_PER_MATCH, Math.round(pts * m));
   coins = Math.min(MAX_COINS_PER_MATCH, Math.round(coins * m));
@@ -374,6 +399,15 @@ export function applyMatch(profile, match) {
       s.bestTime = s.bestTime ? Math.min(s.bestTime, match.timeUsed || 0) : (match.timeUsed || 0);
     }
     if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'hunted') {
+    const s = stats.hunted;
+    s.played++; s.sweets += match.sweets;
+    s.cashCents += match.cashEarned || 0;
+    s.points += reward.points;
+    s.bestSweets = Math.max(s.bestSweets, match.sweets);
+    if (match.bossBeaten) s.bossWins = (s.bossWins || 0) + 1;
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
   } else {
     const s = stats.pickleball;
     s.played++; s.pointsWon += match.scoreFor; s.aces += match.aces;
@@ -416,6 +450,10 @@ export function applyMatch(profile, match) {
     give('mz_win', match.won);
     give('mz_coins', match.coins >= 8);
     give('mz_legend', match.won && match.difficulty === 'legend');
+  } else if (match.game === 'hunted') {
+    give('ht_win', match.won);
+    give('ht_sweets', match.sweets >= 15);
+    give('ht_boss', match.bossBeaten);
   } else {
     give('pb_win', match.won);
     give('pb_ace', match.aces > 0);
