@@ -78,6 +78,7 @@ class FirebaseBackend {
     });
   }
   async signIn() {
+    if (!this.A) throw Object.assign(new Error('Firebase Auth is not ready.'), { code: 'auth/network-request-failed' });
     const provider = new this.A.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     try {
@@ -89,6 +90,16 @@ class FirebaseBackend {
         throw e;
       }
     }
+  }
+  // Play as guest — no Google account needed, so everyone can play.
+  // The guest gets a real Firebase UID, so their save, leaderboard place
+  // and rewards all work like a Google player's. Anonymous sign-in must
+  // be turned on in the Firebase console (Authentication → Sign-in
+  // method → Anonymous → Enable), or this throws
+  // auth/operation-not-allowed.
+  async signInGuest() {
+    if (!this.A) throw Object.assign(new Error('Firebase Auth is not ready.'), { code: 'auth/network-request-failed' });
+    await this.A.signInAnonymously(this.auth);
   }
   signOut() { return this.A.signOut(this.auth); }
   userRef(uid = this.user.uid) { return this.F.doc(this.db, 'users', uid); }
@@ -376,6 +387,8 @@ class DemoBackend {
     this.user = { uid: 'demo-player', email: null, displayName: 'Demo player' };
     this.onUser(this.user);
   }
+  // Demo mode already plays without sign-in, so guest is the same as sign-in here.
+  async signInGuest() { return this.signIn(); }
   async signOut() {
     try { localStorage.removeItem(this.KEY + '_signed'); } catch {}
     this.user = null; this.onUser(null);

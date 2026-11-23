@@ -56,6 +56,7 @@ async function boot() {
   if (backend.mode === 'demo') {
     $('#demo-note').classList.remove('hidden');
     $('#btn-google span').textContent = 'Play (demo mode)';
+    $('#btn-guest').classList.add('hidden');
   }
   try {
     await backend.init(onUser);
@@ -95,9 +96,17 @@ $('#btn-google').addEventListener('click', async () => {
   try { await backend.signIn(); }
   catch (e) { console.error(e); showError('#auth-error', friendlyAuthError(e)); }
 });
+// Play as guest — no account needed, so everyone can play. The guest
+// still gets a real save and a place on the leaderboard.
+$('#btn-guest').addEventListener('click', async () => {
+  $('#auth-error').classList.add('hidden');
+  try { await backend.signInGuest(); }
+  catch (e) { console.error(e); showError('#auth-error', friendlyAuthError(e)); }
+});
 function friendlyAuthError(e) {
   if (e.code === 'auth/unauthorized-domain') return 'This website is not yet allowed in Firebase sign-in settings (Authorized domains).';
   if (e.code === 'auth/network-request-failed') return 'Network problem. Check your connection and try again.';
+  if (e.code === 'auth/operation-not-allowed' || e.code === 'auth/admin-restricted-operation') return 'Guest play is not turned on yet. In the Firebase console, go to Authentication → Sign-in method → Anonymous → Enable.';
   return 'Sign-in failed: ' + (e.code || e.message);
 }
 

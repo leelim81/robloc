@@ -4,7 +4,7 @@ rules_version = '2';
 // Paste this into Firebase console → Firestore Database → Rules, then Publish.
 //
 // Kept simple on purpose so new game features never need a rules change:
-//   - anyone signed in with Google can create and save their own player
+//   - anyone signed in (Google or guest) can create and save their own player
 //   - nobody can change another player's save
 //   - special roles and their bonuses (owner = Trevor) come only from roles/{uid},
 //     which is created by hand in the console and can't be written by players

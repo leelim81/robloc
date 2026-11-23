@@ -66,6 +66,12 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   box-shadow: 0 6px 0 #c7cde0, 0 18px 40px rgba(0,0,0,.4);
 }
 .btn-google:active { box-shadow: 0 2px 0 #c7cde0; }
+.btn-guest {
+  background: rgba(34, 211, 238, .16); color: #a5f3fc; font-weight: 800; padding: 15px 28px; font-size: 18px;
+  border: 1px solid rgba(34, 211, 238, .45); box-shadow: 0 6px 0 rgba(34, 211, 238, .25), 0 18px 40px rgba(0,0,0,.4);
+}
+.btn-guest:hover { background: rgba(34, 211, 238, .24); }
+.btn-guest:active { box-shadow: 0 2px 0 rgba(34, 211, 238, .25); }
 .icon-btn { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: rgba(255,255,255,.08); border: 1px solid var(--line); color: var(--muted); transition: .2s; }
 .icon-btn:hover { color: #fff; transform: rotate(30deg); }
 
