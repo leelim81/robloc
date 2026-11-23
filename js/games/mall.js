@@ -8,9 +8,9 @@ import { payPlan as planFor, coinsOf, moneyCentsOf, formatShort } from '../econo
 import { SHOP_COUNT, SECTIONS, shopInfo, shopItems, withTax, fmtCents, TAX_RATE } from './shops.js';
 
 const SHOP_W = 470, X0 = 260, FLOOR = 540;
-// The mall has 7 floors: 1 = shops, 2 = food, 3 = drinks, 4 = clothes, 5 = makeup, B1 = car parks (no shops), R = Roof (no shops, 10 swimming pools, 5 golf courses).
+// The mall has 7 floors: 1 = shops, 2 = food, 3 = drinks, 4 = clothes, 5 = makeup, B1 = car parks (no shops), R = Roof (no shops, open-air: 10 pools, 5 golf courses, playgrounds, gardens, sports, picnics).
 const B1_FLOOR = 5, BAYS = 120, BAY_W = 230;
-const ROOF_FLOOR = 6, ROOF_W = 8300;
+const ROOF_FLOOR = 6, ROOF_W = 14500;
 const FLOORS = [
   { name: 'Shops', title: 'Floor 1 · Shops', icon: '🛍️', wall: ['#e0e7ff', '#f8fafc'], tile: ['#e7e5e4', '#d6d3d1'] },
   { name: 'Food', title: 'Floor 2 · Food Court', icon: '🍔', wall: ['#ffedd5', '#fff7ed'], tile: ['#fef3c7', '#fde68a'] },
@@ -133,30 +133,50 @@ function drawBays(ctx, camX, x0, W) {
     else { ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.font = '900 16px Nunito'; ctx.fillText('EMPTY', x + BAY_W / 2 + shiftAt((TOP + BOT) / 2), (TOP + BOT) / 2); }
   }
 }
-// R Roof: ten swimming pools and five golf courses, with sun chairs,
-// umbrellas and palm trees. No shops up here - just the open-air roof.
+// R Roof: an open-air top floor with NO roof over it - just sky above.
+// 10 swimming pools, 5 golf courses, 3 playgrounds, 3 gardens, 3 sports
+// courts, 2 picnic areas and 2 sunbathing areas, plus sun chairs,
+// umbrellas and palm trees. The name is R for Roof because it is the
+// top floor, but there is no roof covering it - it is outdoors.
 const POOL_COLORS = ['#38bdf8', '#0ea5e9', '#0284c7'];
 const TOWEL_COLORS = ['#f43f5e', '#f59e0b', '#22c55e', '#a855f7', '#ec4899', '#0ea5e9'];
-// 15 features along the roof, two pools then a golf course, five times:
-// 10 swimming pools and 5 golf courses.
-const ROOF_FEATURES = ['pool', 'pool', 'golf', 'pool', 'pool', 'golf', 'pool', 'pool', 'golf', 'pool', 'pool', 'golf', 'pool', 'pool', 'golf'];
+const FLOWER_COLORS = ['#f43f5e', '#facc15', '#ec4899', '#a855f7', '#f97316', '#fff'];
+// 28 outdoor things along the roof: 10 pools, 5 golf courses, 3 playgrounds,
+// 3 gardens, 3 sports courts, 2 picnic areas, 2 sunbathing areas.
+const ROOF_FEATURES = [
+  'pool', 'pool', 'golf', 'play', 'garden', 'sport',
+  'pool', 'pool', 'golf', 'play', 'garden', 'sport',
+  'pool', 'pool', 'golf', 'play', 'garden', 'sport',
+  'pool', 'pool', 'golf', 'picnic', 'sun',
+  'pool', 'pool', 'golf', 'picnic', 'sun',
+];
 const ROOF_SLOT = 500, ROOF_FEAT_W = 430;
 function drawRoof(ctx, camX, x0, W, t) {
-  // Sun and clouds in the sky.
+  // Open sky: sun, clouds and birds. No roof over this floor.
   ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(X0 + 200, 90, 46, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#fef08a'; ctx.beginPath(); ctx.arc(X0 + 200, 90, 32, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,.9)';
-  for (const [cx, cy, s] of [[X0 + 900, 70, 1], [X0 + 2000, 110, 1.3], [X0 + 3400, 60, 0.9], [X0 + 4800, 100, 1.1], [X0 + 6200, 70, 1], [X0 + 7600, 110, 1.2]]) {
+  for (const [cx, cy, s] of [[X0 + 900, 70, 1], [X0 + 2500, 110, 1.3], [X0 + 4500, 60, 0.9], [X0 + 6500, 100, 1.1], [X0 + 8500, 70, 1], [X0 + 10500, 110, 1.2], [X0 + 12500, 70, 1], [X0 + 14000, 100, 1]]) {
     ctx.beginPath(); ctx.ellipse(cx, cy, 70 * s, 22 * s, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(cx + 40 * s, cy + 8 * s, 50 * s, 18 * s, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  // Birds flying in the open sky.
+  ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  for (let b = 0; b < 6; b++) {
+    const bx = X0 + 600 + b * 2200 + Math.sin(t * 0.5 + b * 2) * 60;
+    const by = 200 + (b % 3) * 40 + Math.sin(t * 0.8 + b) * 8;
+    const flap = Math.sin(t * 6 + b * 3) * 6;
+    ctx.beginPath(); ctx.moveTo(bx - 14, by + flap); ctx.quadraticCurveTo(bx - 4, by - 6, bx, by); ctx.quadraticCurveTo(bx + 4, by - 6, bx + 14, by + flap); ctx.stroke();
   }
   // A "ROOF" sign on the back wall.
   ctx.fillStyle = '#0f172a'; ctx.font = "900 34px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('☀️ ROOF · R ☀️', X0 + ROOF_W / 2, 180);
-  let poolN = 0, golfN = 0;
+  let poolN = 0, golfN = 0, playN = 0, gardenN = 0, sportN = 0, picnicN = 0, sunN = 0;
   for (let k = 0; k < ROOF_FEATURES.length; k++) {
     const px = X0 + 50 + k * ROOF_SLOT, pw = ROOF_FEAT_W, top = FLOOR + 25, bot = FLOOR + 135;
-    if (ROOF_FEATURES[k] === 'pool') {
+    const kind = ROOF_FEATURES[k];
+    ctx.font = "900 22px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (kind === 'pool') {
       poolN++;
       // deck edge around the pool
       ctx.fillStyle = '#fef9c3'; rrect(ctx, px - 14, top - 14, pw + 28, bot - top + 28, 18); ctx.fill();
@@ -178,10 +198,9 @@ function drawRoof(ctx, camX, x0, W, t) {
       ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.arc(bx, by, 22, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(bx, by); ctx.arc(bx, by, 22, -Math.PI / 2, Math.PI / 2); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.moveTo(bx, by); ctx.arc(bx, by, 22, Math.PI / 2, Math.PI); ctx.closePath(); ctx.fill();
-      // pool label
-      ctx.fillStyle = '#fff'; ctx.font = "900 22px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
       ctx.fillText('POOL ' + poolN, px + pw / 2, bot - 20);
-    } else {
+    } else if (kind === 'golf') {
       golfN++;
       // the green
       ctx.fillStyle = '#4ade80'; rrect(ctx, px, top + 5, pw, bot - top - 5, 14); ctx.fill();
@@ -194,9 +213,124 @@ function drawRoof(ctx, camX, x0, W, t) {
       const fx = px + pw - 100;
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(fx, top + 65); ctx.lineTo(fx, top - 28); ctx.stroke();
       ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.moveTo(fx, top - 28); ctx.lineTo(fx + 40, top - 16); ctx.lineTo(fx, top - 4); ctx.closePath(); ctx.fill();
-      // golf label
-      ctx.fillStyle = '#fff'; ctx.font = "900 22px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
       ctx.fillText('GOLF ' + golfN, px + pw / 2, bot - 20);
+    } else if (kind === 'play') {
+      playN++;
+      // soft play mat
+      ctx.fillStyle = '#bbf7d0'; rrect(ctx, px, top + 5, pw, bot - top - 5, 14); ctx.fill();
+      // swing set: posts, bar and two swaying swings
+      ctx.strokeStyle = '#64748b'; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.moveTo(px + 45, bot); ctx.lineTo(px + 45, top + 18); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px + 195, bot); ctx.lineTo(px + 195, top + 18); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px + 40, top + 18); ctx.lineTo(px + 200, top + 18); ctx.stroke();
+      for (let sw = 0; sw < 2; sw++) {
+        const sx = px + 80 + sw * 80, sway = Math.sin(t * 1.4 + sw * 2 + k) * 8;
+        ctx.strokeStyle = '#334155'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(sx, top + 18); ctx.lineTo(sx + sway, bot - 28); ctx.stroke();
+        ctx.fillStyle = '#f59e0b'; rrect(ctx, sx + sway - 22, bot - 28, 44, 10, 4); ctx.fill();
+      }
+      // slide: ladder and slope
+      ctx.strokeStyle = '#64748b'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(px + 260, bot); ctx.lineTo(px + 260, top + 35); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px + 285, bot); ctx.lineTo(px + 285, top + 35); ctx.stroke();
+      for (let r = 0; r < 4; r++) { ctx.beginPath(); ctx.moveTo(px + 260, top + 45 + r * 20); ctx.lineTo(px + 285, top + 45 + r * 20); ctx.stroke(); }
+      ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.moveTo(px + 285, top + 35); ctx.lineTo(px + 395, bot - 8); ctx.lineTo(px + 395, bot + 2); ctx.lineTo(px + 285, top + 48); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillText('PLAYGROUND ' + playN, px + pw / 2, bot - 20);
+    } else if (kind === 'garden') {
+      gardenN++;
+      // grass
+      ctx.fillStyle = '#86efac'; rrect(ctx, px, top + 5, pw, bot - top - 5, 14); ctx.fill();
+      // flower beds: rows of flowers
+      for (let f = 0; f < 10; f++) {
+        const fx = px + 30 + (f % 5) * 70, fy = top + 45 + Math.floor(f / 5) * 35;
+        ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(fx, fy + 12); ctx.lineTo(fx, fy - 6); ctx.stroke();
+        ctx.fillStyle = FLOWER_COLORS[(f + k) % FLOWER_COLORS.length];
+        ctx.beginPath(); ctx.arc(fx, fy - 8, 8, 0, Math.PI * 2); ctx.fill();
+      }
+      // bushes
+      ctx.fillStyle = '#16a34a';
+      ctx.beginPath(); ctx.arc(px + 40, bot - 22, 20, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px + 75, bot - 16, 15, 0, Math.PI * 2); ctx.fill();
+      // a small tree
+      ctx.strokeStyle = '#92400e'; ctx.lineWidth = 8;
+      ctx.beginPath(); ctx.moveTo(px + 370, bot - 8); ctx.lineTo(px + 370, top + 45); ctx.stroke();
+      ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(px + 370, top + 35, 26, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillText('GARDEN ' + gardenN, px + pw / 2, bot - 20);
+    } else if (kind === 'sport') {
+      sportN++;
+      const sport = ['BASKETBALL', 'TENNIS', 'FOOTBALL'][(sportN - 1) % 3];
+      if (sport === 'BASKETBALL') {
+        // court
+        ctx.fillStyle = '#fdba74'; rrect(ctx, px, top + 5, pw, bot - top - 5, 14); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(px + pw / 2, bot - 10, 55, Math.PI, 0); ctx.stroke();
+        // hoop: pole, backboard, rim, net
+        ctx.strokeStyle = '#334155'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(px + pw - 45, bot); ctx.lineTo(px + pw - 45, top + 20); ctx.stroke();
+        ctx.fillStyle = '#fff'; rrect(ctx, px + pw - 75, top + 12, 60, 42, 4); ctx.fill();
+        ctx.strokeStyle = '#ea580c'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(px + pw - 45, top + 62, 14, 0, Math.PI * 2); ctx.stroke();
+        // basketball
+        ctx.fillStyle = '#f97316'; ctx.beginPath(); ctx.arc(px + 90, bot - 22, 16, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px + 90, bot - 22, 16, 0, Math.PI * 2); ctx.stroke();
+      } else if (sport === 'TENNIS') {
+        // court
+        ctx.fillStyle = '#38bdf8'; rrect(ctx, px, top + 5, pw, bot - top - 5, 14); ctx.fill();
+        ctx.fillStyle = '#4ade80'; rrect(ctx, px + 30, top + 20, pw - 60, bot - top - 35, 8); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.strokeRect(px + 30, top + 20, pw - 60, bot - top - 35);
+        // net across the middle
+        ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(px + 30, top + 65); ctx.lineTo(px + pw - 30, top + 65); ctx.stroke();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px + pw / 2, top + 20); ctx.lineTo(px + pw / 2, bot - 15); ctx.stroke();
+        // tennis ball
+        ctx.fillStyle = '#d9f99d'; ctx.beginPath(); ctx.arc(px + 90, bot - 22, 12, 0, Math.PI * 2); ctx.fill();
+      } else {
+        // football goal
+        ctx.fillStyle = '#4ade80'; rrect(ctx, px, top + 5, pw, bot - top - 5, 14); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.strokeRect(px + 40, top + 30, pw - 80, bot - top - 45);
+        ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(px + pw / 2 - 70, bot - 5); ctx.lineTo(px + pw / 2 - 70, top + 30); ctx.lineTo(px + pw / 2 + 70, top + 30); ctx.lineTo(px + pw / 2 + 70, bot - 5); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2;
+        for (let n = 0; n < 3; n++) { ctx.beginPath(); ctx.moveTo(px + pw / 2 - 70 + n * 35, top + 30); ctx.lineTo(px + pw / 2 - 70 + n * 35, bot - 5); ctx.stroke(); }
+        // football
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(px + 80, bot - 20, 14, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(px + 80, bot - 20, 5, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = '#fff';
+      ctx.fillText(sport, px + pw / 2, bot - 20);
+    } else if (kind === 'picnic') {
+      picnicN++;
+      // grass + checkered blanket
+      ctx.fillStyle = '#86efac'; rrect(ctx, px, top + 5, pw, bot - top - 5, 14); ctx.fill();
+      ctx.fillStyle = '#fff'; rrect(ctx, px + 30, bot - 55, 130, 45, 6); ctx.fill();
+      ctx.fillStyle = '#f43f5e';
+      for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) ctx.fillRect(px + 30 + c * 44, bot - 55 + r * 23, 22, 23);
+      // picnic table
+      ctx.fillStyle = '#92400e'; rrect(ctx, px + 220, bot - 45, 150, 12, 4); ctx.fill();
+      ctx.fillStyle = '#92400e'; rrect(ctx, px + 210, bot - 20, 170, 10, 4); ctx.fill();
+      ctx.fillStyle = '#78350f'; rrect(ctx, px + 285, bot - 45, 10, 45, 3); ctx.fill();
+      // BBQ grill with smoke
+      ctx.fillStyle = '#1f2937'; ctx.beginPath(); ctx.arc(px + 390, bot - 30, 18, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#1f2937'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(px + 378, bot - 18); ctx.lineTo(px + 372, bot); ctx.moveTo(px + 402, bot - 18); ctx.lineTo(px + 408, bot); ctx.stroke();
+      ctx.strokeStyle = 'rgba(148,163,184,.8)'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(px + 390, bot - 48); ctx.quadraticCurveTo(px + 382, bot - 62, px + 392, bot - 74); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.fillText('PICNIC ' + picnicN, px + pw / 2, bot - 20);
+    } else if (kind === 'sun') {
+      sunN++;
+      // two sun chairs and an umbrella
+      ctx.strokeStyle = '#92400e'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(px + pw / 2, bot); ctx.lineTo(px + pw / 2, top + 35); ctx.stroke();
+      ctx.fillStyle = TOWEL_COLORS[(sunN + 1) % TOWEL_COLORS.length];
+      ctx.beginPath(); ctx.moveTo(px + pw / 2 - 60, top + 45); ctx.quadraticCurveTo(px + pw / 2, top - 5, px + pw / 2 + 60, top + 45); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.moveTo(px + pw / 2 - 20, top + 45); ctx.quadraticCurveTo(px + pw / 2, top + 8, px + pw / 2 + 20, top + 45); ctx.closePath(); ctx.fill();
+      for (const cx of [px + 70, px + pw - 70]) {
+        ctx.fillStyle = '#78716c'; rrect(ctx, cx - 50, bot - 12, 100, 12, 5); ctx.fill();
+        ctx.fillStyle = '#78716c'; ctx.save(); ctx.translate(cx - 40, bot - 12); ctx.rotate(-0.5); rrect(ctx, -5, -30, 10, 32, 4); ctx.fill(); ctx.restore();
+        ctx.fillStyle = TOWEL_COLORS[(sunN + 3) % TOWEL_COLORS.length]; rrect(ctx, cx - 40, bot - 16, 80, 7, 3); ctx.fill();
+      }
+      ctx.fillStyle = '#fff';
+      ctx.fillText('SUN CHAIRS', px + pw / 2, bot - 20);
     }
   }
   // A sun chair and umbrella at the far end, past the last feature.
@@ -685,7 +819,7 @@ function create(env) {
       ctx.fillStyle = '#fde68a'; ctx.font = "28px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(f === ROOF_FLOOR ? 'R' : f === B1_FLOOR ? 'B1' : String(f + 1), X + 90, y + 41);
       ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = "24px 'Lilita One'"; ctx.fillText(`${FLOORS[f].icon} ${FLOORS[f].name}`, X + 146, y + 28);
       ctx.font = '800 12px Nunito'; ctx.fillStyle = '#cbd5e1';
-      ctx.fillText(f === ROOF_FLOOR ? 'Roof · 10 pools · 5 golf courses' : f === B1_FLOOR ? 'B1 · 120 parking bays' : `Shops ${(sec.from + 1).toLocaleString()}–${sec.to.toLocaleString()} · ${(sec.to - sec.from).toLocaleString()} shops`, X + 146, y + 52);
+      ctx.fillText(f === ROOF_FLOOR ? 'Roof · 10 pools · 5 golf · play · gardens' : f === B1_FLOOR ? 'B1 · 120 parking bays' : `Shops ${(sec.from + 1).toLocaleString()}–${sec.to.toLocaleString()} · ${(sec.to - sec.from).toLocaleString()} shops`, X + 146, y + 52);
       if (here) { ctx.fillStyle = '#facc15'; ctx.font = '900 11px Nunito'; ctx.fillText('YOU ARE HERE', X + 146, y + 68); }
       hit(X + 30, y, W - 60, 78, () => ride(f));
     });
@@ -744,14 +878,14 @@ export default {
   id: 'mall',
   title: 'Shopping Mall',
   tagline: '7 floors: shops, food, drinks, clothes, makeup, B1 car parks, R roof',
-  desc: 'Walk the ROBLOC Mall: 10,000 shops (toys, pets, phones, cars, houses, jets…), 68,000 food places, 10,000 drink shops, 2,780 clothes and shoe shops and 2,780 makeup shops on 5 floors, plus 120 car park bays on B1 and 10 swimming pools and 5 golf courses with sun chairs on the R Roof, with real prices and sales tax.',
+  desc: 'Walk the ROBLOC Mall: 10,000 shops (toys, pets, phones, cars, houses, jets…), 68,000 food places, 10,000 drink shops, 2,780 clothes and shoe shops and 2,780 makeup shops on 5 floors, plus 120 car park bays on B1 and, on the open-air R Roof, 10 swimming pools, 5 golf courses, 3 playgrounds, 3 gardens, 3 sports courts, 2 picnic areas and 2 sunbathing areas, with real prices and sales tax.',
   music: 'mall',
   noDifficulty: true,
   playLabel: 'ENTER MALL',
   labels: { a: 'ENTER', b: 'MAP' },
   options: [],
   howto: `<ul>
-    <li>The mall has <b>7 floors</b>: Floor 1 shops, Floor 2 food court, Floor 3 drinks, Floor 4 clothes &amp; shoes, Floor 5 makeup, <b>B1 car parks</b> with 120 parking bays, and the <b>R Roof</b> at the very top with 10 swimming pools, 5 golf courses, sun chairs and umbrellas. Ride the 🛗 elevator at the start of each floor, or tap the floor button at the top.</li>
+    <li>The mall has <b>7 floors</b>: Floor 1 shops, Floor 2 food court, Floor 3 drinks, Floor 4 clothes &amp; shoes, Floor 5 makeup, <b>B1 car parks</b> with 120 parking bays, and the open-air <b>R Roof</b> at the very top with 10 swimming pools, 5 golf courses, 3 playgrounds, 3 gardens, 3 sports courts, 2 picnic areas, sun chairs and umbrellas - no roof over it, just sky. Ride the 🛗 elevator at the start of each floor, or tap the floor button at the top.</li>
     <li><b>Walk</b> by tapping where you want to go, or with the arrows. Tap a shop (or press <b>ENTER</b> / <kbd>Space</kbd> at its door) to go in.</li>
     <li><b>MAP</b> (<kbd>Shift</kbd>) opens the directory of all 93,560 shops: 1–10,000 sell all kinds of things, 10,001–78,000 are food, 78,001–88,000 are drinks, 88,001–90,780 are clothes and shoes and 90,781–93,560 are makeup. Flip pages left and right (hold to go faster) and jump to any shop. The 🅿️ B1 button takes you down to the car parks.</li>
     <li>Every shop sells 7 to 1,000 things. Hold up or down in a shop to scroll faster.</li>
