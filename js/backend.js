@@ -36,11 +36,21 @@ function roleValue(v) {
   const s = String(v ?? '0').replace(/[,\s$]/g, '');
   return /^\d+$/.test(s) ? s : '0';
 }
-const PLAYER_ROLE = { role: 'player', moneyBase: '10', coinsBase: '10', pointsBase: '10', playedBase: '0', winsBase: '0', winChance: '0' };
+// The role fields written to Firestore for a plain player. They are '0'
+// on purpose: the old Firestore rules only allow '0' here, and the new
+// rules allow '0' or '10', so '0' is the value that is always allowed.
+// That matters because syncRole/resetRole repair a player's document by
+// writing these values — if they wrote '10', the repair itself would be
+// refused by the old rules and every save (superpowers, shop, matches)
+// would keep failing with permission-denied. The 10/10/10 start does NOT
+// come from these stored values: normalizeProfile gives a plain player
+// 10 points, $10 and 10 coins in memory, so the game still shows 10/10/10.
+const PLAYER_ROLE = { role: 'player', moneyBase: '0', coinsBase: '0', pointsBase: '0', playedBase: '0', winsBase: '0', winChance: '0' };
 // Everything a plain player starts with: 10 points, $10 and 10 coins to
-// get going with, and nothing else — no badges, no items. Used by
-// "Start over" in Settings. The role fields are plain-player values, so
-// writing them is always allowed by the rules.
+// get going with, and nothing else — no badges, no items. The 10/10/10 is
+// given by normalizeProfile in memory; the stored role fields stay '0' so
+// writing them is always allowed by the rules (old and new). Used by
+// "Start over" in Settings.
 const ZERO_PROFILE = {
   ...PLAYER_ROLE,
   levelBase: 0, ownedBase: '0', gamesBase: {},

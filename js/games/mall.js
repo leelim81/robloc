@@ -596,7 +596,9 @@ function create(env) {
       audio.play('coin'); fx.confetti(640, 360, 40);
     } catch (e) {
       console.error(e);
-      S.error = e.code === 'not-enough' ? 'Not enough money or coins for this superpower.' : 'Could not buy the superpower.';
+      // Show the real reason, not just "could not buy": if Firebase refuses
+      // the save (for example the old rules), the code tells us why.
+      S.error = e.code === 'not-enough' ? 'Not enough money or coins for this superpower.' : 'Could not buy the superpower. (' + (e.code || e.message || 'unknown') + ')';
       S.errorT = 0;
       audio.play('fault');
     }

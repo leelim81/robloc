@@ -675,7 +675,9 @@ $('#btn-play').addEventListener('click', async () => {
           state.profile = normalizeProfile(res.profile);
           opts.power = power;
         } catch (e) {
-          toast(e.code === 'not-enough' ? 'Not enough money or coins for that superpower!' : 'Could not buy the superpower.');
+          // Show the real reason, not just "could not buy": if Firebase refuses
+          // the save (for example the old rules), the code tells us why.
+          toast(e.code === 'not-enough' ? 'Not enough money or coins for that superpower!' : 'Could not buy the superpower. (' + (e.code || e.message || 'unknown') + ')');
           return;
         }
       }
