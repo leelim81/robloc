@@ -45,9 +45,9 @@ export const BADGES = [
   { id: 'pm_first',        name: 'Claw Catch',         desc: 'Win a prize from the Prize Machine.',        icon: '🧸', color: '#db2777' },
   { id: 'pm_win',          name: 'Prize Pro',          desc: 'Reach the prize goal in the Prize Machine.', icon: '🎁', color: '#9333ea' },
   { id: 'pm_gold',         name: 'Golden Grab',        desc: 'Win the golden crown from the Prize Machine.', icon: '👑', color: '#ca8a04' },
-  { id: 'tr_win',          name: 'Road Captain',       desc: 'Win a Transport Modes run.',                 icon: '✈️', color: '#0ea5e9' },
-  { id: 'tr_stops',        name: 'All Stops',          desc: 'Reach 4 stops in one Transport Modes run.',  icon: '🚏', color: '#0284c7' },
-  { id: 'tr_legend',       name: 'Top Driver',         desc: 'Beat Legend difficulty in Transport Modes.', icon: '🏆', color: '#dc2626' },
+  { id: 'mz_win',          name: 'Maze Runner',        desc: 'Win a Maze game.',                           icon: '🌀', color: '#7c3aed' },
+  { id: 'mz_coins',        name: 'Coin Hunter',        desc: 'Collect 8 coins in one Maze game.',          icon: '🪙', color: '#d97706' },
+  { id: 'mz_legend',       name: 'Maze Master',        desc: 'Beat Legend difficulty in Maze.',            icon: '🏆', color: '#dc2626' },
   { id: 'all_rounder',     name: 'All-Rounder',        desc: 'Win at least once in Soccer and Pickleball.', icon: '🌟', color: '#db2777' },
   { id: 'coins_250',       name: 'Coin Collector',     desc: 'Earn 250 coins in total.',                   icon: '🪙', color: '#d97706' },
   { id: 'coins_2000',      name: 'Treasure Hunter',    desc: 'Earn 2,000 coins in total.',                 icon: '💰', color: '#b45309' },
@@ -118,7 +118,7 @@ export function emptyStats() {
     baseball: { played: 0, wins: 0, runs: 0, hits: 0, homers: 0, strikeouts: 0, legendWins: 0 },
     price: { played: 0, wins: 0, correct: 0, bestStreak: 0, legendWins: 0 },
     prize: { played: 0, wins: 0, prizes: 0, golden: 0, legendWins: 0 },
-    transport: { played: 0, wins: 0, coins: 0, stops: 0, bestStops: 0, bestDistance: 0, legendWins: 0 },
+    maze: { played: 0, wins: 0, coins: 0, bestCoins: 0, bestTime: 0, legendWins: 0 },
     matches: 0,
   };
 }
@@ -129,7 +129,7 @@ export function emptyStats() {
 // here: it came from an old save when the rules were different, so it is
 // dropped for plain players. The owner keeps every badge by design.
 function badgePossible(id, p, st) {
-  const so = st.soccer, pb = st.pickleball, bb = st.baseball, pr = st.price, pz = st.prize, tr = st.transport || {};
+  const so = st.soccer, pb = st.pickleball, bb = st.baseball, pr = st.price, pz = st.prize, mz = st.maze || {};
   switch (id) {
     case 'first_match': return st.matches > 0;
     case 'soccer_goal': return so.goals > 0;
@@ -153,9 +153,9 @@ function badgePossible(id, p, st) {
     case 'pm_first': return pz.prizes > 0;
     case 'pm_win': return pz.wins > 0;
     case 'pm_gold': return pz.golden > 0;
-    case 'tr_win': return tr.wins > 0;
-    case 'tr_stops': return tr.bestStops >= 4;
-    case 'tr_legend': return tr.legendWins > 0;
+    case 'mz_win': return mz.wins > 0;
+    case 'mz_coins': return mz.bestCoins >= 8;
+    case 'mz_legend': return mz.legendWins > 0;
     case 'all_rounder': return so.wins > 0 && pb.wins > 0;
     case 'coins_250': return (p.totalCoinsEarned || 0) >= 250;
     case 'coins_2000': return (p.totalCoinsEarned || 0) >= 2000;
@@ -177,7 +177,7 @@ export function normalizeProfile(p) {
     baseball: { ...s.baseball, ...(st.baseball || {}) },
     price: { ...s.price, ...(st.price || {}) },
     prize: { ...s.prize, ...(st.prize || {}) },
-    transport: { ...s.transport, ...(st.transport || {}) },
+    maze: { ...s.maze, ...(st.maze || {}) },
     matches: st.matches || 0,
   };
   // Only Trevor is the owner, and only by NAME - never by a stored role.
@@ -324,9 +324,9 @@ export function computeRewards(match) {
   } else if (match.game === 'baseball') {
     pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.runsFor * 18 + match.homers * 30 + match.strikeouts * 8;
     coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.runsFor * 4 + match.homers * 8;
-  } else if (match.game === 'transport') {
-    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.coins * 4 + match.stops * 25;
-    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.coins;
+  } else if (match.game === 'maze') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.coins * 10 + (match.won ? Math.max(0, match.timeLeft || 0) * 2 : 0);
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.coins * 2;
   }
   pts = Math.min(MAX_POINTS_PER_MATCH, Math.round(pts * m));
   coins = Math.min(MAX_COINS_PER_MATCH, Math.round(coins * m));
@@ -365,12 +365,14 @@ export function applyMatch(profile, match) {
     s.played++; s.runs += match.runsFor; s.hits += match.hits || 0; s.homers += match.homers; s.strikeouts += match.strikeouts;
     if (match.won) s.wins++;
     if (match.won && match.difficulty === 'legend') s.legendWins++;
-  } else if (match.game === 'transport') {
-    const s = stats.transport;
-    s.played++; s.coins += match.coins; s.stops += match.stops;
-    s.bestStops = Math.max(s.bestStops, match.stops);
-    s.bestDistance = Math.max(s.bestDistance, match.distance || 0);
-    if (match.won) s.wins++;
+  } else if (match.game === 'maze') {
+    const s = stats.maze;
+    s.played++; s.coins += match.coins;
+    s.bestCoins = Math.max(s.bestCoins, match.coins);
+    if (match.won) {
+      s.wins++;
+      s.bestTime = s.bestTime ? Math.min(s.bestTime, match.timeUsed || 0) : (match.timeUsed || 0);
+    }
     if (match.won && match.difficulty === 'legend') s.legendWins++;
   } else {
     const s = stats.pickleball;
@@ -410,10 +412,10 @@ export function applyMatch(profile, match) {
     give('bb_win', match.won);
     give('bb_k', match.strikeouts >= 3);
     give('bb_legend', match.won && match.difficulty === 'legend');
-  } else if (match.game === 'transport') {
-    give('tr_win', match.won);
-    give('tr_stops', match.stops >= 4);
-    give('tr_legend', match.won && match.difficulty === 'legend');
+  } else if (match.game === 'maze') {
+    give('mz_win', match.won);
+    give('mz_coins', match.coins >= 8);
+    give('mz_legend', match.won && match.difficulty === 'legend');
   } else {
     give('pb_win', match.won);
     give('pb_ace', match.aces > 0);

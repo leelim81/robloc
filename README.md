@@ -14,7 +14,7 @@ Live site: https://leelim81.github.io/robloc
 | Shopping Mall: 7 floors with an elevator and 93,560 shops (Floor 1: 10,000 general shops, Floor 2: 68,000 food places, Floor 3: 10,000 drink shops, Floor 4: 2,780 clothes and shoe shops, Floor 5: 2,780 makeup shops) plus B1 with 120 car park bays and the open-air R Roof at the very top (no roof over it, just sky) with TEN outdoor things - 10 swimming pools, 5 golf courses, 10 playgrounds, 10 gardens, 10 sports courts, 5 picnic areas, 5 sunbathing areas, 5 fountains, 5 skate parks, 5 outdoor gyms - plus sun chairs and umbrellas, each shop selling 7 to 1,000 items at real prices plus 8% sales tax. The mall has a MAP button, an elevator, and a 🔍 SEARCH button: tap the letters and every shop with those letters shows up, tap one and the shop opens | Playable |
 | Guess the Price: game show with real mall items; pick the right price and beat the CPU contestant | Playable |
 | Prize Machine: claw machine with plush toys, toys, coin bags and a golden crown | Playable |
-| Transport Modes: pick a plane, a bus or a train and ride it to the destination — switch lanes to collect coins and dodge obstacles, 3 hearts, reach the flag to win | Playable |
+| Maze: find your way through a new maze every game to the flag before the timer runs out — move with arrows, joystick, the on-screen D-pad or by tapping the cell next to you, collect coins on the way | Playable |
 | Dream Store, Brick Builder Shop | Coming soon |
 
 Everything is drawn and synthesized in the browser: characters, stadiums, music and sound effects. There are no image or audio files to license.
