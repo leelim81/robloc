@@ -96,15 +96,17 @@ class FirebaseBackend {
   }
 
   // Role bonuses for the signed-in player, from roles/{uid} - and from the
-  // player's own name. The owner gets all of them. Si Wei gets only his
-  // starting money and coins (the amounts in the code, so an old roles
-  // document can never under-pay him), whether his role comes from the
-  // roles document or from his name - so he gets the balance even when no
-  // roles document exists for him yet. Everyone else starts from zero.
+  // player's own name. The owner gets all of them, but only when the name
+  // is Trevor: a roles document that says "owner" for anyone else is
+  // ignored, or it would hand them Trevor's whole fortune. Si Wei gets
+  // only his starting money and coins (the amounts in the code, so an old
+  // roles document can never under-pay him), whether his role comes from
+  // the roles document or from his name - so he gets the balance even when
+  // no roles document exists for him yet. Everyone else starts from zero.
   // p is the player's own profile, already normalized, so its role already
   // reflects the name.
   bonusesFor(r, p) {
-    if (r.role === 'owner') return r;
+    if (r.role === 'owner' && isOwnerName(p?.name)) return r;
     if (r.role === 'siwei' || p?.role === 'siwei') return { ...PLAYER_ROLE, role: 'siwei', moneyBase: SIWEI_STATS.moneyBase, coinsBase: SIWEI_STATS.coinsBase };
     return { ...PLAYER_ROLE };
   }
@@ -122,6 +124,10 @@ class FirebaseBackend {
   async syncRole(p, r) {
     // Trevor is recognized by name, so his saved profile only needs plain-player values.
     if (isOwnerName(p.name)) r = PLAYER_ROLE;
+    // A roles document that says "owner" for anyone who is not Trevor is
+    // wrong (or stale) - never write it into their profile, or the board
+    // would show them with Trevor's fortune.
+    if (r.role === 'owner' && !isOwnerName(p.name)) r = PLAYER_ROLE;
     if (!ROLE_FIELDS.some(k => r[k] !== p[k])) return;
     try { await this.F.updateDoc(this.userRef(), r); }
     catch (e) {

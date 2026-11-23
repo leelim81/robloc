@@ -156,7 +156,13 @@ export function normalizeProfile(p) {
     prize: { ...s.prize, ...(st.prize || {}) },
     matches: st.matches || 0,
   };
-  // Only Trevor is the owner (by name, or by role "owner" in roles/{uid}).
+  // Only Trevor is the owner, and only by NAME - never by a stored role.
+  // A roles document (or an old save) that says role "owner" for anyone
+  // else is ignored here: it gave that player Trevor's whole fortune
+  // ($73.5Qa, 67.2T coins, 72.6Qa points) just for having the role
+  // written down. The owner amounts come from OWNER_STATS in the code,
+  // by the name "trevor" alone - the same way Si Wei's amounts come from
+  // SIWEI_STATS by his name, so no document can ever hand them out.
   // Everyone else starts from the beginning, like real games: any bonus
   // numbers in a roles document for another role are ignored here, and the
   // role itself becomes a plain player. Every owner bonus is zeroed for
@@ -168,7 +174,7 @@ export function normalizeProfile(p) {
   // the code, not from the roles document, so an old document can never
   // under-pay him - and the name alone is enough, so he gets the balance
   // even when no roles document exists for him yet.
-  if (p.role === 'owner' || isOwnerName(p.name)) p = { ...p, ...OWNER_STATS, role: 'owner' };
+  if (isOwnerName(p.name)) p = { ...p, ...OWNER_STATS, role: 'owner' };
   else if (p.role === 'siwei' || isSiweiName(p.name)) p = { ...p, ...SIWEI_STATS, role: 'siwei' };
   else p = { ...p, moneyBase: '0', coinsBase: '0', pointsBase: '0', playedBase: '0', winsBase: '0', winChance: '0', ownedBase: '0', levelBase: 0, gamesBase: {}, role: 'player' };
   // A plain player cannot keep things bought with money they never earned.
