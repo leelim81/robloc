@@ -1,4 +1,4 @@
-// ROBLOC Shopping Mall: walk a seven-floor mall (five shop floors plus B1 car parks and the RR Roof), enter shops and buy things at real-world prices.
+// ROBLOC Shopping Mall: walk a seven-floor mall (five shop floors plus B1 car parks and the R Roof), enter shops and buy things at real-world prices.
 // Prices are in cents. Purchases are paid with money ($) first, or with coins at 1 coin = $1.
 // The 8% sales tax on every purchase goes to Trevor, the boss.
 import { drawHuman, shade, rrect, SKINS, HAIRS, HAIR_STYLES, SHIRTS } from '../art.js';
@@ -8,7 +8,7 @@ import { payPlan as planFor, coinsOf, moneyCentsOf, formatShort } from '../econo
 import { SHOP_COUNT, SECTIONS, shopInfo, shopItems, withTax, fmtCents, TAX_RATE } from './shops.js';
 
 const SHOP_W = 470, X0 = 260, FLOOR = 540;
-// The mall has 7 floors: 1 = shops, 2 = food, 3 = drinks, 4 = clothes, 5 = makeup, B1 = car parks (no shops), RR = Roof (no shops, 3 swimming pools).
+// The mall has 7 floors: 1 = shops, 2 = food, 3 = drinks, 4 = clothes, 5 = makeup, B1 = car parks (no shops), R = Roof (no shops, 3 swimming pools).
 const B1_FLOOR = 5, BAYS = 120, BAY_W = 230;
 const ROOF_FLOOR = 6, ROOF_W = 2700;
 const FLOORS = [
@@ -18,7 +18,7 @@ const FLOORS = [
   { name: 'Clothes', title: 'Floor 4 · Clothes & Shoes', icon: '👕', wall: ['#fce7f3', '#fdf2f8'], tile: ['#f5d0fe', '#e9d5ff'] },
   { name: 'Makeup', title: 'Floor 5 · Makeup', icon: '💄', wall: ['#fbcfe8', '#fff1f2'], tile: ['#f9a8d4', '#fda4af'] },
   { name: 'Car Parks', title: 'B1 · Car Parks', icon: '🅿️', wall: ['#94a3b8', '#e2e8f0'], tile: ['#78716c', '#a8a29e'] },
-  { name: 'Roof', title: 'RR · Roof', icon: '🏊', wall: ['#7dd3fc', '#e0f2fe'], tile: ['#fde68a', '#fef3c7'] },
+  { name: 'Roof', title: 'R · Roof', icon: '🏊', wall: ['#7dd3fc', '#e0f2fe'], tile: ['#fde68a', '#fef3c7'] },
 ];
 const floorOf = i => SECTIONS.findIndex(s => i >= s.from && i < s.to);
 const worldW = f => f === B1_FLOOR ? X0 * 2 + BAYS * BAY_W : f === ROOF_FLOOR ? X0 * 2 + ROOF_W : X0 * 2 + (SECTIONS[f].to - SECTIONS[f].from) * SHOP_W;
@@ -133,7 +133,7 @@ function drawBays(ctx, camX, x0, W) {
     else { ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.font = '900 16px Nunito'; ctx.fillText('EMPTY', x + BAY_W / 2 + shiftAt((TOP + BOT) / 2), (TOP + BOT) / 2); }
   }
 }
-// RR Roof: three swimming pools with sun chairs, umbrellas and palm trees.
+// R Roof: three swimming pools with sun chairs, umbrellas and palm trees.
 // No shops up here - just the open-air roof to walk around.
 const POOL_COLORS = ['#38bdf8', '#0ea5e9', '#0284c7'];
 const TOWEL_COLORS = ['#f43f5e', '#f59e0b', '#22c55e', '#a855f7', '#ec4899', '#0ea5e9'];
@@ -148,7 +148,7 @@ function drawRoof(ctx, camX, x0, W, t) {
   }
   // A "ROOF" sign on the back wall.
   ctx.fillStyle = '#0f172a'; ctx.font = "900 34px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('☀️ ROOF · RR ☀️', X0 + ROOF_W / 2, 180);
+  ctx.fillText('☀️ ROOF · R ☀️', X0 + ROOF_W / 2, 180);
   for (let k = 0; k < 3; k++) {
     const px = X0 + 50 + k * 900, pw = 700, top = FLOOR + 25, bot = FLOOR + 135;
     // deck edge around the pool
@@ -206,7 +206,7 @@ function drawElevator(ctx, x, floor, t, near) {
   ctx.fillStyle = '#475569'; ctx.fillRect(x - 115, 130, 230, FLOOR - 130);
   ctx.fillStyle = '#0f172a'; ctx.fillRect(x - 70, 144, 140, 44);
   ctx.fillStyle = '#f87171'; ctx.font = "30px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(`${['▲▼', '▲▼', '▲▼', '▲▼', '▲▼', '▲', '▼'][floor]} ${['1', '2', '3', '4', '5', 'B1', 'RR'][floor]}`, x, 168);
+  ctx.fillText(`${['▲▼', '▲▼', '▲▼', '▲▼', '▲▼', '▲', '▼'][floor]} ${['1', '2', '3', '4', '5', 'B1', 'R'][floor]}`, x, 168);
   const open = near ? 0.35 + Math.sin(t * 3) * 0.05 : 0;
   const dg = ctx.createLinearGradient(x - 90, 0, x + 90, 0);
   dg.addColorStop(0, '#cbd5e1'); dg.addColorStop(0.5, '#f1f5f9'); dg.addColorStop(1, '#94a3b8');
@@ -471,7 +471,7 @@ function create(env) {
       else if (ns >= 0) prompt(ctx, `${input.touchMode ? 'Tap the shop' : 'Press SPACE'} to go into ${shopInfo(ns).name}`, 1, '#fde68a');
       else prompt(ctx, input.touchMode ? 'Tap a shop to go in · MAP to jump to any shop' : 'Arrows to walk · SPACE enter a shop · SHIFT mall map · or click', 0.85);
       if (S.intro < 2) drawBanner(ctx, 'ROBLOC MALL', 640, 300, S.intro, { size: 96, color: '#fbcfe8', glow: '#db2777', sub: FLOORS[floor].title });
-      else if (S.floorBanner !== undefined && S.floorBanner < 1.8) drawBanner(ctx, floor === B1_FLOOR ? 'B1' : floor === ROOF_FLOOR ? 'RR' : `FLOOR ${floor + 1}`, 640, 300, S.floorBanner, { size: 96, color: '#a5f3fc', glow: '#0891b2', sub: `${FLOORS[floor].icon} ${FLOORS[floor].name}` });
+      else if (S.floorBanner !== undefined && S.floorBanner < 1.8) drawBanner(ctx, floor === B1_FLOOR ? 'B1' : floor === ROOF_FLOOR ? 'R' : `FLOOR ${floor + 1}`, 640, 300, S.floorBanner, { size: 96, color: '#a5f3fc', glow: '#0891b2', sub: `${FLOORS[floor].icon} ${FLOORS[floor].name}` });
     }
     if (S.mode === 'shop') drawShop(ctx);
     if (S.mode === 'map') drawMap(ctx);
@@ -656,13 +656,13 @@ function create(env) {
     const X = 390, Y = 30, W = 500, H = 660;
     panel(ctx, X, Y, W, H, '🛗 Elevator', '#0f766e');
     closeButton(ctx, X + W - 52, Y + 13, () => { S.mode = 'walk'; audio.play('back'); });
-    // Floors top to bottom: RR (the Roof), 5, 4, 3, 2, 1, then B1 at the bottom, below 1.
+    // Floors top to bottom: R (the Roof), 5, 4, 3, 2, 1, then B1 at the bottom, below 1.
     [6, 4, 3, 2, 1, 0, 5].forEach((f, k) => {
       const y = Y + 80 + k * 80, sel = S.liftSel === f, here = f === floor, sec = SECTIONS[f];
       ctx.fillStyle = sel ? '#14b8a6' : '#1e293b'; rrect(ctx, X + 30, y, W - 60, 78, 18); ctx.fill();
       if (sel) { ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4; rrect(ctx, X + 30, y, W - 60, 78, 18); ctx.stroke(); }
       ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(X + 90, y + 39, 28, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fde68a'; ctx.font = "28px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(f === ROOF_FLOOR ? 'RR' : f === B1_FLOOR ? 'B1' : String(f + 1), X + 90, y + 41);
+      ctx.fillStyle = '#fde68a'; ctx.font = "28px 'Lilita One'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(f === ROOF_FLOOR ? 'R' : f === B1_FLOOR ? 'B1' : String(f + 1), X + 90, y + 41);
       ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = "24px 'Lilita One'"; ctx.fillText(`${FLOORS[f].icon} ${FLOORS[f].name}`, X + 146, y + 28);
       ctx.font = '800 12px Nunito'; ctx.fillStyle = '#cbd5e1';
       ctx.fillText(f === ROOF_FLOOR ? 'Roof · 3 swimming pools' : f === B1_FLOOR ? 'B1 · 120 parking bays' : `Shops ${(sec.from + 1).toLocaleString()}–${sec.to.toLocaleString()} · ${(sec.to - sec.from).toLocaleString()} shops`, X + 146, y + 52);
@@ -723,15 +723,15 @@ function drawThumb(ctx, w, h, t, view) {
 export default {
   id: 'mall',
   title: 'Shopping Mall',
-  tagline: '7 floors: shops, food, drinks, clothes, makeup, B1 car parks, RR roof',
-  desc: 'Walk the ROBLOC Mall: 10,000 shops (toys, pets, phones, cars, houses, jets…), 68,000 food places, 10,000 drink shops, 2,780 clothes and shoe shops and 2,780 makeup shops on 5 floors, plus 120 car park bays on B1 and 3 swimming pools with sun chairs on the RR Roof, with real prices and sales tax.',
+  tagline: '7 floors: shops, food, drinks, clothes, makeup, B1 car parks, R roof',
+  desc: 'Walk the ROBLOC Mall: 10,000 shops (toys, pets, phones, cars, houses, jets…), 68,000 food places, 10,000 drink shops, 2,780 clothes and shoe shops and 2,780 makeup shops on 5 floors, plus 120 car park bays on B1 and 3 swimming pools with sun chairs on the R Roof, with real prices and sales tax.',
   music: 'mall',
   noDifficulty: true,
   playLabel: 'ENTER MALL',
   labels: { a: 'ENTER', b: 'MAP' },
   options: [],
   howto: `<ul>
-    <li>The mall has <b>7 floors</b>: Floor 1 shops, Floor 2 food court, Floor 3 drinks, Floor 4 clothes &amp; shoes, Floor 5 makeup, <b>B1 car parks</b> with 120 parking bays, and the <b>RR Roof</b> at the very top with 3 swimming pools, sun chairs and umbrellas. Ride the 🛗 elevator at the start of each floor, or tap the floor button at the top.</li>
+    <li>The mall has <b>7 floors</b>: Floor 1 shops, Floor 2 food court, Floor 3 drinks, Floor 4 clothes &amp; shoes, Floor 5 makeup, <b>B1 car parks</b> with 120 parking bays, and the <b>R Roof</b> at the very top with 3 swimming pools, sun chairs and umbrellas. Ride the 🛗 elevator at the start of each floor, or tap the floor button at the top.</li>
     <li><b>Walk</b> by tapping where you want to go, or with the arrows. Tap a shop (or press <b>ENTER</b> / <kbd>Space</kbd> at its door) to go in.</li>
     <li><b>MAP</b> (<kbd>Shift</kbd>) opens the directory of all 93,560 shops: 1–10,000 sell all kinds of things, 10,001–78,000 are food, 78,001–88,000 are drinks, 88,001–90,780 are clothes and shoes and 90,781–93,560 are makeup. Flip pages left and right (hold to go faster) and jump to any shop. The 🅿️ B1 button takes you down to the car parks.</li>
     <li>Every shop sells 7 to 1,000 things. Hold up or down in a shop to scroll faster.</li>
