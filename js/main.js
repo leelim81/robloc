@@ -345,15 +345,11 @@ async function renderLeaderboard() {
   }
   const unit = overall ? 'pts' : 'wins';
   const roleTag = r => r.role === 'owner' ? '<span class="role-tag owner">👑</span>' : '';
-  // Only Trevor (owner) and Si Wei have a name on the board. Every other
-  // player's name is hidden - their row shows only rank, picture and points.
-  // Your own row shows YOU instead of your name.
-  const showName = r => r.role === 'owner' || r.role === 'siwei';
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   top.slice(0, 3).forEach((r, i) => {
     const d = document.createElement('div');
     d.className = `pod p${i + 1}`; d.style.animationDelay = (0.1 + (2 - i) * 0.12) + 's';
-    d.innerHTML = `<canvas width="168" height="168"></canvas><div class="pod-name">${showName(r) ? esc(r.name) + ' ' : ''}${roleTag(r)}</div><div class="pod-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</div><div class="pod-block">${i + 1}</div>`;
+    d.innerHTML = `<canvas width="168" height="168"></canvas><div class="pod-name">${esc(r.name)} ${roleTag(r)}</div><div class="pod-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</div><div class="pod-block">${i + 1}</div>`;
     drawPortrait(d.querySelector('canvas'), r.avatar, { bg: false });
     pod.appendChild(d);
   });
@@ -363,7 +359,7 @@ async function renderLeaderboard() {
     li.className = 'lb-row' + (isMe ? ' me' : ''); li.style.animationDelay = Math.min(i, 15) * 0.03 + 's';
     const rank = formatBig(r.rank);
     li.innerHTML = `<span class="lb-rank${rank.length > 3 ? ' long' : ''}">${rank}</span><canvas width="88" height="88"></canvas>
-      <span class="lb-name">${showName(r) ? esc(r.name) + ' ' : ''}${roleTag(r)} ${!overall ? `<small>Lv ${formatShort(r.level ?? levelInfo(r.points).level)}</small>` : ''}${isMe ? '<span class="lb-you">YOU</span>' : ''}</span>
+      <span class="lb-name">${esc(r.name)} ${roleTag(r)} ${!overall ? `<small>Lv ${formatShort(r.level ?? levelInfo(r.points).level)}</small>` : ''}${isMe ? '<span class="lb-you">YOU</span>' : ''}</span>
       <span class="lb-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</span>`;
     drawPortrait(li.querySelector('canvas'), r.avatar);
     list.appendChild(li);
