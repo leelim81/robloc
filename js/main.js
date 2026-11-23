@@ -578,6 +578,9 @@ const host = {
     enterHub();
   },
   async finish(result) {
+    // A game must never finish twice: a second finish would save the
+    // match a second time and pay the reward twice.
+    if (this.ended) return;
     this.ended = true; input.enabled = false; input.reset();
     $('#touch-controls').classList.remove('on'); $('#game-layer').classList.remove('playing');
     const banner = $('#results-banner');

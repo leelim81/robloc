@@ -191,7 +191,8 @@ class FirebaseBackend {
   }
 
   async updateIdentity({ name, avatar }) {
-    await this.withRepair(() => this.F.updateDoc(this.userRef(), { name, avatar }));
+    // Keep the saved role fields plain (see recordMatch).
+    await this.withRepair(() => this.F.updateDoc(this.userRef(), { name, avatar, ...PLAYER_ROLE }));
   }
   // Start over: erase everything (points, coins, money, badges, stats, items,
   // boss tax paid) and begin again from zero. Only the signed-in player can
@@ -216,7 +217,13 @@ class FirebaseBackend {
       if (!snap.exists()) throw new Error('Profile missing');
       const p = normalizeProfile(snap.data());
       const { next, reward, newBadges } = applyMatch(p, match);
-      tx.update(this.userRef(), { ...next, lastAward: serverTimestamp() });
+      // The saved document must keep plain-player role fields: the rules
+      // only allow role 'player' with bases 0/10, or an exact roles/{uid}
+      // match. Trevor's own amounts come from his NAME in the code, not
+      // from the saved role fields, so writing his owner role ('owner'
+      // with huge bases) here made Firebase refuse EVERY save for him —
+      // matches said "could not save rewards" and nothing was stored.
+      tx.update(this.userRef(), { ...next, ...PLAYER_ROLE, lastAward: serverTimestamp() });
       return { profile: mergeLocal(this.user.uid, { ...p, ...next }), reward, newBadges };
     }));
   }
@@ -235,6 +242,9 @@ class FirebaseBackend {
         moneySpentCents: String(BigInt(p.moneySpentCents || '0') + dollarsCents),
         coinsSpent: (p.coinsSpent || 0) + power.cost,
         lastAward: serverTimestamp(),
+        // Keep the saved role fields plain (see recordMatch): writing
+        // Trevor's owner role here would make Firebase refuse the buy.
+        ...PLAYER_ROLE,
       };
       tx.update(this.userRef(), next);
       return { profile: mergeLocal(this.user.uid, { ...p, ...next }) };
@@ -266,7 +276,8 @@ class FirebaseBackend {
       const snap = await tx.get(this.userRef());
       if (!snap.exists()) throw new Error('Profile missing');
       const raw = normalizeProfile(snap.data());
-      tx.update(this.userRef(), spend(raw, itemId, cents, true, taxCents));
+      // Keep the saved role fields plain (see recordMatch).
+      tx.update(this.userRef(), { ...spend(raw, itemId, cents, true, taxCents), ...PLAYER_ROLE });
     })).then(() => local(-1)).catch(e => console.warn('Purchase kept on this device only', e));
     const inv = { ...cur.inventory, [itemId]: (cur.inventory[itemId] || 0) + 1 };
     return { profile: { ...cur, inventory: inv, moneySpentCents: String(BigInt(cur.moneySpentCents) + BigInt(plan.money)), coinsSpent: cur.coinsSpent + plan.coins, bossPaidCents: String(BigInt(cur.bossPaidCents || '0') + BigInt(taxCents)) } };
