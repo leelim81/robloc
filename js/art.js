@@ -37,7 +37,7 @@ export function drawShadow(ctx, x, y, rx, ry, alpha = 0.35) {
 
 /**
  * o: { view: 'front'|'back'|'side', flip, phase, moving, skin, hair, style, shirt, shorts, socks, shoes,
- *      number, pose: 'run'|'kick'|'swing'|'celebrate'|'dive'|'ready', poseT, paddle, gloves, alpha, shadow }
+ *      number, pose: 'run'|'kick'|'swing'|'celebrate'|'dive'|'ready'|'swim', poseT, paddle, gloves, alpha, shadow }
  */
 export function drawHuman(ctx, x, y, s, o) {
   const view = o.view || 'front';
@@ -54,6 +54,12 @@ export function drawHuman(ctx, x, y, s, o) {
   if (pose === 'dive') {
     ctx.translate(0, -30);
     ctx.rotate(-1.25 * Math.min(1, pt * 1.6));
+    ctx.translate(0, 30);
+  }
+  if (pose === 'swim') {
+    // Front crawl: body flat in the water, head up at the front (leading).
+    ctx.translate(0, -30);
+    ctx.rotate(1.35);
     ctx.translate(0, 30);
   }
 
@@ -91,6 +97,7 @@ export function drawHuman(ctx, x, y, s, o) {
     let b1 = Math.max(0, -Math.sin(ph + 0.6)) * 1.1 * mv, b2 = Math.max(0, Math.sin(ph + 0.6)) * 1.1 * mv;
     if (pose === 'kick') { const k = Math.sin(Math.min(1, pt) * Math.PI); a1 = -0.4 + 1.9 * k - 0.5 * (1 - pt); b1 = 0.9 * (1 - k); a2 = -0.25; b2 = 0.1; }
     if (pose === 'dive') { a1 = 0.5; a2 = 0.2; b1 = 0.4; b2 = 0.6; }
+    if (pose === 'swim') { a1 = 0.25 + Math.sin(ph * 2) * 0.3; a2 = 0.25 - Math.sin(ph * 2) * 0.3; b1 = 0.25; b2 = 0.25; }
     if (pose === 'ready') { a1 = 0.25; a2 = -0.25; b1 = 0.35; b2 = 0.35; }
     drawLegSide(a2, b2, false);
     drawLegSide(a1, b1, true);
@@ -143,6 +150,7 @@ export function drawHuman(ctx, x, y, s, o) {
   else { aL = 0.18; aR = -0.18; }
   if (pose === 'celebrate') { aL = Math.PI - 0.5 + Math.sin(ph * 3) * 0.15; aR = Math.PI + 0.5 - Math.sin(ph * 3) * 0.15; }
   if (pose === 'dive') { aL = Math.PI - 0.15; aR = Math.PI + 0.15; }
+  if (pose === 'swim') { aL = 0.6 + Math.sin(ph) * 1.1; aR = 0.6 - Math.sin(ph) * 1.1; }
   if (pose === 'kick') { aL = -0.9; aR = 0.9; }
   const hasPaddle = !!o.paddle;
   const swingT = Math.min(1, pt), sw = o.swingDir || 1;
