@@ -27,6 +27,7 @@ const LB_FIELD = { points: 'points', soccer: 'stats.soccer.wins', pickleball: 's
 
 function lbValue(p, kind) {
   if (kind === 'soccer' || kind === 'pickleball' || kind === 'baseball') return gameStats(p, kind).wins;
+  if (kind === 'money') return moneyOf(p);
   return totalPoints(p);
 }
 const ROLE_FIELDS = ['role', 'moneyBase', 'coinsBase', 'pointsBase', 'playedBase', 'winsBase', 'winChance'];
@@ -320,7 +321,9 @@ class FirebaseBackend {
 
   async leaderboard(kind) {
     const { collection, query, orderBy, limit, getDocs, where } = this.F;
-    const field = LB_FIELD[kind];
+    // Money is not one Firestore field (it is moneyBase + earned − spent),
+    // so the Money tab fetches by points and ranks by money below.
+    const field = kind === 'money' ? 'points' : LB_FIELD[kind];
     const q = query(collection(this.db, 'users'), where(field, '>', 0), orderBy(field, 'desc'), limit(50));
     // Role holders can have bonus points that the points query does not see, so fetch them too.
     const [snaps, special, named] = await Promise.all([

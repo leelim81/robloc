@@ -2,7 +2,7 @@ import { backend, validateName } from './backend.js';
 import { audio } from './audio.js';
 import { Input } from './input.js';
 import { FX } from './fx.js';
-import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, moneyCentsOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned, dreamItemsOwned, SUPERPOWERS, isOwnerName, OWNER_WIN_CHANCE, OTHER_WIN_CHANCE, FAKE_NAMES, fakePoints, fakeWins, fakeMoney, fakeCoins, fakeBadges } from './economy.js';
+import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, moneyCentsOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned, dreamItemsOwned, brickItemsOwned, SUPERPOWERS, isOwnerName, OWNER_WIN_CHANCE, OTHER_WIN_CHANCE, FAKE_NAMES, fakePoints, fakeWins, fakeMoney, fakeCoins, fakeBadges } from './economy.js';
 import { SKINS, HAIRS, SHIRTS, HAIR_STYLES, HAIR_STYLE_LABELS, DEFAULT_AVATAR, drawPortrait, drawAvatarFull } from './art.js';
 import soccer from './games/soccer.js';
 import pickleball from './games/pickleball.js';
@@ -13,17 +13,16 @@ import prizemachine from './games/prizemachine.js';
 import maze from './games/maze.js';
 import hunted from './games/hunted.js';
 import dreamstore from './games/dreamstore.js';
+import brickbuilder from './games/brickbuilder.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, maze, mall, dreamstore];
+const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, maze, mall, dreamstore, brickbuilder];
 // Hunted lives on its own now (Trevor: "delete the one in Robloc, put
 // it in the new Robloc hunted"). It is NOT in the hub. Open it at
 // ?hunted=1 (or hunted.html) — a standalone Hunted with only one game.
 const HUNTED_MODE = new URLSearchParams(location.search).has('hunted');
-const COMING = [
-  ['Brick Builder Shop', '🧱', 'Shop for building sets and create.'],
-];
+const COMING = [];   // Nothing is coming soon any more — every shop and game is unlocked.
 
 const state = { user: null, profile: null, view: 'games', lbKind: 'points', editing: false, avatar: { ...DEFAULT_AVATAR } };
 const input = new Input();
@@ -285,11 +284,11 @@ function renderGames() {
     const card = document.createElement('button');
     card.className = 'game-card playable'; card.style.animationDelay = (i * 0.08) + 's';
     const st = gameStats(p, g.id);
-    const ownedPill = g.id === 'mall' ? itemsOwned(p) : g.id === 'dream' ? dreamItemsOwned(p) : 0n;
+    const ownedPill = g.id === 'mall' ? itemsOwned(p) : g.id === 'dream' ? dreamItemsOwned(p) : g.id === 'brick' ? brickItemsOwned(p) : 0n;
     card.innerHTML = `<canvas data-thumb="${g.id}" width="520" height="325"></canvas>
       <span class="play-badge">PLAY</span>
       <div class="card-body"><h3 class="card-title">${g.title}</h3><p class="card-sub">${g.tagline}</p>
-      <div class="card-meta">${(g.id === 'mall' || g.id === 'dream')
+      <div class="card-meta">${(g.id === 'mall' || g.id === 'dream' || g.id === 'brick')
         ? (ownedPill > 0n ? `<span class="meta-pill best" title="${formatBig(ownedPill)}">🛍️ ${formatShort(ownedPill)} items owned</span>` : '')
         : `<span class="meta-pill" title="${formatBig(st.played)}">${formatShort(st.played)} played</span><span class="meta-pill best" title="${formatBig(st.wins)}">🏆 ${formatShort(st.wins)} wins</span>`}</div></div>`;
     card.addEventListener('click', () => openPregame(g));
@@ -331,10 +330,10 @@ function stopThumbs() { cancelAnimationFrame(thumbRAF); }
 const OWNER_POINTS_FALLBACK = BigInt(OWNER_STATS.pointsBase);   // Trevor's points if his profile is not loaded
 // A fake player's look: varied skin/hair/shirt so the portraits differ.
 const fakeAvatar = i => ({ skin: SKINS[i % SKINS.length], hair: HAIRS[i % HAIRS.length], style: HAIR_STYLES[i % HAIR_STYLES.length], shirt: SHIRTS[i % SHIRTS.length] });
-// The 19 fake rows for a board: value = points (Overall) or wins (a wins tab).
+// The 19 fake rows for a board: value = points (Overall), money (Money tab) or wins (a wins tab).
 function fakeRows(kind) {
   return FAKE_NAMES.map((name, i) => {
-    const value = kind === 'points' ? fakePoints(i) : fakeWins(kind, i);
+    const value = kind === 'points' ? fakePoints(i) : kind === 'money' ? fakeMoney(i) : fakeWins(kind, i);
     return { uid: 'fake-' + i, name, avatar: fakeAvatar(i), role: 'player', value, points: fakePoints(i), level: OWNER_STATS.levelBase, money: fakeMoney(i), coins: fakeCoins(i), badges: fakeBadges(i) };
   });
 }
@@ -405,13 +404,15 @@ async function renderLeaderboard() {
   let top = rows, rest = [];
   if (overall) ({ top, rest } = buildOverall(rows, count || rows.length || 1));
   else {
-    // Wins tabs: top 20, then your own row at the bottom. A plain player
-    // never appears in the top 20: their own row always goes last.
-    // Trevor is always #1 here too: if his row is missing, put him in at #1
-    // from his fixed per-game wins and push everyone else one rank down.
+    // Wins and Money tabs: top 20, then your own row at the bottom. A
+    // plain player never appears in the top 20: their own row always
+    // goes last. Trevor is always #1 here too: if his row is missing,
+    // put him in at #1 from his fixed per-game wins (or his money, on
+    // the Money tab) and push everyone else one rank down.
     // Then fill the top 20 with fake players under him, like the Overall board.
     if (!rows.some(r => r.role === 'owner')) {
-      rows = [{ uid: 'owner', name: 'Trevor', avatar: { ...DEFAULT_AVATAR }, role: 'owner', value: OWNER_STATS.gamesBase[state.lbKind].wins, points: OWNER_POINTS_FALLBACK, level: OWNER_STATS.levelBase, money: moneyOf(OWNER_STATS), coins: coinsOf(OWNER_STATS), badges: BADGES.length }, ...rows];
+      const ownerValue = state.lbKind === 'money' ? moneyOf(OWNER_STATS) : OWNER_STATS.gamesBase[state.lbKind].wins;
+      rows = [{ uid: 'owner', name: 'Trevor', avatar: { ...DEFAULT_AVATAR }, role: 'owner', value: ownerValue, points: OWNER_POINTS_FALLBACK, level: OWNER_STATS.levelBase, money: moneyOf(OWNER_STATS), coins: coinsOf(OWNER_STATS), badges: BADGES.length }, ...rows];
       rows.sort(cmpBig);
     }
     rows = [...rows.filter(r => !String(r.uid).startsWith('fake-')), ...fakeRows(state.lbKind)];
@@ -422,12 +423,15 @@ async function renderLeaderboard() {
     top = pool.slice(0, 20);
     if (state.user && state.profile && !isOwnerViewer) {
       const mine = rows.find(r => r.uid === state.user.uid);
-      const p = state.profile, wins = gameStats(p, state.lbKind).wins;
+      const p = state.profile, wins = state.lbKind === 'money' ? moneyOf(p) : gameStats(p, state.lbKind).wins;
       rest = [mine || { uid: state.user.uid, name: p.name, avatar: p.avatar, role: p.role, value: wins, points: totalPoints(p), level: playerLevel(p).level, money: moneyOf(p), coins: coinsOf(p), badges: p.badges.length }];
       rest.forEach(r => { r.rank = pool.length + 1; });
     }
   }
-  const unit = overall ? 'pts' : 'wins';
+  const unit = overall ? 'pts' : state.lbKind === 'money' ? '' : 'wins';
+  // The big number on each row: money shows with a $ in front ($73.5Sp),
+  // points show as "72.6Qa pts", wins as "16.9B wins".
+  const fmtVal = r => state.lbKind === 'money' ? '$' + formatShort(r.value) : `${formatShort(r.value)} ${unit}`;
   const roleTag = r => r.role === 'owner' ? '<span class="role-tag owner">👑</span>' : '';
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   // Every player on the board shows their dollars, points, coins and badges,
@@ -438,7 +442,7 @@ async function renderLeaderboard() {
   top.slice(0, 3).forEach((r, i) => {
     const d = document.createElement('div');
     d.className = `pod p${i + 1}`; d.style.animationDelay = (0.1 + (2 - i) * 0.12) + 's';
-    d.innerHTML = `<canvas width="168" height="168"></canvas><div class="pod-name">${esc(r.name)} ${roleTag(r)}</div><div class="pod-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</div><div class="pod-stats">${rowStats(r)}</div><div class="pod-block">${i + 1}</div>`;
+    d.innerHTML = `<canvas width="168" height="168"></canvas><div class="pod-name">${esc(r.name)} ${roleTag(r)}</div><div class="pod-val" title="${formatBig(r.value)}">${fmtVal(r)}</div><div class="pod-stats">${rowStats(r)}</div><div class="pod-block">${i + 1}</div>`;
     drawPortrait(d.querySelector('canvas'), r.avatar, { bg: false });
     pod.appendChild(d);
   });
@@ -450,7 +454,7 @@ async function renderLeaderboard() {
     li.innerHTML = `<span class="lb-rank${rank.length > 3 ? ' long' : ''}">${rank}</span><canvas width="88" height="88"></canvas>
       <span class="lb-main"><span class="lb-name">${esc(r.name)} ${roleTag(r)} ${!overall ? `<small>Lv ${formatShort(r.level ?? levelInfo(r.points).level)}</small>` : ''}${isMe ? '<span class="lb-you">YOU</span>' : ''}</span>
       <span class="lb-stats">${rowStats(r)}</span></span>
-      <span class="lb-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</span>`;
+      <span class="lb-val" title="${formatBig(r.value)}">${fmtVal(r)}</span>`;
     drawPortrait(li.querySelector('canvas'), r.avatar);
     list.appendChild(li);
   };
