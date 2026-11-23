@@ -67,6 +67,10 @@ export const HUNTED_TREVOR_START_CENTS = 878837;
 // Hunted: Trevor starts with 3740 Hunted points, everyone else starts
 // from 0. Hunted points only grow, so it is set once, when it is 0.
 export const HUNTED_TREVOR_START_POINTS = 3740;
+// Hunted: Trevor starts with 7635 played and 7273 won, everyone else
+// starts from 0. These only grow, so they are set once, when they are 0.
+export const HUNTED_TREVOR_START_PLAYED = 7635;
+export const HUNTED_TREVOR_START_WINS = 7273;
 
 // Trevor's (the owner's) stats. These override whatever roles/{uid} says, so changing them only needs a code push.
 export const OWNER_STATS = {
@@ -227,6 +231,9 @@ export function normalizeProfile(p) {
   if (isOwnerName(p.name) && !(stats.hunted.cashCents > 0)) stats.hunted.cashCents = HUNTED_TREVOR_START_CENTS;
   // Hunted: Trevor starts with 3740 Hunted points, everyone else from 0.
   if (isOwnerName(p.name) && !(stats.hunted.points > 0)) stats.hunted.points = HUNTED_TREVOR_START_POINTS;
+  // Hunted: Trevor starts with 7635 played and 7273 won, everyone else 0.
+  if (isOwnerName(p.name) && !(stats.hunted.played > 0)) stats.hunted.played = HUNTED_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && !(stats.hunted.wins > 0)) stats.hunted.wins = HUNTED_TREVOR_START_WINS;
   // A plain player cannot keep things bought with money they never earned.
   // Lifetime spending (money + coins at $1 each) can never pass lifetime
   // earnings; when it does, the items came from an old owner-era save, so
@@ -283,7 +290,7 @@ export function totalPoints(p) { return BigInt(p.pointsBase || '0') + BigInt(p.p
 export function careerOf(p) {
   const s = p.stats || emptyStats();
   const played = BigInt(p.playedBase || '0') + BigInt(s.matches || 0);
-  const wins = BigInt(p.winsBase || '0') + BigInt((s.soccer?.wins || 0) + (s.pickleball?.wins || 0) + (s.baseball?.wins || 0) + (s.price?.wins || 0) + (s.prize?.wins || 0));
+  const wins = BigInt(p.winsBase || '0') + BigInt((s.soccer?.wins || 0) + (s.pickleball?.wins || 0) + (s.baseball?.wins || 0) + (s.price?.wins || 0) + (s.prize?.wins || 0) + (s.maze?.wins || 0) + (s.hunted?.wins || 0));
   const chance = Number(p.winChance || 0);
   const rate = chance > 0 ? chance : played > 0n ? Number(wins * 100n / played) : 0;
   return { played, wins, rate };

@@ -15,7 +15,11 @@ import hunted from './games/hunted.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, maze, hunted, mall];
+const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, maze, mall];
+// Hunted lives on its own now (Trevor: "delete the one in Robloc, put
+// it in the new Robloc hunted"). It is NOT in the hub. Open it at
+// ?hunted=1 (or hunted.html) — a standalone Hunted with only one game.
+const HUNTED_MODE = new URLSearchParams(location.search).has('hunted');
 const COMING = [
   ['Dream Store', '🌙', 'Explore a dreamy shop full of wonders.'],
   ['Brick Builder Shop', '🧱', 'Shop for building sets and create.'],
@@ -161,6 +165,8 @@ $('#btn-setup-done').addEventListener('click', async () => {
 
 // ---------------- hub ----------------
 function enterHub() {
+  // In Hunted mode there is no hub — just the Hunted game, on its own.
+  if (HUNTED_MODE) { openPregame(hunted); return; }
   show('screen-hub');
   audio.music('menu');
   renderTopbar(false);
@@ -640,6 +646,8 @@ host.canvas.addEventListener('pointerdown', e => {
 document.addEventListener('visibilitychange', () => { if (document.hidden && host.inst && !host.ended) host.pause(); });
 
 function openPregame(g) {
+  // In Hunted mode there is no hub to go back to — hide the back button.
+  $('#btn-pregame-back').classList.toggle('hidden', HUNTED_MODE && g.id === 'hunted');
   $('#pregame-title').textContent = g.title;
   $('#pregame-desc').textContent = g.desc;
   $('#pregame-howto').innerHTML = g.howto;

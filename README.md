@@ -17,6 +17,8 @@ Live site: https://leelim81.github.io/robloc
 | Maze: find your way through a new maze every game to the flag before the timer runs out — move with arrows, joystick, the on-screen D-pad or by tapping the cell next to you, collect coins on the way | Playable |
 | Dream Store, Brick Builder Shop | Coming soon |
 
+**ROBLOC Hunted** is a separate game on its own (not in the hub above): open `hunted.html` (or `?hunted=1`). Go to people's houses and collect sweets — don't get caught by the ghost! SNEAK: when the ghost is looking at you, he has a red triangle in front of him — if you are inside the triangle, he catches you. FREEZE outside the triangle (Shh!) — when he turns away, RUN. The Candy Boss appears after 4 sweets. Trevor starts with $8,788.37 in Hunted cash, 3740 Hunted points, 7635 played and 7273 won; everyone else starts from zero.
+
 Everything is drawn and synthesized in the browser: characters, stadiums, music and sound effects. There are no image or audio files to license.
 
 ## Tech

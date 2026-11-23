@@ -1,9 +1,15 @@
 // ROBLOC Hunted: go to people's houses and collect sweets — don't get
 // caught! Trevor's notes: Trevor starts from $8,788.37 in Hunted cash
 // and 3740 Hunted points, everyone else starts from zero; only one game
-// — collect sweets. A ghost hunts you, and after 4 sweets the big Candy
-// Boss (🍭) appears. Collect sweets to wear the boss down and beat it.
+// — collect sweets. How to play: go to people's houses and collect
+// sweets, don't get caught, and beat the Candy Boss. SNEAK: you need to
+// sneak in — when the ghost is LOOKING at you, FREEZE (don't move!),
+// when he turns away, RUN. If you move while he's looking, he catches
+// you. Shh!
 import { rrect } from '../art.js';
+
+const LOOK_TIME = 2.0;   // the ghost watches you for 2s — FREEZE!
+const TURN_TIME = 3.0;   // the ghost turns away for 3s — RUN!
 
 const DIFF = {
   rookie: { time: 60, target: 8, ghost: 150, boss: 200 },
@@ -48,6 +54,9 @@ function create(env) {
     phase: 'intro', t: 0, timeLeft: D.time,
     px: 640, py: 360, tx: null, ty: null,
     gx: 120, gy: 120, hearts: 3, invT: 0,
+    // sneak: the ghost watches, then turns away. When he's LOOKING and
+    // you move, he catches you. When he's turned away, run!
+    looking: false, lookT: TURN_TIME, lookAge: 0,
     sweets: 0, cashEarned: 0, cash: startCash,
     boss: { active: false, beaten: false, x: 640, y: 140, hp: BOSS_HP },
     msg: null, msgT: 0, won: false, reported: false,
@@ -116,11 +125,18 @@ function create(env) {
     S.timeLeft -= dt;
     if (S.timeLeft <= 0) { S.timeLeft = 0; endRun(S.sweets >= D.target); return; }
 
-    // --- player movement: joystick/arrows, tap-to-move, or the D-pad ---
-    let mx = input.mx, my = input.my;
-    if (input.a.pressed) { my = -1; mx = 0; }
-    if (input.b.pressed) { my = 1; mx = 0; }
-    if (S.padDir) { const d = S.padDir; S.padDir = null; mx = d[0]; my = d[1]; S.tx = null; S.ty = null; }
+    // --- player movement: joystick/arrows, tap-to-move, or the D-pad.
+    // When the ghost is LOOKING you freeze — no moving at all. (With
+    // Power the ghost runs away and isn't watching, so you move freely.)
+    let mx = 0, my = 0;
+    if (!S.looking || SCARE) {
+      mx = input.mx; my = input.my;
+      if (input.a.pressed) { my = -1; mx = 0; }
+      if (input.b.pressed) { my = 1; mx = 0; }
+      if (S.padDir) { const d = S.padDir; S.padDir = null; mx = d[0]; my = d[1]; S.tx = null; S.ty = null; }
+    } else {
+      S.padDir = null;
+    }
     if (mx || my) {
       const len = Math.hypot(mx, my) || 1;
       S.px = clamp(S.px + (mx / len) * PLAYER_SPEED * SPD * dt, 50, 1230);
@@ -169,13 +185,60 @@ function create(env) {
       }
     }
 
-    // --- the ghost chases you (or runs away when you have Power) ---
+    // --- SNEAK: the ghost watches, then turns away. When he's LOOKING
+    // he has a TRIANGLE (his view) in front of him — if you are inside
+    // that triangle, he catches you. When he turns away, RUN! (Shh!) ---
+    S.lookT -= dt;
+    if (S.lookT <= 0) {
+      S.looking = !S.looking;
+      S.lookT = S.looking ? LOOK_TIME : TURN_TIME;
+      S.lookAge = 0;
+      if (S.looking) say('👀 He\'s looking! FREEZE! Shh!');
+      else say('He turned away — RUN! 🏃');
+    }
+    S.lookAge += dt;
+    // While he's LOOKING you freeze in place (no moving at all).
+    if (S.looking && !SCARE) { S.tx = null; S.ty = null; S.padDir = null; }
+    // The triangle: apex at the ghost, spread in the direction he faces
+    // (toward you when he's looking). If you are inside it while he's
+    // looking, he catches you.
+    if (S.looking && !SCARE && S.invT <= 0) {
+      const gAng = Math.atan2(S.py - S.gy, S.px - S.gx);
+      const R = 260, A = 0.5;
+      const ax = S.gx, ay = S.gy;
+      const bx = S.gx + Math.cos(gAng - A) * R, by = S.gy + Math.sin(gAng - A) * R;
+      const cx = S.gx + Math.cos(gAng + A) * R, cy = S.gy + Math.sin(gAng + A) * R;
+      // point-in-triangle (barycentric): is the player inside the view?
+      const v0x = cx - ax, v0y = cy - ay;
+      const v1x = bx - ax, v1y = by - ay;
+      const v2x = S.px - ax, v2y = S.py - ay;
+      const d00 = v0x * v0x + v0y * v0y, d01 = v0x * v1x + v0y * v1y;
+      const d02 = v0x * v2x + v0y * v2y, d11 = v1x * v1x + v1y * v1y;
+      const d12 = v1x * v2x + v1y * v2y;
+      const den = d00 * d11 - d01 * d01 || 1;
+      const u = (d11 * d02 - d01 * d12) / den;
+      const v = (d00 * d12 - d01 * d02) / den;
+      const inTri = u >= 0 && v >= 0 && (u + v) <= 1;
+      if (inTri) {
+        hurtPlayer(S.gx, S.gy);
+        if (S.phase !== 'end') {
+          S.gx = S.px > 640 ? 90 : 1190;
+          S.gy = S.py > 400 ? 140 : 640;
+        }
+        if (S.phase === 'end') return;
+      }
+    }
+
+    // --- the ghost chases you when he's turned away (or runs away
+    // when you have Power). When he's LOOKING he stands and watches.
     const gdx = S.px - S.gx, gdy = S.py - S.gy;
     const gd = Math.hypot(gdx, gdy) || 1;
     const dir = SCARE ? -1 : 1;
     const gs = D.ghost * (SCARE ? 0.9 : 1);
-    S.gx = clamp(S.gx + (gdx / gd) * dir * gs * dt, 50, 1230);
-    S.gy = clamp(S.gy + (gdy / gd) * dir * gs * dt, 110, 680);
+    if (!S.looking || SCARE) {
+      S.gx = clamp(S.gx + (gdx / gd) * dir * gs * dt, 50, 1230);
+      S.gy = clamp(S.gy + (gdy / gd) * dir * gs * dt, 110, 680);
+    }
     if (!SCARE && S.invT <= 0 && dist(S.px, S.py, S.gx, S.gy) < 46) {
       hurtPlayer(S.gx, S.gy);
       if (S.phase !== 'end') {
@@ -256,10 +319,32 @@ function create(env) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(sw.kind.icon, sw.x, sw.y + Math.sin(t * 3 + sw.bob) * 3);
     }
-    // ghost
+    // ghost — when he's LOOKING he has a TRIANGLE (his view) in front
+    // of him. If you are inside the triangle, he catches you. When
+    // he's turned away he faces away. With Power he runs from you.
+    const gAng = Math.atan2(S.py - S.gy, S.px - S.gx);
+    if (S.looking && !SCARE) {
+      // the triangle: apex at the ghost, base 260px out, spread ±0.5
+      const R = 260, A = 0.5;
+      const bx = S.gx + Math.cos(gAng - A) * R, by = S.gy + Math.sin(gAng - A) * R;
+      const cx = S.gx + Math.cos(gAng + A) * R, cy = S.gy + Math.sin(gAng + A) * R;
+      ctx.fillStyle = 'rgba(248,113,113,.22)';
+      ctx.beginPath();
+      ctx.moveTo(S.gx, S.gy); ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(248,113,113,.8)'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(S.gx, S.gy); ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.closePath(); ctx.stroke();
+      ctx.fillStyle = 'rgba(248,113,113,.9)';
+      ctx.font = "900 26px Nunito"; ctx.textAlign = 'center';
+      ctx.fillText('👀 FREEZE! Shh! (don\'t be in the triangle!)', 640, 130);
+    } else if (S.phase === 'go') {
+      ctx.fillStyle = 'rgba(74,222,128,.9)';
+      ctx.font = "900 26px Nunito"; ctx.textAlign = 'center';
+      ctx.fillText('🏃 GO! He turned away!', 640, 130);
+    }
     ctx.font = '52px "Apple Color Emoji","Segoe UI Emoji",sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(SCARE ? '😱' : '👻', S.gx, S.gy + Math.sin(t * 4) * 4);
+    ctx.fillText(SCARE ? '😱' : (S.looking ? '👀' : '👻'), S.gx, S.gy + Math.sin(t * 4) * 4);
     // Candy Boss
     const B = S.boss;
     if (B.active && !B.beaten) {
@@ -304,7 +389,8 @@ function create(env) {
       ctx.font = "900 54px 'Lilita One'"; ctx.fillText('👻 HUNTED!', 640, 300);
       ctx.font = "700 26px Nunito";
       ctx.fillText(`Go to the houses and grab ${D.target} sweets — don't get caught by the ghost!`, 640, 360);
-      ctx.fillText('The Candy Boss appears after 4 sweets. Beat it for a bonus!', 640, 396);
+      ctx.fillText('SNEAK: when he\'s LOOKING, FREEZE! When he turns away, RUN!', 640, 396);
+      ctx.fillText('The Candy Boss appears after 4 sweets. Beat it for a bonus!', 640, 432);
     }
     if (S.msg && S.msgT < 1.4) {
       ctx.fillStyle = 'rgba(15,23,42,.8)'; rrect(ctx, 440, 120, 400, 52, 14); ctx.fill();
@@ -339,13 +425,13 @@ export default {
   id: 'hunted',
   title: 'Hunted',
   tagline: 'Go to houses, grab sweets, don\'t get caught',
-  desc: 'Go to people\'s houses and collect sweets — and don\'t get caught by the ghost! The Candy Boss appears after 4 sweets. Trevor starts with $8,788.37 in Hunted cash and 3740 Hunted points, everyone else starts from zero.',
+  desc: 'Go to people\'s houses and collect sweets — and don\'t get caught by the ghost! SNEAK: when the ghost is looking at you, FREEZE (don\'t move!) — when he turns away, RUN. The Candy Boss appears after 4 sweets. Trevor starts with $8,788.37 in Hunted cash and 3740 Hunted points, everyone else starts from zero.',
   music: 'menu',
   labels: { a: '▲ UP', b: '▼ DOWN' },
   howto: `<ul>
     <li><b>Move</b>: arrow keys / joystick, the on-screen D-pad, or tap anywhere to run there.</li>
     <li><b>Goal</b>: go to the 🏠 houses and grab the target sweets (🍬🍭🍫🧁🍩) before the ⏱️ timer runs out. Each sweet is worth $1–$5 in Hunted cash and hurts the Candy Boss.</li>
-    <li><b>Ghost</b>: if the 👻 ghost catches you, you lose a ❤️ heart. Lose all 3 and the game is over.</li>
+    <li><b>SNEAK</b>: the 👻 ghost watches, then turns away. When he's <b>LOOKING</b> at you, he has a red <b>TRIANGLE</b> in front of him — if you are <b>inside the triangle, you lose</b> (he catches you!). <b>FREEZE</b> outside the triangle (Shh!) — when he <b>turns away</b>, <b>RUN</b>! If he catches you, you lose a ❤️ heart. Lose all 3 and the game is over.</li>
     <li><b>Candy Boss</b>: a big 🍭 appears after 4 sweets. It is faster! Grab sweets to wear it down — beat it for +$10.00 and a badge.</li>
     <li>💪 Power scares the ghost and the boss away — they run from you! ⚡ Speed makes you run 50% faster.</li>
   </ul>`,
