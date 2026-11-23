@@ -5,6 +5,16 @@ export const DIFF_MULT = { rookie: 1, pro: 1.5, legend: 2 };
 export const MAX_POINTS_PER_MATCH = 600;   // keep in sync with firestore.rules (limit 1000)
 export const MAX_COINS_PER_MATCH = 250;    // keep in sync with firestore.rules (limit 500)
 
+// Superpowers: coins are for superpowers. Spend coins before a match to get
+// a power for that match. Speed = move 50% faster. Power = shots and hits
+// 50% stronger. Double Points = earn double points from the match.
+export const SUPERPOWERS = [
+  { id: 'none',   name: 'None',          icon: '🚫', cost: 0,   desc: 'No superpower.' },
+  { id: 'speed',  name: 'Speed',         icon: '⚡', cost: 50,  desc: 'Run and move 50% faster.' },
+  { id: 'power',  name: 'Power',         icon: '💪', cost: 50,  desc: 'Shots and hits 50% stronger.' },
+  { id: 'double', name: 'Double Points', icon: '⭐', cost: 100, desc: 'Earn double points this match.' },
+];
+
 export const BADGES = [
   { id: 'welcome',         name: 'Welcome Aboard',     desc: 'Create your ROBLOC player.',                 icon: '👋', color: '#38bdf8' },
   { id: 'first_match',     name: 'Kickoff',            desc: 'Finish your first match in any game.',       icon: '🎮', color: '#818cf8' },
@@ -297,6 +307,8 @@ export function computeRewards(match) {
   }
   pts = Math.min(MAX_POINTS_PER_MATCH, Math.round(pts * m));
   coins = Math.min(MAX_COINS_PER_MATCH, Math.round(coins * m));
+  // The Double Points superpower doubles the points (up to twice the cap).
+  if (match.doublePoints) pts = Math.min(MAX_POINTS_PER_MATCH * 2, pts * 2);
   // Dollars: 75¢ for every coin, plus $5 for a win (or $2 for a draw), with a few random cents like a real paycheck.
   const cents = coins * 75 + (match.won ? 500 : match.draw ? 200 : 0) + Math.floor(Math.random() * 100);
   return { points: pts, coins, cents };

@@ -1,7 +1,7 @@
 // Persistence layer. Uses Firebase (Google sign-in + Firestore) when configured,
 // otherwise falls back to a local demo mode backed by localStorage.
 import { firebaseConfig } from './firebase-config.js';
-import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwnerName, isSiweiName, gameStats, SIWEI_STATS } from './economy.js';
+import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwnerName, isSiweiName, gameStats, SIWEI_STATS, coinsOf } from './economy.js';
 
 const OWNER_NAME_SPELLINGS = ['trevor', 'Trevor', 'TREVOR', 'trevor ', 'Trevor '];
 // Spellings of Si Wei's name, so only the first account with that name can use it.
@@ -208,6 +208,21 @@ class FirebaseBackend {
     }));
   }
 
+  // Spend coins on a superpower. Throws { code: 'not-enough' } when the
+  // player cannot afford it.
+  async spendCoins(amount) {
+    const { runTransaction, serverTimestamp } = this.F;
+    return this.withRepair(() => runTransaction(this.db, async tx => {
+      const snap = await tx.get(this.userRef());
+      if (!snap.exists()) throw new Error('Profile missing');
+      const p = normalizeProfile(snap.data());
+      if (coinsOf(p) < BigInt(amount)) { const e = new Error('Not enough coins'); e.code = 'not-enough'; throw e; }
+      const next = { coinsSpent: (p.coinsSpent || 0) + amount, lastAward: serverTimestamp() };
+      tx.update(this.userRef(), next);
+      return { profile: mergeLocal(this.user.uid, { ...p, ...next }) };
+    }));
+  }
+
   // Buys one shop item for `cents` (tax included). Throws { code: 'not-enough' } when it can't be afforded.
   // Buying is instant: the item is saved on this device right away, then saved to Firebase in the
   // background. When Firebase confirms, the device copy is removed (Firebase has it now).
@@ -361,6 +376,15 @@ class DemoBackend {
     const profile = { ...p, ...next };
     this.write(profile);
     return { profile, reward, newBadges };
+  }
+  // Spend coins on a superpower. Throws { code: 'not-enough' } when the
+  // player cannot afford it.
+  async spendCoins(amount) {
+    const p = normalizeProfile(this.read());
+    if (coinsOf(p) < BigInt(amount)) { const e = new Error('Not enough coins'); e.code = 'not-enough'; throw e; }
+    const profile = { ...p, coinsSpent: (p.coinsSpent || 0) + amount };
+    this.write(profile);
+    return { profile };
   }
   async purchase(itemId, cents, current, taxCents = 0) {
     const p = normalizeProfile(this.read());

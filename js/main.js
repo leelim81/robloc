@@ -2,7 +2,7 @@ import { backend, validateName } from './backend.js';
 import { audio } from './audio.js';
 import { Input } from './input.js';
 import { FX } from './fx.js';
-import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, moneyCentsOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned } from './economy.js';
+import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, moneyCentsOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned, SUPERPOWERS } from './economy.js';
 import { SKINS, HAIRS, SHIRTS, HAIR_STYLES, HAIR_STYLE_LABELS, DEFAULT_AVATAR, drawPortrait, drawAvatarFull } from './art.js';
 import soccer from './games/soccer.js';
 import pickleball from './games/pickleball.js';
@@ -560,6 +560,8 @@ const host = {
     setTimeout(() => $('#results').classList.remove('hidden'), 900);
     audio.play(result.outcome === 'win' ? 'win' : result.outcome === 'draw' ? 'draw' : 'lose');
     try {
+      // The Double Points superpower doubles the points for this match.
+      if (this.options.power === 'double') result.match.doublePoints = true;
       const res = await backend.recordMatch(result.match);
       state.profile = normalizeProfile(res.profile);
       setTimeout(() => {
@@ -606,6 +608,22 @@ function openPregame(g) {
   $('#diff-seg').parentElement.classList.toggle('hidden', !!g.noDifficulty);
   $('#btn-play').textContent = g.playLabel || 'PLAY';
   $$('#diff-seg button').forEach(b => b.classList.toggle('active', b.dataset.v === (host.lastDiff || 'rookie')));
+  // Superpowers: coins buy a power for this match. Hidden for the mall.
+  const powerBlock = $('#power-block'), powerSeg = $('#power-seg');
+  powerBlock.classList.toggle('hidden', !!g.noDifficulty);
+  if (!g.noDifficulty) {
+    const coins = Number(coinsOf(state.profile || {}));
+    $('#power-coins').textContent = `· you have ${formatShort(coins)} 🪙`;
+    powerSeg.innerHTML = SUPERPOWERS.map(p =>
+      `<button data-v="${p.id}" class="${p.id === 'none' ? 'active' : ''}" ${p.cost > coins ? 'disabled' : ''}>${p.icon} ${p.name}<small>${p.cost === 0 ? 'free' : p.cost + ' coins'}</small></button>`).join('');
+    const showDesc = id => { $('#power-desc').textContent = SUPERPOWERS.find(p => p.id === id)?.desc || ''; };
+    showDesc('none');
+    powerSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      if (b.disabled) return;
+      powerSeg.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+      showDesc(b.dataset.v);
+    }));
+  }
   const extra = $('#extra-opt'); extra.innerHTML = '';
   (g.options || []).forEach(opt => {
     extra.innerHTML += `<span class="field-label">${opt.label}</span><div class="seg" data-opt="${opt.key}">${opt.choices.map((c, i) => `<button data-v="${c.v}" class="${i === (opt.default || 0) ? 'active' : ''}">${c.label}<small>${c.sub || ''}</small></button>`).join('')}</div>`;
@@ -616,10 +634,27 @@ function openPregame(g) {
 }
 $$('#diff-seg button').forEach(b => b.addEventListener('click', () => $$('#diff-seg button').forEach(x => x.classList.toggle('active', x === b))));
 $('#btn-pregame-back').addEventListener('click', () => host.close());
-$('#btn-play').addEventListener('click', () => {
+$('#btn-play').addEventListener('click', async () => {
   const opts = { difficulty: $('#diff-seg .active').dataset.v };
   host.lastDiff = opts.difficulty;
   $$('#extra-opt .seg').forEach(seg => opts[seg.dataset.opt] = seg.querySelector('.active').dataset.v);
+  // Superpower: spend the coins now, so the power is paid for even if the
+  // player quits the match early.
+  const powerBtn = $('#power-seg .active');
+  const power = powerBtn ? powerBtn.dataset.v : 'none';
+  if (power && power !== 'none') {
+    const sp = SUPERPOWERS.find(p => p.id === power);
+    if (sp && sp.cost > 0) {
+      try {
+        const res = await backend.spendCoins(sp.cost);
+        state.profile = normalizeProfile(res.profile);
+        opts.power = power;
+      } catch (e) {
+        toast(e.code === 'not-enough' ? 'Not enough coins for that superpower!' : 'Could not buy the superpower.');
+        return;
+      }
+    }
+  }
   audio.play('whoosh');
   host.start(opts);
 });

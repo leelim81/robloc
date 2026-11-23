@@ -301,6 +301,9 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .seg button { padding: 10px 6px; border-radius: 14px; background: rgba(255,255,255,.06); border: 2px solid var(--line); font-weight: 900; display: flex; flex-direction: column; align-items: center; gap: 2px; transition: .15s; }
 .seg button small { font-weight: 700; color: var(--muted); font-size: 11px; }
 .seg button.active { border-color: var(--cyan); background: rgba(34,211,238,.14); }
+.seg button:disabled { opacity: .35; cursor: not-allowed; }
+#power-seg { grid-template-columns: repeat(4, 1fr); }
+.power-desc { color: var(--muted); font-size: 13px; margin: 8px 2px 0; line-height: 1.4; }
 .howto { background: rgba(0,0,0,.2); border-radius: 14px; padding: 10px 14px; margin-bottom: 16px; border: 1px solid var(--line); }
 .howto summary { font-weight: 900; cursor: pointer; }
 .howto ul { margin: 10px 0 4px; padding-left: 20px; color: var(--muted); font-size: 14px; line-height: 1.55; }
