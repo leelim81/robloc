@@ -77,6 +77,21 @@ export const HUNTED_TREVOR_START_WINS = 18389;
 export const MAZE_TREVOR_START_PLAYED = 82663;
 export const MAZE_TREVOR_START_WINS = 76769;
 
+// Fake leaderboard players (Trevor: "put a lot of fake people, put top
+// 20 just put fake people... close to my points"). 19 fake players fill
+// the top 20 under Trevor, so the board always looks full. Their points
+// are a fraction of Trevor's points — 99% for #2 down to 81% for #20 —
+// so they sit just below him and he stays #1. Their money, coins and
+// badges scale the same way. Willow is #2 (Trevor named her first).
+export const FAKE_NAMES = ['Willow', 'Mia', 'Leo', 'Zara', 'Kai', 'Luna', 'Max', 'Ruby', 'Finn', 'Ivy', 'Noah', 'Ella', 'Owen', 'Ava', 'Liam', 'Sophia', 'Ethan', 'Chloe', 'Lucas'];
+// i = 0..18 is the fake's place under Trevor (rank 2..20).
+export const fakeFrac = i => BigInt(99 - i);
+export function fakePoints(i) { return BigInt(OWNER_STATS.pointsBase) * fakeFrac(i) / 100n; }
+export function fakeWins(game, i) { return BigInt(OWNER_STATS.gamesBase[game].wins) * fakeFrac(i) / 100n; }
+export function fakeMoney(i) { return moneyOf(OWNER_STATS) * fakeFrac(i) / 100n; }
+export function fakeCoins(i) { return coinsOf(OWNER_STATS) * fakeFrac(i) / 100n; }
+export function fakeBadges(i) { return Math.max(0, BADGES.length - 1 - i); }
+
 // Trevor's (the owner's) stats. These override whatever roles/{uid} says, so changing them only needs a code push.
 // Win rates (Trevor: "Trevor 90 present wins others 25 percent").
 // Trevor wins about 90% of matches; everyone else wins about 25%.

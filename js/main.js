@@ -2,7 +2,7 @@ import { backend, validateName } from './backend.js';
 import { audio } from './audio.js';
 import { Input } from './input.js';
 import { FX } from './fx.js';
-import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, moneyCentsOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned, dreamItemsOwned, SUPERPOWERS, isOwnerName, OWNER_WIN_CHANCE, OTHER_WIN_CHANCE } from './economy.js';
+import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, moneyCentsOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned, dreamItemsOwned, SUPERPOWERS, isOwnerName, OWNER_WIN_CHANCE, OTHER_WIN_CHANCE, FAKE_NAMES, fakePoints, fakeWins, fakeMoney, fakeCoins, fakeBadges } from './economy.js';
 import { SKINS, HAIRS, SHIRTS, HAIR_STYLES, HAIR_STYLE_LABELS, DEFAULT_AVATAR, drawPortrait, drawAvatarFull } from './art.js';
 import soccer from './games/soccer.js';
 import pickleball from './games/pickleball.js';
@@ -312,13 +312,23 @@ function startThumbs() {
 function stopThumbs() { cancelAnimationFrame(thumbRAF); }
 
 // ---------------- leaderboard ----------------
-// The Overall board shows real players only. Everybody starts from zero, so
-// nobody is given points: the owner always stays #1 (put in at #1 himself
-// when his online player is not found), and everyone else earns their place.
-// The board shows the top 10, then only the viewing player's own row last,
-// with their estimated world rank. A plain player never appears in the top
-// 10 list, even if they would rank there.
+// The Overall board shows Trevor at #1 and 19 fake players filling the
+// top 20 under him (Trevor: "put a lot of fake people, put top 20 just
+// put fake people... close to my points"). The fakes' points sit just
+// below Trevor's (99% down to 81%), so he stays #1 and the board always
+// looks full. The board shows the top 20, then only the viewing player's
+// own row last, with their estimated world rank. A plain player never
+// appears in the top 20 list, even if they would rank there.
 const OWNER_POINTS_FALLBACK = BigInt(OWNER_STATS.pointsBase);   // Trevor's points if his profile is not loaded
+// A fake player's look: varied skin/hair/shirt so the portraits differ.
+const fakeAvatar = i => ({ skin: SKINS[i % SKINS.length], hair: HAIRS[i % HAIRS.length], style: HAIR_STYLES[i % HAIR_STYLES.length], shirt: SHIRTS[i % SHIRTS.length] });
+// The 19 fake rows for a board: value = points (Overall) or wins (a wins tab).
+function fakeRows(kind) {
+  return FAKE_NAMES.map((name, i) => {
+    const value = kind === 'points' ? fakePoints(i) : fakeWins(kind, i);
+    return { uid: 'fake-' + i, name, avatar: fakeAvatar(i), role: 'player', value, points: fakePoints(i), level: OWNER_STATS.levelBase, money: fakeMoney(i), coins: fakeCoins(i), badges: fakeBadges(i) };
+  });
+}
 function clamp01(v) { return Math.max(0, Math.min(1, v)); }
 // Estimate a player's world rank from their points. `world` is the real
 // number of players, so the rank never pretends the world is bigger than it is.
@@ -340,16 +350,19 @@ function buildOverall(rows, world) {
   if (!rows.some(r => r.role === 'owner')) {
     rows = [...rows, { uid: 'owner', name: 'Trevor', avatar: { ...DEFAULT_AVATAR }, role: 'owner', value: OWNER_POINTS_FALLBACK, points: OWNER_POINTS_FALLBACK, level: OWNER_STATS.levelBase, money: moneyOf(OWNER_STATS), coins: coinsOf(OWNER_STATS), badges: BADGES.length }];
   }
+  // Fill the top 20 with fake players under Trevor (their points sit just
+  // below his). Real players keep their own place below the fakes.
+  rows = [...rows.filter(r => !String(r.uid).startsWith('fake-')), ...fakeRows('points')];
   const owner = rows.find(r => r.role === 'owner');
   const anchor = owner ? BigInt(owner.value) : OWNER_POINTS_FALLBACK;
   const isOwnerViewer = state.user && state.profile?.role === 'owner';
-  // The top 10 are the leaders. A plain player never appears in that list:
-  // their own row always goes last, below the top 10, with their estimated
-  // world rank. The owner is the exception: his row is #1 in the top 10.
+  // The top 20 are the leaders. A plain player never appears in that list:
+  // their own row always goes last, below the top 20, with their estimated
+  // world rank. The owner is the exception: his row is #1 in the top 20.
   const pool = isOwnerViewer ? rows : rows.filter(r => r.uid !== state.user?.uid);
-  const top = [...pool].sort(cmpBig).slice(0, 10);
+  const top = [...pool].sort(cmpBig).slice(0, 20);
   top.forEach((r, i) => { r.rank = i + 1; });
-  // Below the top 10 only the signed-in player's own row is shown, with their estimated world rank.
+  // Below the top 20 only the signed-in player's own row is shown, with their estimated world rank.
   const rest = [];
   if (state.user && state.profile && !isOwnerViewer) {
     const p = state.profile;
@@ -383,18 +396,21 @@ async function renderLeaderboard() {
   let top = rows, rest = [];
   if (overall) ({ top, rest } = buildOverall(rows, count || rows.length || 1));
   else {
-    // Wins tabs: top 10, then your own row at the bottom. A plain player
-    // never appears in the top 10: their own row always goes last.
+    // Wins tabs: top 20, then your own row at the bottom. A plain player
+    // never appears in the top 20: their own row always goes last.
     // Trevor is always #1 here too: if his row is missing, put him in at #1
     // from his fixed per-game wins and push everyone else one rank down.
+    // Then fill the top 20 with fake players under him, like the Overall board.
     if (!rows.some(r => r.role === 'owner')) {
       rows = [{ uid: 'owner', name: 'Trevor', avatar: { ...DEFAULT_AVATAR }, role: 'owner', value: OWNER_STATS.gamesBase[state.lbKind].wins, points: OWNER_POINTS_FALLBACK, level: OWNER_STATS.levelBase, money: moneyOf(OWNER_STATS), coins: coinsOf(OWNER_STATS), badges: BADGES.length }, ...rows];
       rows.sort(cmpBig);
     }
+    rows = [...rows.filter(r => !String(r.uid).startsWith('fake-')), ...fakeRows(state.lbKind)];
     const isOwnerViewer = state.user && state.profile?.role === 'owner';
     const pool = isOwnerViewer ? rows : rows.filter(r => r.uid !== state.user?.uid);
+    pool.sort(cmpBig);
     pool.forEach((r, i) => { r.rank = i + 1; });
-    top = pool.slice(0, 10);
+    top = pool.slice(0, 20);
     if (state.user && state.profile && !isOwnerViewer) {
       const mine = rows.find(r => r.uid === state.user.uid);
       const p = state.profile, wins = gameStats(p, state.lbKind).wins;
@@ -437,7 +453,7 @@ async function renderLeaderboard() {
   if (!top.length) note.textContent = 'No rankings yet. Finish a match to get on the board!';
   else if (overall) note.textContent = count ? (count === 1 ? '1 player worldwide' : `${formatBig(count)} players worldwide`) : '';
   else if (backend.mode === 'demo') note.textContent = 'Demo mode shows only this device. Sign in online to compete with everyone.';
-  else note.textContent = 'Top 10 players.';
+  else note.textContent = 'Top 20 players.';
 }
 
 function renderBadges() {
