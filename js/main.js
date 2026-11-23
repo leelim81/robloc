@@ -281,12 +281,12 @@ function buildOverall(rows, world) {
   // If the signed-in player is the owner, use their own profile so they always show at #1.
   if (state.user && state.profile?.role === 'owner') {
     const p = state.profile;
-    rows = [...rows.filter(r => r.uid !== state.user.uid), { uid: state.user.uid, name: p.name, avatar: p.avatar, role: 'owner', value: totalPoints(p), points: totalPoints(p) }];
+    rows = [...rows.filter(r => r.uid !== state.user.uid), { uid: state.user.uid, name: p.name, avatar: p.avatar, role: 'owner', value: totalPoints(p), points: totalPoints(p), money: moneyOf(p), coins: coinsOf(p), badges: p.badges.length }];
   }
   // If the owner's row is not in the list at all (his online player was not
   // found), put him in at #1 himself and push everyone else one rank down.
   if (!rows.some(r => r.role === 'owner')) {
-    rows = [...rows, { uid: 'owner', name: 'Trevor', avatar: { ...DEFAULT_AVATAR }, role: 'owner', value: OWNER_POINTS_FALLBACK, points: OWNER_POINTS_FALLBACK, level: OWNER_STATS.levelBase }];
+    rows = [...rows, { uid: 'owner', name: 'Trevor', avatar: { ...DEFAULT_AVATAR }, role: 'owner', value: OWNER_POINTS_FALLBACK, points: OWNER_POINTS_FALLBACK, level: OWNER_STATS.levelBase, money: moneyOf(OWNER_STATS), coins: coinsOf(OWNER_STATS), badges: BADGES.length }];
   }
   const owner = rows.find(r => r.role === 'owner');
   const anchor = owner ? BigInt(owner.value) : OWNER_POINTS_FALLBACK;
@@ -302,7 +302,7 @@ function buildOverall(rows, world) {
   if (state.user && state.profile && !isOwnerViewer) {
     const p = state.profile;
     const mine = rows.find(r => r.uid === state.user.uid);
-    rest.push(mine || { uid: state.user.uid, name: p.name, avatar: p.avatar, role: p.role, value: totalPoints(p), points: totalPoints(p) });
+    rest.push(mine || { uid: state.user.uid, name: p.name, avatar: p.avatar, role: p.role, value: totalPoints(p), points: totalPoints(p), money: moneyOf(p), coins: coinsOf(p), badges: p.badges.length });
   }
   rest.sort(cmpBig);
   let last = top.length;
@@ -336,7 +336,7 @@ async function renderLeaderboard() {
     // Trevor is always #1 here too: if his row is missing, put him in at #1
     // from his fixed per-game wins and push everyone else one rank down.
     if (!rows.some(r => r.role === 'owner')) {
-      rows = [{ uid: 'owner', name: 'Trevor', avatar: { ...DEFAULT_AVATAR }, role: 'owner', value: OWNER_STATS.gamesBase[state.lbKind].wins, points: OWNER_POINTS_FALLBACK, level: OWNER_STATS.levelBase }, ...rows];
+      rows = [{ uid: 'owner', name: 'Trevor', avatar: { ...DEFAULT_AVATAR }, role: 'owner', value: OWNER_STATS.gamesBase[state.lbKind].wins, points: OWNER_POINTS_FALLBACK, level: OWNER_STATS.levelBase, money: moneyOf(OWNER_STATS), coins: coinsOf(OWNER_STATS), badges: BADGES.length }, ...rows];
       rows.sort(cmpBig);
     }
     const isOwnerViewer = state.user && state.profile?.role === 'owner';
@@ -346,17 +346,22 @@ async function renderLeaderboard() {
     if (state.user && state.profile && !isOwnerViewer) {
       const mine = rows.find(r => r.uid === state.user.uid);
       const p = state.profile, wins = gameStats(p, state.lbKind).wins;
-      rest = [mine || { uid: state.user.uid, name: p.name, avatar: p.avatar, role: p.role, value: wins, points: totalPoints(p), level: playerLevel(p).level }];
+      rest = [mine || { uid: state.user.uid, name: p.name, avatar: p.avatar, role: p.role, value: wins, points: totalPoints(p), level: playerLevel(p).level, money: moneyOf(p), coins: coinsOf(p), badges: p.badges.length }];
       rest.forEach(r => { r.rank = pool.length + 1; });
     }
   }
   const unit = overall ? 'pts' : 'wins';
   const roleTag = r => r.role === 'owner' ? '<span class="role-tag owner">👑</span>' : '';
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Every player on the board shows their dollars, points, coins and badges,
+  // so nobody looks like they are missing any of them. Dollars show like the
+  // hub ($10.00 when small, $73.5Sp when huge).
+  const fmtDollars = m => { const v = BigInt(m ?? 0n); return v < 100000n ? '$' + formatBig(v) + '.00' : '$' + formatShort(v); };
+  const rowStats = r => `${fmtDollars(r.money)} · 🪙 ${formatShort(r.coins ?? 0n)} · ⭐ ${formatShort(r.points ?? r.value ?? 0n)} pts · 🏅 ${(r.badges ?? 0)}/${BADGES.length}`;
   top.slice(0, 3).forEach((r, i) => {
     const d = document.createElement('div');
     d.className = `pod p${i + 1}`; d.style.animationDelay = (0.1 + (2 - i) * 0.12) + 's';
-    d.innerHTML = `<canvas width="168" height="168"></canvas><div class="pod-name">${esc(r.name)} ${roleTag(r)}</div><div class="pod-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</div><div class="pod-block">${i + 1}</div>`;
+    d.innerHTML = `<canvas width="168" height="168"></canvas><div class="pod-name">${esc(r.name)} ${roleTag(r)}</div><div class="pod-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</div><div class="pod-stats">${rowStats(r)}</div><div class="pod-block">${i + 1}</div>`;
     drawPortrait(d.querySelector('canvas'), r.avatar, { bg: false });
     pod.appendChild(d);
   });
@@ -366,7 +371,8 @@ async function renderLeaderboard() {
     li.className = 'lb-row' + (isMe ? ' me' : ''); li.style.animationDelay = Math.min(i, 15) * 0.03 + 's';
     const rank = formatBig(r.rank);
     li.innerHTML = `<span class="lb-rank${rank.length > 3 ? ' long' : ''}">${rank}</span><canvas width="88" height="88"></canvas>
-      <span class="lb-name">${esc(r.name)} ${roleTag(r)} ${!overall ? `<small>Lv ${formatShort(r.level ?? levelInfo(r.points).level)}</small>` : ''}${isMe ? '<span class="lb-you">YOU</span>' : ''}</span>
+      <span class="lb-main"><span class="lb-name">${esc(r.name)} ${roleTag(r)} ${!overall ? `<small>Lv ${formatShort(r.level ?? levelInfo(r.points).level)}</small>` : ''}${isMe ? '<span class="lb-you">YOU</span>' : ''}</span>
+      <span class="lb-stats">${rowStats(r)}</span></span>
       <span class="lb-val" title="${formatBig(r.value)}">${formatShort(r.value)} ${unit}</span>`;
     drawPortrait(li.querySelector('canvas'), r.avatar);
     list.appendChild(li);

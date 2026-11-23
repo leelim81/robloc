@@ -1,7 +1,7 @@
 // Persistence layer. Uses Firebase (Google sign-in + Firestore) when configured,
 // otherwise falls back to a local demo mode backed by localStorage.
 import { firebaseConfig } from './firebase-config.js';
-import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwnerName, isSiweiName, gameStats, SIWEI_STATS, coinsOf, moneyCentsOf } from './economy.js';
+import { applyMatch, normalizeProfile, totalPoints, payPlan, playerLevel, isOwnerName, isSiweiName, gameStats, SIWEI_STATS, coinsOf, moneyOf, moneyCentsOf } from './economy.js';
 
 const OWNER_NAME_SPELLINGS = ['trevor', 'Trevor', 'TREVOR', 'trevor ', 'Trevor '];
 // Spellings of Si Wei's name, so only the first account with that name can use it.
@@ -311,7 +311,7 @@ class FirebaseBackend {
     for (const d of [...snaps.docs, ...(special ? special.docs : []), ...(named ? named.docs : [])]) {
       const p = normalizeProfile(d.data());
       const value = lbValue(p, kind);
-      if (value > 0) byId.set(d.id, { uid: d.id, name: p.name, avatar: p.avatar, role: p.role, value, points: totalPoints(p), level: playerLevel(p).level });
+      if (value > 0) byId.set(d.id, { uid: d.id, name: p.name, avatar: p.avatar, role: p.role, value, points: totalPoints(p), level: playerLevel(p).level, money: moneyOf(p), coins: coinsOf(p), badges: p.badges.length });
     }
     return [...byId.values()].sort((a, b) => (BigInt(b.value) > BigInt(a.value) ? 1 : BigInt(b.value) < BigInt(a.value) ? -1 : 0)).slice(0, 50);
   }
@@ -427,7 +427,7 @@ class DemoBackend {
     if (!p) return [];
     const np = normalizeProfile(p);
     const v = lbValue(np, kind);
-    return v > 0 ? [{ uid: 'demo-player', name: np.name, avatar: np.avatar, role: np.role, value: v, points: totalPoints(np), level: playerLevel(np).level }] : [];
+    return v > 0 ? [{ uid: 'demo-player', name: np.name, avatar: np.avatar, role: np.role, value: v, points: totalPoints(np), level: playerLevel(np).level, money: moneyOf(np), coins: coinsOf(np), badges: np.badges.length }] : [];
   }
 }
 
