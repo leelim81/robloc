@@ -165,13 +165,39 @@ $('#btn-setup-done').addEventListener('click', async () => {
 
 // ---------------- hub ----------------
 function enterHub() {
-  // In Hunted mode there is no hub — just the Hunted game, on its own.
-  if (HUNTED_MODE) { openPregame(hunted); return; }
+  // In Hunted mode there is no big hub — just a chooser with ONE game
+  // (Hunted), like the others: you pick your game, but there is only
+  // one game to pick. Tapping its card opens the Hunted pregame.
+  if (HUNTED_MODE) {
+    show('screen-hub');
+    audio.music('menu');
+    renderTopbar(false);
+    renderHuntedChooser();
+    switchView('games');
+    return;
+  }
   show('screen-hub');
   audio.music('menu');
   renderTopbar(false);
   renderGames();
   switchView(state.view);
+}
+
+// Hunted chooser: the hub's games grid with only the Hunted card.
+function renderHuntedChooser() {
+  const grid = $('#games-grid'); grid.innerHTML = '';
+  const p = state.profile;
+  const g = hunted;
+  const st = gameStats(p, g.id);
+  const card = document.createElement('button');
+  card.className = 'game-card playable';
+  card.innerHTML = `<canvas data-thumb="${g.id}" width="520" height="325"></canvas>
+      <span class="play-badge">PLAY</span>
+      <div class="card-body"><h3 class="card-title">${g.title}</h3><p class="card-sub">${g.tagline}</p>
+      <div class="card-meta"><span class="meta-pill" title="${formatBig(st.played)}">${formatShort(st.played)} played</span><span class="meta-pill best" title="${formatBig(st.wins)}">🏆 ${formatShort(st.wins)} wins</span></div></div>`;
+  card.addEventListener('click', () => openPregame(g));
+  grid.appendChild(card);
+  startThumbs();
 }
 
 let shown = { points: 0n, coins: 0n };
