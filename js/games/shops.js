@@ -1,7 +1,8 @@
-// ROBLOC shop catalog: 208,560 shops. 1-10,000 sell all kinds of things (the first 18 are hand-made),
+// ROBLOC shop catalog: 218,560 shops. 1-10,000 sell all kinds of things (the first 18 are hand-made),
 // 10,001-78,000 sell food, 78,001-88,000 sell drinks, 88,001-90,780 sell clothes and shoes,
 // 90,781-193,560 sell makeup (Floor 5, 102,780 shops), 193,561-198,560 are restaurants (Floor 6),
-// and 198,561-208,560 are toys (Floor 7, 10,000 toy shops).
+// 198,561-208,560 are toys (Floor 7), 208,561-213,560 are hotels (Level G, 5,000 hotels)
+// and 213,561-218,560 are arcades (Level UG, 5,000 arcades).
 // The mall also has a B1 car park level (120 bays, no shops).
 // Prices are in cents.
 
@@ -67,7 +68,7 @@ export function fmtCents(c) {
 // ---------- generated shops ----------
 // Shops 19 to 10,000 are generated from shop types below. The same shop number always gives the same
 // name, items and prices, so nothing needs storing. Each shop sells 7 to 1,000 items.
-export const SHOP_COUNT = 208560;
+export const SHOP_COUNT = 218560;
 
 // [item, emoji, lowest price, highest price] in dollars
 const KINDS = [
@@ -259,7 +260,25 @@ const TOYS_KINDS = [
   toy('outdoor', ['Outdoor Toys', 'Play Outside', 'Backyard Fun'], '🪁', '#22c55e', [['Kite', '🪁', 10, 45], ['Soccer Ball', '⚽', 15, 60], ['Water Gun', '🔫', 8, 40], ['Bubble Wand', '🫧', 3, 15], ['Jump Rope', '🪢', 5, 20], ['Frisbee', '🥏', 8, 30]]),
   toy('crafts', ['Art & Craft', 'Crafts', 'Art Studio', 'Makers'], '🎨', '#f97316', [['Paint Set', '🎨', 8, 120], ['Crayons', '🖍️', 2, 20], ['Paint Brush', '🖌️', 2, 40], ['Canvas', '🖼️', 6, 150], ['Scissors', '✂️', 3, 25], ['Clay', '🏺', 5, 40], ['Pencils', '✏️', 2, 30]]),
 ];
-const FOOD_FROM = 10000, DRINK_FROM = 78000, CLOTHES_FROM = 88000, MAKEUP_FROM = 90780, RESTAURANT_FROM = 193560, TOYS_FROM = 198560;
+// Level G (Ground): hotels. Each hotel sells rooms — book a room like
+// buying an item, and it goes into your inventory.
+const hotel = (key, words, icon, color, t) => ({ key, words, icon, color, t, v1: COLORS, v2: MODS });
+const HOTEL_KINDS = [
+  hotel('hotel', ['Hotel', 'Grand Hotel', 'Luxury Hotel', 'City Hotel'], '🏨', '#0ea5e9', [['Deluxe Room', '🛏️', 80, 300], ['Suite', '🛏️', 150, 600], ['Standard Room', '🛏️', 50, 200], ['Family Room', '🛏️', 120, 400], ['Breakfast', '🍳', 10, 30], ['Room Service', '🛎️', 15, 50]]),
+  hotel('resort', ['Resort', 'Beach Resort', 'Island Resort', 'Holiday Resort'], '🏝️', '#14b8a6', [['Beach Villa', '🏝️', 200, 800], ['Ocean Room', '🌊', 150, 500], ['Pool Villa', '🏊', 250, 900], ['Spa Session', '💆', 30, 100], ['Beach Towel', '🏖️', 8, 30]]),
+  hotel('motel', ['Motel', 'Inn', 'Guest House', 'Roadside Inn'], '🛏️', '#f59e0b', [['Room', '🛏️', 40, 120], ['Double Room', '🛏️', 60, 180], ['Family Room', '🛏️', 90, 250], ['Breakfast', '🍳', 8, 25]]),
+  hotel('hostel', ['Hostel', 'Backpackers', 'Youth Hostel', 'Travelers Lodge'], '🎒', '#22c55e', [['Dorm Bed', '🛏️', 15, 50], ['Private Room', '🛏️', 40, 120], ['Locker', '🔒', 5, 20], ['Map', '🗺️', 3, 12]]),
+];
+// Level UG (Underground): arcades. Each arcade sells game tokens and
+// prizes — play tokens, claw machine plushies and VR sessions.
+const arcade = (key, words, icon, color, t) => ({ key, words, icon, color, t, v1: COLORS, v2: MODS });
+const ARCADE_KINDS = [
+  arcade('arcade', ['Arcade', 'Game Arcade', 'Fun Zone', 'Play Palace'], '🕹️', '#a855f7', [['Game Token', '🪙', 1, 5], ['Arcade Game', '🕹️', 5, 20], ['Prize Ticket', '🎟️', 2, 10], ['Plush Toy', '🧸', 10, 40], ['Candy', '🍬', 1, 5]]),
+  arcade('claw', ['Claw Machine', 'Prize Claw', 'Grabber', 'Claw World'], '🧸', '#ec4899', [['Plush Bear', '🧸', 5, 20], ['Plush Bunny', '🐰', 5, 20], ['Toy Robot', '🤖', 8, 30], ['Keychain', '🔑', 3, 10], ['Plush Cat', '🐱', 5, 20]]),
+  arcade('racing', ['Racing Games', 'Race Zone', 'Speed Arcade', 'Turbo Racers'], '🏎️', '#ef4444', [['Race Token', '🏎️', 2, 10], ['Racing Game', '🏎️', 5, 20], ['Steering Wheel', '🎮', 20, 80], ['Trophy', '🏆', 10, 50]]),
+  arcade('vr', ['VR Arcade', 'Virtual Reality', 'VR Zone', 'Future Games'], '🥽', '#0891b2', [['VR Session', '🥽', 10, 40], ['VR Game', '🥽', 15, 60], ['VR Headset', '🥽', 50, 200], ['3D Glasses', '👓', 5, 25]]),
+];
+const FOOD_FROM = 10000, DRINK_FROM = 78000, CLOTHES_FROM = 88000, MAKEUP_FROM = 90780, RESTAURANT_FROM = 193560, TOYS_FROM = 198560, HOTEL_FROM = 208560, ARCADE_FROM = 213560;
 export const SECTIONS = [
   { name: 'Shops', from: 0, to: FOOD_FROM },
   { name: 'Food', from: FOOD_FROM, to: DRINK_FROM },
@@ -271,12 +290,18 @@ export const SECTIONS = [
   { name: 'Restaurants', from: RESTAURANT_FROM, to: TOYS_FROM },
   // Floor 7: toys (198,561-208,560) — toy shops, dolls, games, blocks,
   // outdoor toys and crafts, below the Roof and above the Restaurants.
-  { name: 'Toys', from: TOYS_FROM, to: 208560 },
+  { name: 'Toys', from: TOYS_FROM, to: HOTEL_FROM },
+  // Level G (Ground): hotels (208,561-213,560) — hotels, resorts, motels
+  // and hostels, below Floor 1 and above the Underground level.
+  { name: 'Hotels', from: HOTEL_FROM, to: ARCADE_FROM },
+  // Level UG (Underground): arcades (213,561-218,560) — arcades, claw
+  // machines, racing games and VR, below the Ground level and above B1.
+  { name: 'Arcades', from: ARCADE_FROM, to: 218560 },
   // B1 has no shops (from == to): 120 car park bays instead, drawn by the mall itself.
-  { name: 'Car Parks', from: 208560, to: 208560 },
+  { name: 'Car Parks', from: 218560, to: 218560 },
   // R (the Roof) has no shops either: 3 swimming pools, sun chairs and
   // umbrellas instead, drawn by the mall itself.
-  { name: 'Roof', from: 208560, to: 208560 },
+  { name: 'Roof', from: 218560, to: 218560 },
 ];
 export const sectionOf = i => SECTIONS.find(s => i >= s.from && i < s.to) || SECTIONS[0];
 
@@ -294,7 +319,9 @@ export function shopInfo(i) {
   }
   // Toys (Floor 7) use the toy kinds; restaurants (Floor 6) sell food
   // like the Food floor — sit-down restaurants with an owner's name.
-  const kinds = i >= TOYS_FROM ? TOYS_KINDS : i >= RESTAURANT_FROM ? FOOD_KINDS : i >= MAKEUP_FROM ? MAKEUP_KINDS : i >= CLOTHES_FROM ? CLOTHES_KINDS : i >= DRINK_FROM ? DRINK_KINDS : i >= FOOD_FROM ? FOOD_KINDS : KINDS;
+  // Hotels (Level G) use the hotel kinds; arcades (Level UG) use the
+  // arcade kinds.
+  const kinds = i >= ARCADE_FROM ? ARCADE_KINDS : i >= HOTEL_FROM ? HOTEL_KINDS : i >= TOYS_FROM ? TOYS_KINDS : i >= RESTAURANT_FROM ? FOOD_KINDS : i >= MAKEUP_FROM ? MAKEUP_KINDS : i >= CLOTHES_FROM ? CLOTHES_KINDS : i >= DRINK_FROM ? DRINK_KINDS : i >= FOOD_FROM ? FOOD_KINDS : KINDS;
   const kind = kinds[Math.floor(r() * kinds.length)];
   const lead = kinds !== KINDS && r() < 0.5 ? OWNERS[Math.floor(r() * OWNERS.length)] : PREFIXES[Math.floor(r() * PREFIXES.length)];
   const name = lead + ' ' + kind.words[Math.floor(r() * kind.words.length)];
