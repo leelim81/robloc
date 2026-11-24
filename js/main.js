@@ -686,6 +686,30 @@ const host = {
       if (this.options.power === 'double') result.match.doublePoints = true;
       if (this.options.power === 'lucky') result.match.doubleCoins = true;
       if (this.options.power === 'shield') result.match.shield = true;
+      // The power is only spent now that the match is done. A held power
+      // (bought in the mall) is used up; a new power is charged now. If
+      // the match was cancelled instead, this never runs, so the power
+      // stays — cancelling or restarting a match never loses a superpower.
+      if (this.options.power && this.options.power !== 'none') {
+        const sp = SUPERPOWERS.find(p => p.id === this.options.power);
+        if (sp && sp.cost > 0) {
+          if (this.options.powerHeld) {
+            clearPowerHeld();
+          } else if (this.options.powerUnpaid) {
+            try {
+              const res = await backend.spendPower(sp);
+              state.profile = normalizeProfile(res.profile);
+            } catch (e) {
+              console.warn('Could not charge for the superpower', e);
+            }
+          }
+        }
+        // The power was spent on this match only — the next match starts
+        // without one, so "Play again" does not get it for free.
+        delete this.options.power;
+        delete this.options.powerHeld;
+        delete this.options.powerUnpaid;
+      }
       const res = await backend.recordMatch(result.match);
       state.profile = normalizeProfile(res.profile);
       setTimeout(() => {
@@ -697,7 +721,10 @@ const host = {
           d.innerHTML = badgeSVG(b) + b.name; $('#results-badges').appendChild(d);
           setTimeout(() => badgeToast(b), 1400 + i * 700);
         });
-        $('#results-save').textContent = backend.mode === 'demo' ? 'Saved on this device.' : 'Saved to your account ✓';
+        // The rewards are saved — to the account when Firebase accepts
+        // them, otherwise on this device (the cloud sync runs in the
+        // background), so the player always keeps what they earned.
+        $('#results-save').textContent = backend.mode === 'demo' ? 'Saved on this device.' : 'Saved ✓';
       }, 1200);
     } catch (e) {
       console.error(e);
@@ -766,9 +793,9 @@ $('#btn-play').addEventListener('click', async () => {
   const opts = { difficulty: $('#diff-seg .active').dataset.v };
   host.lastDiff = opts.difficulty;
   $$('#extra-opt .seg').forEach(seg => opts[seg.dataset.opt] = seg.querySelector('.active').dataset.v);
-  // Superpower: spend the dollars AND coins now, so the power is paid for even if the
-  // player quits the match early. A power bought in the mall search is
-  // already paid for — use it without charging again.
+  // Superpower: the power is only spent when the match actually ends.
+  // If the player cancels or restarts the match, the power is NOT lost —
+  // a held power stays held, and a new power is only charged at the end.
   const powerBtn = $('#power-seg .active');
   const power = powerBtn ? powerBtn.dataset.v : 'none';
   if (power && power !== 'none') {
@@ -776,18 +803,18 @@ $('#btn-play').addEventListener('click', async () => {
     if (sp && sp.cost > 0) {
       if (power === getPowerHeld()) {
         opts.power = power;
-        clearPowerHeld();
+        opts.powerHeld = true;
       } else {
-        try {
-          const res = await backend.spendPower(sp);
-          state.profile = normalizeProfile(res.profile);
-          opts.power = power;
-        } catch (e) {
-          // Show the real reason, not just "could not buy": if Firebase refuses
-          // the save (for example the old rules), the code tells us why.
-          toast(e.code === 'not-enough' ? 'Not enough money or coins for that superpower!' : 'Could not buy the superpower. (' + (e.code || e.message || 'unknown') + ')');
+        // New power: check the player can afford it now, but only charge
+        // when the match ends (so cancelling costs nothing).
+        const coins = Number(coinsOf(state.profile || {}));
+        const dollars = Number(moneyOf(state.profile || {}));
+        if (sp.cost > coins || sp.dollars > dollars) {
+          toast('Not enough money or coins for that superpower!');
           return;
         }
+        opts.power = power;
+        opts.powerUnpaid = true;
       }
     }
   }

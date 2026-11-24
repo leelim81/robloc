@@ -1,6 +1,7 @@
-// ROBLOC shop catalog: 93,560 shops. 1-10,000 sell all kinds of things (the first 18 are hand-made),
+// ROBLOC shop catalog: 98,560 shops. 1-10,000 sell all kinds of things (the first 18 are hand-made),
 // 10,001-78,000 sell food, 78,001-88,000 sell drinks, 88,001-90,780 sell clothes and shoes,
-// and 90,781-93,560 sell makeup. The mall also has a B1 car park level (120 bays, no shops).
+// 90,781-93,560 sell makeup, and 93,561-98,560 are restaurants (Floor 6).
+// The mall also has a B1 car park level (120 bays, no shops).
 // Prices are in cents.
 
 export const TAX_RATE = 0.08;
@@ -65,7 +66,7 @@ export function fmtCents(c) {
 // ---------- generated shops ----------
 // Shops 19 to 10,000 are generated from shop types below. The same shop number always gives the same
 // name, items and prices, so nothing needs storing. Each shop sells 7 to 1,000 items.
-export const SHOP_COUNT = 93560;
+export const SHOP_COUNT = 98560;
 
 // [item, emoji, lowest price, highest price] in dollars
 const KINDS = [
@@ -247,18 +248,21 @@ const MAKEUP_KINDS = [
   makeup('mirror', ['Mirrors', 'Vanity', 'Mirror Shop'], '🪞', '#64748b', [['Mirror', '🪞', 10, 150], ['Makeup Bag', '👜', 12, 120], ['Vanity Case', '👜', 25, 300], ['Travel Mirror', '🪞', 8, 60]]),
   makeup('bath', ['Bath & Body', 'Bath Shop', 'Body Care'], '🛁', '#14b8a6', [['Bath Bomb', '🛁', 3, 15], ['Soap', '🧼', 2, 15], ['Body Wash', '🧴', 4, 25], ['Hand Cream', '🧴', 3, 30]]),
 ];
-const FOOD_FROM = 10000, DRINK_FROM = 78000, CLOTHES_FROM = 88000, MAKEUP_FROM = 90780;
+const FOOD_FROM = 10000, DRINK_FROM = 78000, CLOTHES_FROM = 88000, MAKEUP_FROM = 90780, RESTAURANT_FROM = 93560;
 export const SECTIONS = [
   { name: 'Shops', from: 0, to: FOOD_FROM },
   { name: 'Food', from: FOOD_FROM, to: DRINK_FROM },
   { name: 'Drinks', from: DRINK_FROM, to: CLOTHES_FROM },
   { name: 'Clothes', from: CLOTHES_FROM, to: MAKEUP_FROM },
-  { name: 'Makeup', from: MAKEUP_FROM, to: 93560 },
+  { name: 'Makeup', from: MAKEUP_FROM, to: RESTAURANT_FROM },
+  // Floor 6: restaurants (93,561-98,560) — sit-down restaurants selling
+  // food, like the Food floor but its own floor below the Roof.
+  { name: 'Restaurants', from: RESTAURANT_FROM, to: 98560 },
   // B1 has no shops (from == to): 120 car park bays instead, drawn by the mall itself.
-  { name: 'Car Parks', from: 93560, to: 93560 },
+  { name: 'Car Parks', from: 98560, to: 98560 },
   // R (the Roof) has no shops either: 3 swimming pools, sun chairs and
   // umbrellas instead, drawn by the mall itself.
-  { name: 'Roof', from: 93560, to: 93560 },
+  { name: 'Roof', from: 98560, to: 98560 },
 ];
 export const sectionOf = i => SECTIONS.find(s => i >= s.from && i < s.to) || SECTIONS[0];
 
@@ -274,7 +278,9 @@ export function shopInfo(i) {
     const c = CURATED[i];
     return remember(infoCache, i, { index: i, number: i + 1, name: c.name, icon: c.icon, color: c.color, kind: KIND_BY_KEY[c.id], count: Math.max(count, c.items.length), section: 'Shops' });
   }
-  const kinds = i >= MAKEUP_FROM ? MAKEUP_KINDS : i >= CLOTHES_FROM ? CLOTHES_KINDS : i >= DRINK_FROM ? DRINK_KINDS : i >= FOOD_FROM ? FOOD_KINDS : KINDS;
+  // Restaurants (Floor 6) sell food like the Food floor — sit-down
+  // restaurants with an owner's name (e.g. "Rosa's Sushi").
+  const kinds = i >= RESTAURANT_FROM ? FOOD_KINDS : i >= MAKEUP_FROM ? MAKEUP_KINDS : i >= CLOTHES_FROM ? CLOTHES_KINDS : i >= DRINK_FROM ? DRINK_KINDS : i >= FOOD_FROM ? FOOD_KINDS : KINDS;
   const kind = kinds[Math.floor(r() * kinds.length)];
   const lead = kinds !== KINDS && r() < 0.5 ? OWNERS[Math.floor(r() * OWNERS.length)] : PREFIXES[Math.floor(r() * PREFIXES.length)];
   const name = lead + ' ' + kind.words[Math.floor(r() * kind.words.length)];

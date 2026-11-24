@@ -150,7 +150,9 @@ class FirebaseBackend {
     const r = await this.readRole();
     await this.syncRole({ ...PLAYER_ROLE, ...snap.data() }, r);
     // Show the role bonuses locally even if saving them to the profile was refused.
-    return mergeLocal(this.user.uid, { ...p, ...this.bonusesFor(r, p) });
+    // Pending match rewards kept on this device are applied too, so a player
+    // still sees the money they earned even when Firebase refused the save.
+    return mergePending(this.user.uid, mergeLocal(this.user.uid, { ...p, ...this.bonusesFor(r, p) }));
   }
   // Copies roles/{uid} into the player's profile so others see it on the leaderboard. Never blocks play.
   async syncRole(p, r) {
@@ -222,6 +224,9 @@ class FirebaseBackend {
     const { serverTimestamp } = this.F;
     await this.withRepair(() => this.F.updateDoc(this.userRef(), { ...ZERO_PROFILE, lastAward: serverTimestamp() }));
     clearLocal(this.user.uid);
+    // Pending match rewards kept on this device are cleared too, so
+    // starting over does not bring old earnings back.
+    writePending(this.user.uid, []);
     const snap = await this.F.getDoc(this.userRef());
     // Starting over returns the player to their starting balance: Si Wei
     // gets his $700,000 and 10,000 coins back, like a brand-new Si Wei
@@ -231,20 +236,39 @@ class FirebaseBackend {
   }
   async recordMatch(match) {
     const { runTransaction, serverTimestamp } = this.F;
-    return this.withRepair(() => runTransaction(this.db, async tx => {
-      const snap = await tx.get(this.userRef());
-      if (!snap.exists()) throw new Error('Profile missing');
-      const p = normalizeProfile(snap.data());
-      const { next, reward, newBadges } = applyMatch(p, match);
+    // Work out the reward on this device first, so the player is paid even
+    // if Firebase refuses the save (the old rules are still published in
+    // the console). The match is kept on this device until the cloud
+    // confirms it, so the money survives a reload and is never paid twice.
+    const snap = await this.F.getDoc(this.userRef());
+    if (!snap.exists()) throw new Error('Profile missing');
+    const p = normalizeProfile(snap.data());
+    const base = mergePending(this.user.uid, p);
+    const { next, reward, newBadges } = applyMatch(base, match);
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const list = readPending(this.user.uid);
+    list.push({ id, match });
+    writePending(this.user.uid, list);
+    // Cloud sync in the background: on confirm, drop the local copy so it
+    // is not counted twice; on refusal, keep it on this device.
+    this.withRepair(() => runTransaction(this.db, async tx => {
+      const s2 = await tx.get(this.userRef());
+      if (!s2.exists()) throw new Error('Profile missing');
+      const p2 = normalizeProfile(s2.data());
+      const { next: next2 } = applyMatch(p2, match);
       // The saved document must keep plain-player role fields: the rules
       // only allow role 'player' with bases 0/10, or an exact roles/{uid}
       // match. Trevor's own amounts come from his NAME in the code, not
       // from the saved role fields, so writing his owner role ('owner'
       // with huge bases) here made Firebase refuse EVERY save for him —
       // matches said "could not save rewards" and nothing was stored.
-      tx.update(this.userRef(), { ...next, ...PLAYER_ROLE, lastAward: serverTimestamp() });
-      return { profile: mergeLocal(this.user.uid, { ...p, ...next }), reward, newBadges };
-    }));
+      tx.update(this.userRef(), { ...next2, ...PLAYER_ROLE, lastAward: serverTimestamp() });
+    })).then(() => {
+      writePending(this.user.uid, readPending(this.user.uid).filter(e => e.id !== id));
+    }).catch(e => {
+      console.warn('Match rewards kept on this device only (Firebase did not accept them)', e);
+    });
+    return { profile: mergeLocal(this.user.uid, { ...base, ...next }), reward, newBadges };
   }
 
   // Spend dollars AND coins on a superpower, like a real game. Throws
@@ -387,6 +411,27 @@ function mergeLocal(uid, p) {
     coinsSpent: (p.coinsSpent || 0) + (l.coinsSpent || 0),
     bossPaidCents: String(BigInt(p.bossPaidCents || '0') + BigInt(l.bossPaidCents || '0')),
   });
+}
+
+// Match rewards Firebase refused (usually because new rules weren't published
+// yet) are kept on this device so playing still pays; they're applied to the
+// profile whenever it loads. Each entry is { id, match } — the match is kept
+// until the cloud confirms it, so it survives a reload and is never paid twice.
+const pendingKey = uid => 'robloc_local_pending_' + uid;
+function readPending(uid) {
+  try { return JSON.parse(localStorage.getItem(pendingKey(uid)) || 'null') || []; }
+  catch { return []; }
+}
+function writePending(uid, list) { try { localStorage.setItem(pendingKey(uid), JSON.stringify(list)); } catch {} }
+function mergePending(uid, p) {
+  const list = readPending(uid);
+  let prof = p;
+  for (const entry of list) {
+    if (!entry || !entry.match) continue;
+    const { next } = applyMatch(prof, entry.match);
+    prof = { ...prof, ...next };
+  }
+  return prof;
 }
 
 function spend(p, itemId, cents, skipCheck = false, taxCents = 0) {
