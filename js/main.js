@@ -710,7 +710,7 @@ const host = {
         delete this.options.powerHeld;
         delete this.options.powerUnpaid;
       }
-      const res = await backend.recordMatch(result.match);
+      const res = await backend.recordMatch(result.match, state.profile);
       state.profile = normalizeProfile(res.profile);
       setTimeout(() => {
         countUp('#rw-points', res.reward.points); countUp('#rw-coins', res.reward.coins, true);

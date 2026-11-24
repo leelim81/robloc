@@ -234,15 +234,23 @@ class FirebaseBackend {
     const prof = normalizeProfile(snap.data());
     return { ...prof, ...this.bonusesFor(await this.readRole(), prof) };
   }
-  async recordMatch(match) {
+  async recordMatch(match, currentProfile) {
     const { runTransaction, serverTimestamp } = this.F;
-    // Work out the reward on this device first, so the player is paid even
-    // if Firebase refuses the save (the old rules are still published in
-    // the console). The match is kept on this device until the cloud
-    // confirms it, so the money survives a reload and is never paid twice.
-    const snap = await this.F.getDoc(this.userRef());
-    if (!snap.exists()) throw new Error('Profile missing');
-    const p = normalizeProfile(snap.data());
+    // Work out the reward on this device first, from the profile already
+    // in memory, so the player is paid even if Firebase cannot be reached
+    // at all (network "unavailable") or refuses the save (old rules still
+    // published in the console). The match is kept on this device until
+    // the cloud confirms it, so the money survives a reload and is never
+    // paid twice. Only fall back to reading the cloud profile when the
+    // caller did not pass one.
+    let p;
+    if (currentProfile) {
+      p = normalizeProfile(currentProfile);
+    } else {
+      const snap = await this.F.getDoc(this.userRef());
+      if (!snap.exists()) throw new Error('Profile missing');
+      p = normalizeProfile(snap.data());
+    }
     const base = mergePending(this.user.uid, p);
     const { next, reward, newBadges } = applyMatch(base, match);
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
