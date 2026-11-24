@@ -2,7 +2,7 @@ import { backend, validateName } from './backend.js';
 import { audio } from './audio.js';
 import { Input } from './input.js';
 import { FX } from './fx.js';
-import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, moneyCentsOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned, SUPERPOWERS, isOwnerName, OWNER_WIN_CHANCE, OTHER_WIN_CHANCE, fakeNamesFor, fakeAvatarSeed, fakePoints, fakeWins, fakeMoney, fakeCoins, fakeBadges } from './economy.js';
+import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, moneyCentsOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned, SUPERPOWERS, isOwnerName, OWNER_WIN_CHANCE, OTHER_WIN_CHANCE, fakeNamesFor, fakeAvatarSeed, fakePoints, fakeWins, fakeMoney, fakeCoins, fakeBadges, WORLD_PLAYERS } from './economy.js';
 import { SKINS, HAIRS, SHIRTS, HAIR_STYLES, HAIR_STYLE_LABELS, DEFAULT_AVATAR, drawPortrait, drawAvatarFull } from './art.js';
 import soccer from './games/soccer.js';
 import pickleball from './games/pickleball.js';
@@ -470,7 +470,7 @@ async function renderLeaderboard() {
     rest.forEach((r, i) => addRow(r, top.length + i));
   }
   if (!top.length) note.textContent = 'No rankings yet. Finish a match to get on the board!';
-  else if (overall) note.textContent = count ? (count === 1 ? '1 player worldwide' : `${formatBig(count)} players worldwide`) : '';
+  else if (overall) note.textContent = `${WORLD_PLAYERS} players worldwide`;
   else if (backend.mode === 'demo') note.textContent = 'Demo mode shows only this device. Sign in online to compete with everyone.';
   else note.textContent = 'Top 20 players.';
 }

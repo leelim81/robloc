@@ -98,17 +98,22 @@ export function fakeNamesFor(kind) {
 // A fake player's look, from their name — so the same person looks the
 // same on every board they appear on.
 export function fakeAvatarSeed(name) { return hashStr(name); }
-// i = 0..18 is the fake's place under Trevor (rank 2..20).
+// Players worldwide, as Trevor wrote it (2026-11-24: "Don't write 1
+// player worldwide write 7645835375373572528729719727 players
+// worldwide"). Shown on the Overall leaderboard note instead of the
+// real player count. Kept as a string — it has 28 digits, far past
+// Number.MAX_SAFE_INTEGER, so it must never go through Number().
+export const WORLD_PLAYERS = '7645835375373572528729719727';
 export const fakeFrac = i => BigInt(99 - i);
 export function fakePoints(i) { return BigInt(OWNER_STATS.pointsBase) * fakeFrac(i) / 100n; }
 export function fakeWins(game, i) { return BigInt(OWNER_STATS.gamesBase[game].wins) * fakeFrac(i) / 100n; }
 export function fakeMoney(i) { return moneyOf(OWNER_STATS) * fakeFrac(i) / 100n; }
 export function fakeCoins(i) { return coinsOf(OWNER_STATS) * fakeFrac(i) / 100n; }
-// Fake leaderboard badges: everyone in the top 20 has 25 badges
-// (Trevor, 2026-11-24: "everybody in the leaderboard got 25... 25 out
-// of 25 for everyone in the top 20 only"). Trevor himself keeps all
-// 35 badges (he is #1 with every badge); this is only for the fakes.
-export function fakeBadges(i) { return 25; }
+// Fake leaderboard badges: everyone in the top 20 has ALL 35 badges
+// (Trevor, 2026-11-24: "top 20 all 35/35... Not 25/25. Top 20 only,
+// all 35/35"). Trevor himself also has all 35 (he is #1 with every
+// badge). A real player's own row still shows their own real count.
+export function fakeBadges(i) { return BADGES.length; }
 
 // Trevor's (the owner's) stats. These override whatever roles/{uid} says, so changing them only needs a code push.
 // Win rates (Trevor: "Trevor 90 present wins others 25 percent").
