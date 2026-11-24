@@ -242,25 +242,45 @@ class FirebaseBackend {
 
   // Spend dollars AND coins on a superpower, like a real game. Throws
   // { code: 'not-enough' } when the player cannot afford either price.
+  // Buy a superpower with dollars AND coins. Like a shop purchase, the
+  // spend is kept on this device first: if Firebase refuses the save —
+  // for example the old rules are still published in the console — the
+  // power still works and the spend still counts. The cloud sync runs
+  // in the background; once it confirms, the local record is removed
+  // so the spend is not counted twice. (Before this, a Firebase
+  // refusal meant no power at all, and Trevor kept seeing "permission".)
   async spendPower(power) {
-    const { runTransaction, serverTimestamp } = this.F;
-    return this.withRepair(() => runTransaction(this.db, async tx => {
+    const uid = this.user.uid;
+    const dollarsCents = BigInt(power.dollars || 0) * 100n;
+    // Affordability uses the profile as loaded (cloud + device-local spends).
+    const p = await this.loadProfile();
+    if (!p) throw new Error('Profile missing');
+    if (moneyCentsOf(p) < dollarsCents || coinsOf(p) < BigInt(power.cost)) { const e = new Error('Not enough money or coins'); e.code = 'not-enough'; throw e; }
+    const local = sign => {
+      const l = readLocal(uid);
+      l.moneySpentCents = String(BigInt(l.moneySpentCents || '0') + BigInt(sign) * dollarsCents);
+      l.coinsSpent = (l.coinsSpent || 0) + sign * power.cost;
+      writeLocal(uid, l);
+    };
+    local(1);
+    this.withRepair(() => this.F.runTransaction(this.db, async tx => {
       const snap = await tx.get(this.userRef());
       if (!snap.exists()) throw new Error('Profile missing');
-      const p = normalizeProfile(snap.data());
-      const dollarsCents = BigInt(power.dollars || 0) * 100n;
-      if (moneyCentsOf(p) < dollarsCents || coinsOf(p) < BigInt(power.cost)) { const e = new Error('Not enough money or coins'); e.code = 'not-enough'; throw e; }
-      const next = {
-        moneySpentCents: String(BigInt(p.moneySpentCents || '0') + dollarsCents),
-        coinsSpent: (p.coinsSpent || 0) + power.cost,
-        lastAward: serverTimestamp(),
+      const raw = normalizeProfile(snap.data());
+      tx.update(this.userRef(), {
+        moneySpentCents: String(BigInt(raw.moneySpentCents || '0') + dollarsCents),
+        coinsSpent: (raw.coinsSpent || 0) + power.cost,
+        lastAward: this.F.serverTimestamp(),
         // Keep the saved role fields plain (see recordMatch): writing
         // Trevor's owner role here would make Firebase refuse the buy.
         ...PLAYER_ROLE,
-      };
-      tx.update(this.userRef(), next);
-      return { profile: mergeLocal(this.user.uid, { ...p, ...next }) };
-    }));
+      });
+    })).then(() => local(-1)).catch(e => console.warn('Superpower kept on this device only', e));
+    return { profile: {
+      ...p,
+      moneySpentCents: String(BigInt(p.moneySpentCents || '0') + dollarsCents),
+      coinsSpent: (p.coinsSpent || 0) + power.cost,
+    } };
   }
 
   // Buys one shop item for `cents` (tax included). Throws { code: 'not-enough' } when it can't be afforded.

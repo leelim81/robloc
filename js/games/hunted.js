@@ -8,15 +8,15 @@
 // you. Shh!
 import { rrect } from '../art.js';
 
-const LOOK_TIME = 2.0;   // the ghost watches you for 2s — FREEZE!
-const TURN_TIME = 3.0;   // the ghost turns away for 3s — RUN!
+const LOOK_TIME = 1.5;   // the ghost watches you for 1.5s — FREEZE!
+const TURN_TIME = 4.0;   // the ghost turns away for 4s — RUN!
 
 const DIFF = {
-  rookie: { time: 60, target: 8, ghost: 150, boss: 200 },
-  pro: { time: 50, target: 12, ghost: 175, boss: 225 },
-  legend: { time: 40, target: 16, ghost: 200, boss: 250 },
-  boost: { time: 75, target: 8, ghost: 140, boss: 190 },   // win-chance matches
-  tough: { time: 35, target: 18, ghost: 220, boss: 270 },  // others: hard game, so they win about 25%
+  rookie: { time: 75, target: 6, ghost: 120, boss: 160 },
+  pro: { time: 60, target: 8, ghost: 140, boss: 180 },
+  legend: { time: 50, target: 10, ghost: 160, boss: 200 },
+  boost: { time: 90, target: 6, ghost: 110, boss: 150 },   // win-chance matches (Trevor wins about 90%)
+  tough: { time: 45, target: 12, ghost: 180, boss: 210 },  // others: hard game, so they win about 25%
 };
 const SWEET_KINDS = [
   { icon: '🍬', value: 100 },   // $1.00
@@ -54,7 +54,7 @@ function create(env) {
   const S = {
     phase: 'intro', t: 0, timeLeft: D.time,
     px: 640, py: 360, tx: null, ty: null,
-    gx: 120, gy: 120, hearts: 3, invT: 0,
+    gx: 120, gy: 120, hearts: 5, invT: 0,   // 5 lives (Trevor: "give five lives")
     // sneak: the ghost watches, then turns away. When he's LOOKING and
     // you move, he catches you. When he's turned away, run!
     looking: false, lookT: TURN_TIME, lookAge: 0,
@@ -115,7 +115,7 @@ function create(env) {
     S.t += dt; S.msgT += dt;
     if (S.invT > 0) S.invT -= dt;
     input.setTapMode(true);
-    if (S.labelKey !== 'hunted') { S.labelKey = 'hunted'; input.setLabels('▲ UP', '▼ DOWN'); }
+    if (S.labelKey !== 'hunted') { S.labelKey = 'hunted'; input.setLabels('▲ FRONT', '▼ BACK'); }
     for (const t of input.taps) for (let k = hits.length - 1; k >= 0; k--) {
       const h = hits[k];
       if (t.x >= h.x && t.x <= h.x + h.w && t.y >= h.y && t.y <= h.y + h.h) { h.fn(t); break; }
@@ -205,7 +205,7 @@ function create(env) {
     // looking, he catches you.
     if (S.looking && !SCARE && S.invT <= 0) {
       const gAng = Math.atan2(S.py - S.gy, S.px - S.gx);
-      const R = 260, A = 0.5;
+      const R = 200, A = 0.5;
       const ax = S.gx, ay = S.gy;
       const bx = S.gx + Math.cos(gAng - A) * R, by = S.gy + Math.sin(gAng - A) * R;
       const cx = S.gx + Math.cos(gAng + A) * R, cy = S.gy + Math.sin(gAng + A) * R;
@@ -301,7 +301,7 @@ function create(env) {
     ctx.fillText(`⏱️ ${Math.ceil(S.timeLeft)}s`, 56, 47);
     ctx.fillStyle = '#fff';
     ctx.fillText(`🍬 ${S.sweets} / ${D.target}`, 200, 47);
-    ctx.fillText('❤️'.repeat(Math.max(0, S.hearts)) + '🖤'.repeat(Math.max(0, 3 - S.hearts)), 370, 47);
+    ctx.fillText('❤️'.repeat(Math.max(0, S.hearts)) + '🖤'.repeat(Math.max(0, 5 - S.hearts)), 370, 47);
     ctx.textAlign = 'right';
     ctx.fillText(`💰 ${money(S.cash)}`, 724, 47);
     // Hunted points (Trevor starts at 3740, everyone else at 0)
@@ -326,7 +326,7 @@ function create(env) {
     const gAng = Math.atan2(S.py - S.gy, S.px - S.gx);
     if (S.looking && !SCARE) {
       // the triangle: apex at the ghost, base 260px out, spread ±0.5
-      const R = 260, A = 0.5;
+      const R = 200, A = 0.5;
       const bx = S.gx + Math.cos(gAng - A) * R, by = S.gy + Math.sin(gAng - A) * R;
       const cx = S.gx + Math.cos(gAng + A) * R, cy = S.gy + Math.sin(gAng + A) * R;
       ctx.fillStyle = 'rgba(248,113,113,.22)';
@@ -361,7 +361,8 @@ function create(env) {
       ctx.fillText('🧒', S.px, S.py + Math.sin(t * 5) * 2);
     }
     fx.draw(ctx);
-    // D-pad (right side): tap a direction to run that way.
+    // D-pad (right side): big, bright buttons to run LEFT / RIGHT /
+    // FRONT (up) / BACK (down). Tap a direction to run that way.
     // Push the tap-to-move area FIRST so the D-pad (pushed after it) is
     // checked first — hits are read in reverse, and the big tap area
     // would otherwise swallow every D-pad tap.
@@ -370,10 +371,16 @@ function create(env) {
         x: 0, y: 100, w: 1280, h: 620,
         fn: t2 => { S.tx = clamp(t2.x, 50, 1230); S.ty = clamp(t2.y, 110, 680); },
       });
-      const bx = 1120, by = 400, s = 74, g = 10;
+      const bx = 1100, by = 400, s = 88, g = 12;
+      ctx.fillStyle = '#fff'; ctx.font = "900 20px Nunito"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('FRONT', bx + s / 2, by - s - g - 14);
+      ctx.fillText('BACK', bx + s / 2, by + s + g + s + 14);
+      ctx.fillText('LEFT', bx - s - g - 34, by + s / 2);
+      ctx.fillText('RIGHT', bx + s + g + s + 40, by + s / 2);
       const btn = (x, y, label, dir) => {
-        ctx.fillStyle = 'rgba(255,255,255,.22)'; rrect(ctx, x, y, s, s, 14); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.font = "900 34px Nunito";
+        ctx.fillStyle = 'rgba(255,255,255,.38)'; rrect(ctx, x, y, s, s, 16); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 3; rrect(ctx, x, y, s, s, 16); ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = "900 44px Nunito";
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(label, x + s / 2, y + s / 2 + 2);
         hits.push({ x, y, w: s, h: s, fn: () => { S.padDir = dir; audio.play('tick'); } });
