@@ -236,7 +236,7 @@ function create(env) {
   }
 
   if (env.debug) env.debug({ S, buy });
-  // Test hook (like __dream): lets Playwright read the shop state and
+  // Test hook (like __hunted): lets Playwright read the shop state and
   // the item positions so a test can tap an item and BUY it.
   if (typeof window !== 'undefined') window.__brick = { S, items: BRICK_ITEMS, at: itemAt };
   audio.setCrowd(0.08);
