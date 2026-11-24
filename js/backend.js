@@ -72,6 +72,11 @@ class FirebaseBackend {
     this.app = app.initializeApp(firebaseConfig);
     this.auth = auth.getAuth(this.app);
     this.db = fs.getFirestore(this.app);
+    // Stay signed in on this device (Trevor, 2026-11-24: "every time
+    // you want to play the game, you must start from the front page...
+    // pick your Gmail"). Remember the sign-in on this device so opening
+    // the game goes straight to the hub instead of the front page.
+    try { await auth.setPersistence(this.auth, auth.browserLocalPersistence); } catch (e) { console.warn('Could not set auth persistence', e); }
     try { await auth.getRedirectResult(this.auth); } catch (e) { this.redirectError = e; }
     auth.onAuthStateChanged(this.auth, u => {
       this.user = u ? { uid: u.uid, email: u.email, displayName: u.displayName } : null;
@@ -81,7 +86,9 @@ class FirebaseBackend {
   async signIn() {
     if (!this.A) throw Object.assign(new Error('Firebase Auth is not ready.'), { code: 'auth/network-request-failed' });
     const provider = new this.A.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
+    // No 'select_account' prompt: Google signs in with the account
+    // already on this device, so Trevor does not have to pick his Gmail
+    // every time (Trevor, 2026-11-24).
     try {
       await this.A.signInWithPopup(this.auth, provider);
     } catch (e) {
