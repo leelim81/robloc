@@ -90,7 +90,11 @@ export function fakePoints(i) { return BigInt(OWNER_STATS.pointsBase) * fakeFrac
 export function fakeWins(game, i) { return BigInt(OWNER_STATS.gamesBase[game].wins) * fakeFrac(i) / 100n; }
 export function fakeMoney(i) { return moneyOf(OWNER_STATS) * fakeFrac(i) / 100n; }
 export function fakeCoins(i) { return coinsOf(OWNER_STATS) * fakeFrac(i) / 100n; }
-export function fakeBadges(i) { return Math.max(0, BADGES.length - 1 - i); }
+// Fake leaderboard badges: everyone in the top 20 has 25 badges
+// (Trevor, 2026-11-24: "everybody in the leaderboard got 25... 25 out
+// of 25 for everyone in the top 20 only"). Trevor himself keeps all
+// 35 badges (he is #1 with every badge); this is only for the fakes.
+export function fakeBadges(i) { return 25; }
 
 // Trevor's (the owner's) stats. These override whatever roles/{uid} says, so changing them only needs a code push.
 // Win rates (Trevor: "Trevor 90 present wins others 25 percent").
