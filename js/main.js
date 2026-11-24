@@ -2,7 +2,7 @@ import { backend, validateName } from './backend.js';
 import { audio } from './audio.js';
 import { Input } from './input.js';
 import { FX } from './fx.js';
-import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, moneyCentsOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned, SUPERPOWERS, isOwnerName, OWNER_WIN_CHANCE, OTHER_WIN_CHANCE, FAKE_NAMES, fakePoints, fakeWins, fakeMoney, fakeCoins, fakeBadges } from './economy.js';
+import { OWNER_STATS, BADGES, BADGE_MAP, badgeSVG, badgeProgress, coinsOf, moneyOf, moneyCentsOf, formatBig, formatShort, levelInfo, playerLevel, normalizeProfile, totalPoints, careerOf, gameStats, itemsOwned, SUPERPOWERS, isOwnerName, OWNER_WIN_CHANCE, OTHER_WIN_CHANCE, fakeNamesFor, fakeAvatarSeed, fakePoints, fakeWins, fakeMoney, fakeCoins, fakeBadges } from './economy.js';
 import { SKINS, HAIRS, SHIRTS, HAIR_STYLES, HAIR_STYLE_LABELS, DEFAULT_AVATAR, drawPortrait, drawAvatarFull } from './art.js';
 import soccer from './games/soccer.js';
 import pickleball from './games/pickleball.js';
@@ -333,12 +333,14 @@ function stopThumbs() { cancelAnimationFrame(thumbRAF); }
 // appears in the top 20 list, even if they would rank there.
 const OWNER_POINTS_FALLBACK = BigInt(OWNER_STATS.pointsBase);   // Trevor's points if his profile is not loaded
 // A fake player's look: varied skin/hair/shirt so the portraits differ.
-const fakeAvatar = i => ({ skin: SKINS[i % SKINS.length], hair: HAIRS[i % HAIRS.length], style: HAIR_STYLES[i % HAIR_STYLES.length], shirt: SHIRTS[i % SHIRTS.length] });
+const fakeAvatar = name => { const s = fakeAvatarSeed(name); return { skin: SKINS[s % SKINS.length], hair: HAIRS[s % HAIRS.length], style: HAIR_STYLES[s % HAIR_STYLES.length], shirt: SHIRTS[s % SHIRTS.length] }; };
 // The 19 fake rows for a board: value = points (Overall), money (Money tab) or wins (a wins tab).
+// Each board has DIFFERENT fake people in a DIFFERENT order (see
+// fakeNamesFor), so the tabs don't all show Willow #2, Mia #3...
 function fakeRows(kind) {
-  return FAKE_NAMES.map((name, i) => {
+  return fakeNamesFor(kind).map((name, i) => {
     const value = kind === 'points' ? fakePoints(i) : kind === 'money' ? fakeMoney(i) : fakeWins(kind, i);
-    return { uid: 'fake-' + i, name, avatar: fakeAvatar(i), role: 'player', value, points: fakePoints(i), level: OWNER_STATS.levelBase, money: fakeMoney(i), coins: fakeCoins(i), badges: fakeBadges(i) };
+    return { uid: 'fake-' + name.toLowerCase(), name, avatar: fakeAvatar(name), role: 'player', value, points: fakePoints(i), level: OWNER_STATS.levelBase, money: fakeMoney(i), coins: fakeCoins(i), badges: fakeBadges(i) };
   });
 }
 function clamp01(v) { return Math.max(0, Math.min(1, v)); }

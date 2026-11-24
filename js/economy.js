@@ -78,12 +78,26 @@ export const MAZE_TREVOR_START_PLAYED = 82663;
 export const MAZE_TREVOR_START_WINS = 76769;
 
 // Fake leaderboard players (Trevor: "put a lot of fake people, put top
-// 20 just put fake people... close to my points"). 19 fake players fill
-// the top 20 under Trevor, so the board always looks full. Their points
+// 20 just put fake people... close to my points"). A pool of 40 names;
+// each board (Overall, Money, Soccer, Pickleball, Baseball) shows a
+// DIFFERENT 19 of them, in a different order (Trevor, 2026-11-24:
+// "always the same people on overall money and everything... make it
+// different people") — so Willow is not #2 on every tab. Their points
 // are a fraction of Trevor's points — 99% for #2 down to 81% for #20 —
 // so they sit just below him and he stays #1. Their money, coins and
-// badges scale the same way. Willow is #2 (Trevor named her first).
-export const FAKE_NAMES = ['Willow', 'Mia', 'Leo', 'Zara', 'Kai', 'Luna', 'Max', 'Ruby', 'Finn', 'Ivy', 'Noah', 'Ella', 'Owen', 'Ava', 'Liam', 'Sophia', 'Ethan', 'Chloe', 'Lucas'];
+// badges scale the same way.
+export const FAKE_NAMES = ['Willow', 'Mia', 'Leo', 'Zara', 'Kai', 'Luna', 'Max', 'Ruby', 'Finn', 'Ivy', 'Noah', 'Ella', 'Owen', 'Ava', 'Liam', 'Sophia', 'Ethan', 'Chloe', 'Lucas', 'Harper', 'Mason', 'Aria', 'Logan', 'Layla', 'James', 'Amelia', 'Benjamin', 'Charlotte', 'Henry', 'Evelyn', 'Alexander', 'Abigail', 'Daniel', 'Emily', 'Jacob', 'Elizabeth', 'Michael', 'Sofia', 'Matthew', 'Grace'];
+// A different 19 fake people for each board, in a different order.
+// Deterministic (a hash of the board kind + the name), so the board
+// looks the same every time you open it, but each tab has different
+// people at different ranks.
+function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
+export function fakeNamesFor(kind) {
+  return [...FAKE_NAMES].sort((a, b) => hashStr(kind + ':' + a) - hashStr(kind + ':' + b)).slice(0, 19);
+}
+// A fake player's look, from their name — so the same person looks the
+// same on every board they appear on.
+export function fakeAvatarSeed(name) { return hashStr(name); }
 // i = 0..18 is the fake's place under Trevor (rank 2..20).
 export const fakeFrac = i => BigInt(99 - i);
 export function fakePoints(i) { return BigInt(OWNER_STATS.pointsBase) * fakeFrac(i) / 100n; }
