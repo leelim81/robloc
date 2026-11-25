@@ -202,9 +202,14 @@ function renderHuntedChooser() {
   const grid = $('#games-grid'); grid.innerHTML = '';
   // Spooky line at the top, then the collect-sweets game below it
   // (Trevor: "write spooky stuff then put the collect sweets game below").
-  const spooky = document.createElement('div');
+  // The line is a button: tap it to go back to the front page (the main
+  // hub) — Trevor: "you press the spooky night again and you return to
+  // the front page". Press once on the hub to come here, press again
+  // here to go back.
+  const spooky = document.createElement('button');
   spooky.className = 'hunted-spooky';
-  spooky.innerHTML = `👻 SPOOKY NIGHT! 🎃<br><span>Collect sweets from the houses — but don't get caught by the ghost! Shh… when he's looking, FREEZE! When he turns away, RUN!</span>`;
+  spooky.innerHTML = `👻 SPOOKY NIGHT! 🎃<br><span>Collect sweets from the houses — but don't get caught by the ghost! Shh… when he's looking, FREEZE! When he turns away, RUN!<br>👆 Tap this line to go back to ROBLOC</span>`;
+  spooky.addEventListener('click', () => { location.href = 'index.html'; });
   grid.appendChild(spooky);
   const p = state.profile;
   const g = hunted;
