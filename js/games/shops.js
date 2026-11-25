@@ -1,8 +1,9 @@
-// ROBLOC shop catalog: 218,560 shops. 1-10,000 sell all kinds of things (the first 18 are hand-made),
+// ROBLOC shop catalog: 223,560 shops. 1-10,000 sell all kinds of things (the first 18 are hand-made),
 // 10,001-78,000 sell food, 78,001-88,000 sell drinks, 88,001-90,780 sell clothes and shoes,
 // 90,781-193,560 sell makeup (Floor 5, 102,780 shops), 193,561-198,560 are restaurants (Floor 6),
-// 198,561-208,560 are toys (Floor 7), 208,561-213,560 are hotels (Level G, 5,000 hotels)
-// and 213,561-218,560 are arcades (Level UG, 5,000 arcades).
+// 198,561-208,560 are toys (Floor 7), 208,561-213,560 are hotels (Level G, 5,000 hotels),
+// 213,561-218,560 are arcades (Level UG, 5,000 arcades)
+// and 218,561-223,560 are pets (Level 0, 5,000 pet shops).
 // The mall also has a B1 car park level (120 bays, no shops).
 // Prices are in cents.
 
@@ -68,7 +69,7 @@ export function fmtCents(c) {
 // ---------- generated shops ----------
 // Shops 19 to 10,000 are generated from shop types below. The same shop number always gives the same
 // name, items and prices, so nothing needs storing. Each shop sells 7 to 1,000 items.
-export const SHOP_COUNT = 218560;
+export const SHOP_COUNT = 223560;
 
 // [item, emoji, lowest price, highest price] in dollars
 const KINDS = [
@@ -278,7 +279,17 @@ const ARCADE_KINDS = [
   arcade('racing', ['Racing Games', 'Race Zone', 'Speed Arcade', 'Turbo Racers'], '🏎️', '#ef4444', [['Race Token', '🏎️', 2, 10], ['Racing Game', '🏎️', 5, 20], ['Steering Wheel', '🎮', 20, 80], ['Trophy', '🏆', 10, 50]]),
   arcade('vr', ['VR Arcade', 'Virtual Reality', 'VR Zone', 'Future Games'], '🥽', '#0891b2', [['VR Session', '🥽', 10, 40], ['VR Game', '🥽', 15, 60], ['VR Headset', '🥽', 50, 200], ['3D Glasses', '👓', 5, 25]]),
 ];
-const FOOD_FROM = 10000, DRINK_FROM = 78000, CLOTHES_FROM = 88000, MAKEUP_FROM = 90780, RESTAURANT_FROM = 193560, TOYS_FROM = 198560, HOTEL_FROM = 208560, ARCADE_FROM = 213560;
+// Level 0: pets. Each pet shop sells pets and pet things — puppies,
+// kittens, hamsters, parrots, goldfish, food, beds and toys.
+const pet = (key, words, icon, color, t) => ({ key, words, icon, color, t, v1: COLORS, v2: MODS });
+const PETS_KINDS = [
+  pet('pets', ['Pets', 'Pet Shop', 'Pet World', 'Furry Friends'], '🐶', '#f59e0b', [['Puppy', '🐶', 100, 500], ['Kitten', '🐱', 80, 400], ['Hamster', '🐹', 20, 80], ['Parrot', '🦜', 50, 300], ['Goldfish', '🐠', 5, 30], ['Rabbit', '🐰', 40, 200]]),
+  pet('dogs', ['Dogs', 'Dog Shop', 'Puppy Palace', 'Dog World'], '🐶', '#ea580c', [['Puppy', '🐶', 100, 500], ['Dog Food', '🦴', 10, 50], ['Leash', '🦮', 8, 40], ['Dog Bed', '🛏️', 20, 100], ['Dog Toy', '🧸', 5, 30], ['Dog Treats', '🦴', 3, 20]]),
+  pet('cats', ['Cats', 'Cat Shop', 'Kitty Corner', 'Cat World'], '🐱', '#ec4899', [['Kitten', '🐱', 80, 400], ['Cat Food', '🐟', 8, 40], ['Litter', '📦', 5, 25], ['Cat Toy', '🧶', 4, 20], ['Cat Bed', '🛏️', 15, 80], ['Scratching Post', '🐾', 20, 100]]),
+  pet('birds', ['Birds', 'Bird Shop', 'Feathered Friends', 'Aviary'], '🦜', '#22c55e', [['Parrot', '🦜', 50, 300], ['Bird Cage', '🏠', 30, 200], ['Bird Seed', '🌻', 3, 15], ['Bird Toy', '🪀', 4, 20], ['Canary', '🐤', 25, 150]]),
+  pet('fish', ['Fish', 'Fish Shop', 'Aquarium', 'Underwater World'], '🐠', '#0891b2', [['Goldfish', '🐠', 5, 30], ['Aquarium', '🏠', 40, 300], ['Fish Food', '🍤', 2, 10], ['Tropical Fish', '🐟', 10, 60], ['Coral', '🪸', 15, 80]]),
+];
+const FOOD_FROM = 10000, DRINK_FROM = 78000, CLOTHES_FROM = 88000, MAKEUP_FROM = 90780, RESTAURANT_FROM = 193560, TOYS_FROM = 198560, HOTEL_FROM = 208560, ARCADE_FROM = 213560, PETS_FROM = 218560;
 export const SECTIONS = [
   { name: 'Shops', from: 0, to: FOOD_FROM },
   { name: 'Food', from: FOOD_FROM, to: DRINK_FROM },
@@ -295,13 +306,17 @@ export const SECTIONS = [
   // and hostels, below Floor 1 and above the Underground level.
   { name: 'Hotels', from: HOTEL_FROM, to: ARCADE_FROM },
   // Level UG (Underground): arcades (213,561-218,560) — arcades, claw
-  // machines, racing games and VR, below the Ground level and above B1.
-  { name: 'Arcades', from: ARCADE_FROM, to: 218560 },
+  // machines, racing games and VR, below Level 0 and above Level G.
+  { name: 'Arcades', from: ARCADE_FROM, to: PETS_FROM },
+  // Level 0: pets (218,561-223,560) — pet shops, dogs, cats, birds and
+  // fish, below Floor 1 and above UG. The floor order bottom to top is
+  // B1, G, UG, 0, 1, 2, 3, 4, 5, 6, 7, R (Trevor, 2026-11-25).
+  { name: 'Pets', from: PETS_FROM, to: 223560 },
   // B1 has no shops (from == to): 120 car park bays instead, drawn by the mall itself.
-  { name: 'Car Parks', from: 218560, to: 218560 },
+  { name: 'Car Parks', from: 223560, to: 223560 },
   // R (the Roof) has no shops either: 3 swimming pools, sun chairs and
   // umbrellas instead, drawn by the mall itself.
-  { name: 'Roof', from: 218560, to: 218560 },
+  { name: 'Roof', from: 223560, to: 223560 },
 ];
 export const sectionOf = i => SECTIONS.find(s => i >= s.from && i < s.to) || SECTIONS[0];
 
@@ -320,8 +335,8 @@ export function shopInfo(i) {
   // Toys (Floor 7) use the toy kinds; restaurants (Floor 6) sell food
   // like the Food floor — sit-down restaurants with an owner's name.
   // Hotels (Level G) use the hotel kinds; arcades (Level UG) use the
-  // arcade kinds.
-  const kinds = i >= ARCADE_FROM ? ARCADE_KINDS : i >= HOTEL_FROM ? HOTEL_KINDS : i >= TOYS_FROM ? TOYS_KINDS : i >= RESTAURANT_FROM ? FOOD_KINDS : i >= MAKEUP_FROM ? MAKEUP_KINDS : i >= CLOTHES_FROM ? CLOTHES_KINDS : i >= DRINK_FROM ? DRINK_KINDS : i >= FOOD_FROM ? FOOD_KINDS : KINDS;
+  // arcade kinds; pets (Level 0) use the pet kinds.
+  const kinds = i >= PETS_FROM ? PETS_KINDS : i >= ARCADE_FROM ? ARCADE_KINDS : i >= HOTEL_FROM ? HOTEL_KINDS : i >= TOYS_FROM ? TOYS_KINDS : i >= RESTAURANT_FROM ? FOOD_KINDS : i >= MAKEUP_FROM ? MAKEUP_KINDS : i >= CLOTHES_FROM ? CLOTHES_KINDS : i >= DRINK_FROM ? DRINK_KINDS : i >= FOOD_FROM ? FOOD_KINDS : KINDS;
   const kind = kinds[Math.floor(r() * kinds.length)];
   const lead = kinds !== KINDS && r() < 0.5 ? OWNERS[Math.floor(r() * OWNERS.length)] : PREFIXES[Math.floor(r() * PREFIXES.length)];
   const name = lead + ' ' + kind.words[Math.floor(r() * kind.words.length)];
