@@ -283,6 +283,14 @@ function switchView(v) {
 
 function renderGames() {
   const grid = $('#games-grid'); grid.innerHTML = '';
+  // Hunted lives on its own page (Trevor: Hunted is a separate game, not
+  // in this hub), so put a spooky line at the top that takes you there —
+  // Trevor: "where's the hunted game and put a line on top".
+  const huntedLink = document.createElement('button');
+  huntedLink.className = 'hunted-spooky';
+  huntedLink.innerHTML = `👻 ROBLOC Hunted is here! 🎃<br><span>Tap to play the collect sweets game — don't get caught by the ghost!</span>`;
+  huntedLink.addEventListener('click', () => { location.href = 'hunted.html'; });
+  grid.appendChild(huntedLink);
   const p = state.profile;
   GAMES.forEach((g, i) => {
     const card = document.createElement('button');
