@@ -152,7 +152,9 @@ class FirebaseBackend {
     // Show the role bonuses locally even if saving them to the profile was refused.
     // Pending match rewards kept on this device are applied too, so a player
     // still sees the money they earned even when Firebase refused the save.
-    return mergePending(this.user.uid, mergeLocal(this.user.uid, { ...p, ...this.bonusesFor(r, p) }));
+    // The device wallet (by name) is applied last, so money earned on this
+    // device is still there even if the sign-in changed since it was earned.
+    return mergeWallet(mergePending(this.user.uid, mergeLocal(this.user.uid, { ...p, ...this.bonusesFor(r, p) })));
   }
   // Copies roles/{uid} into the player's profile so others see it on the leaderboard. Never blocks play.
   async syncRole(p, r) {
@@ -224,14 +226,15 @@ class FirebaseBackend {
     const { serverTimestamp } = this.F;
     await this.withRepair(() => this.F.updateDoc(this.userRef(), { ...ZERO_PROFILE, lastAward: serverTimestamp() }));
     clearLocal(this.user.uid);
-    // Pending match rewards kept on this device are cleared too, so
-    // starting over does not bring old earnings back.
+    // The device wallet (by name) is cleared too, so starting over does
+    // not bring old earnings back.
     writePending(this.user.uid, []);
     const snap = await this.F.getDoc(this.userRef());
     // Starting over returns the player to their starting balance: Si Wei
     // gets his $700,000 and 10,000 coins back, like a brand-new Si Wei
     // player. Everyone else starts from zero.
     const prof = normalizeProfile(snap.data());
+    clearWallet(prof.name);
     return { ...prof, ...this.bonusesFor(await this.readRole(), prof) };
   }
   async recordMatch(match, currentProfile) {
@@ -276,7 +279,12 @@ class FirebaseBackend {
     }).catch(e => {
       console.warn('Match rewards kept on this device only (Firebase did not accept them)', e);
     });
-    return { profile: mergeLocal(this.user.uid, { ...base, ...next }), reward, newBadges };
+    const profile = mergeLocal(this.user.uid, { ...base, ...next });
+    // Save the new totals to the device wallet (by name), so the money is
+    // still there the next time the player comes back, even with no
+    // internet and even if the sign-in changed.
+    writeWallet(profile.name, profile);
+    return { profile, reward, newBadges };
   }
 
   // Spend dollars AND coins on a superpower, like a real game. Throws
@@ -315,11 +323,13 @@ class FirebaseBackend {
         ...PLAYER_ROLE,
       });
     })).then(() => local(-1)).catch(e => console.warn('Superpower kept on this device only', e));
-    return { profile: {
+    const outProfile = {
       ...p,
       moneySpentCents: String(BigInt(p.moneySpentCents || '0') + dollarsCents),
       coinsSpent: (p.coinsSpent || 0) + power.cost,
-    } };
+    };
+    writeWallet(p.name, outProfile);
+    return { profile: outProfile };
   }
 
   // Buys one shop item for `cents` (tax included). Throws { code: 'not-enough' } when it can't be afforded.
@@ -351,7 +361,9 @@ class FirebaseBackend {
       tx.update(this.userRef(), { ...spend(raw, itemId, cents, true, taxCents), ...PLAYER_ROLE });
     })).then(() => local(-1)).catch(e => console.warn('Purchase kept on this device only', e));
     const inv = { ...cur.inventory, [itemId]: (cur.inventory[itemId] || 0) + 1 };
-    return { profile: { ...cur, inventory: inv, moneySpentCents: String(BigInt(cur.moneySpentCents) + BigInt(plan.money)), coinsSpent: cur.coinsSpent + plan.coins, bossPaidCents: String(BigInt(cur.bossPaidCents || '0') + BigInt(taxCents)) } };
+    const outProfile = { ...cur, inventory: inv, moneySpentCents: String(BigInt(cur.moneySpentCents) + BigInt(plan.money)), coinsSpent: cur.coinsSpent + plan.coins, bossPaidCents: String(BigInt(cur.bossPaidCents || '0') + BigInt(taxCents)) };
+    writeWallet(cur.name, outProfile);
+    return { profile: outProfile };
   }
 
   // The boss's earnings: the sales tax every player has paid in the mall.
@@ -442,6 +454,46 @@ function mergePending(uid, p) {
   return prof;
 }
 
+// Device wallet: the money a player earned, saved on THIS device by their
+// NAME (not by account), so it is still there when they come back — even
+// if the sign-in changed, Firebase never answered, or there is no internet
+// at all. Trevor: "if you got $1 the next time when you come back the $1
+// is still there". The pending list and the shop store above are keyed by
+// account UID, so a new sign-in (or a browser that forgets it) loses
+// them; the name is the same every time, so the wallet survives that.
+// This is a high-water mark: it only ever raises the money fields, never
+// lowers them. Start over clears it, so a fresh start really starts fresh.
+const walletKey = name => 'robloc_device_wallet_' + String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const WALLET_FIELDS = ['points', 'coinsEarned', 'totalCoinsEarned', 'moneyEarnedCents', 'moneySpentCents', 'coinsSpent'];
+const WALLET_STRING_FIELDS = new Set(['moneyEarnedCents', 'moneySpentCents']);
+function readWallet(name) {
+  try { return JSON.parse(localStorage.getItem(walletKey(name)) || 'null') || null; }
+  catch { return null; }
+}
+function writeWallet(name, p) {
+  if (!name || !p) return;
+  try {
+    const w = {};
+    for (const k of WALLET_FIELDS) w[k] = p[k] ?? (WALLET_STRING_FIELDS.has(k) ? '0' : 0);
+    localStorage.setItem(walletKey(name), JSON.stringify(w));
+  } catch {}
+}
+function clearWallet(name) { try { localStorage.removeItem(walletKey(name)); } catch {} }
+function mergeWallet(p) {
+  // Raise the money fields to the device wallet's high-water mark, so
+  // money earned on this device is never lost when the cloud save or the
+  // per-account local store cannot be read back.
+  const w = readWallet(p.name);
+  if (!w) return p;
+  const out = { ...p };
+  for (const k of WALLET_FIELDS) {
+    const a = BigInt(out[k] ?? (WALLET_STRING_FIELDS.has(k) ? '0' : 0));
+    const b = BigInt(w[k] ?? (WALLET_STRING_FIELDS.has(k) ? '0' : 0));
+    if (b > a) out[k] = WALLET_STRING_FIELDS.has(k) ? String(b) : Number(b);
+  }
+  return out;
+}
+
 function spend(p, itemId, cents, skipCheck = false, taxCents = 0) {
   // skipCheck: affordability was already checked including device-only purchases; pay with money if it covers it
   const plan = payPlan(p, cents) || (skipCheck ? { money: 0, coins: Math.ceil(cents / 100) } : null);
@@ -478,7 +530,7 @@ class DemoBackend {
   }
   read() { try { const s = localStorage.getItem(this.KEY); return s ? JSON.parse(s) : null; } catch { return null; } }
   write(p) { try { localStorage.setItem(this.KEY, JSON.stringify(p)); } catch {} }
-  async loadProfile() { const p = this.read(); return p ? normalizeProfile(p) : null; }
+  async loadProfile() { const p = this.read(); return p ? mergeWallet(normalizeProfile(p)) : null; }
   async nameTaken() { return false; }
   async createProfile({ name, avatar }) {
     const p = normalizeProfile({ name, avatar, ...PLAYER_ROLE, badges: [] });
@@ -493,6 +545,7 @@ class DemoBackend {
     const out = wasSiwei ? { ...p, ...SIWEI_STATS, role: 'siwei' } : p;
     this.write(out);
     clearLocal(this.user.uid);
+    clearWallet(cur.name);
     return out;
   }
   async recordMatch(match) {
@@ -500,6 +553,7 @@ class DemoBackend {
     const { next, reward, newBadges } = applyMatch(p, match);
     const profile = { ...p, ...next };
     this.write(profile);
+    writeWallet(profile.name, profile);
     return { profile, reward, newBadges };
   }
   // Spend dollars AND coins on a superpower, like a real game. Throws
@@ -514,12 +568,14 @@ class DemoBackend {
       coinsSpent: (p.coinsSpent || 0) + power.cost,
     };
     this.write(profile);
+    writeWallet(p.name, profile);
     return { profile };
   }
   async purchase(itemId, cents, current, taxCents = 0) {
     const p = normalizeProfile(this.read());
     const profile = { ...p, ...spend(p, itemId, cents, false, taxCents) };
     this.write(profile);
+    writeWallet(p.name, profile);
     return { profile };
   }
   // Demo mode: only this device's player exists, so the boss total is the tax they paid.
