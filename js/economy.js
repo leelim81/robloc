@@ -79,6 +79,10 @@ export const HUNTED_TREVOR_START_WINS = 18389;
 // starts from 0. (Trevor's numbers, given 2026-11-23.)
 export const MAZE_TREVOR_START_PLAYED = 82663;
 export const MAZE_TREVOR_START_WINS = 76769;
+// Prize Machine 2: Trevor starts with 376 played and 367 won, everyone
+// else starts from 0. (Trevor's numbers, given 2026-11-26.)
+export const PRIZE2_TREVOR_START_PLAYED = 376;
+export const PRIZE2_TREVOR_START_WINS = 367;
 
 // Fake leaderboard players (Trevor: "put a lot of fake people, put top
 // 20 just put fake people... close to my points"). A pool of 40 names;
@@ -298,6 +302,9 @@ export function normalizeProfile(p) {
   if (isOwnerName(p.name) && (stats.hunted.wins || 0) < HUNTED_TREVOR_START_WINS) stats.hunted.wins = HUNTED_TREVOR_START_WINS;
   if (isOwnerName(p.name) && (stats.maze.played || 0) < MAZE_TREVOR_START_PLAYED) stats.maze.played = MAZE_TREVOR_START_PLAYED;
   if (isOwnerName(p.name) && (stats.maze.wins || 0) < MAZE_TREVOR_START_WINS) stats.maze.wins = MAZE_TREVOR_START_WINS;
+  // Prize Machine 2: Trevor starts with 376 played and 367 won.
+  if (isOwnerName(p.name) && (stats.prize2.played || 0) < PRIZE2_TREVOR_START_PLAYED) stats.prize2.played = PRIZE2_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.prize2.wins || 0) < PRIZE2_TREVOR_START_WINS) stats.prize2.wins = PRIZE2_TREVOR_START_WINS;
   // A plain player cannot keep things bought with money they never earned.
   // Lifetime spending (money + coins at $1 each) can never pass lifetime
   // earnings; when it does, the items came from an old owner-era save, so
