@@ -399,7 +399,15 @@ function buildOverall(rows, world) {
   }
   rest.sort(cmpBig);
   let last = top.length;
-  rest.forEach(r => { r.rank = Math.max(last + 1, estimateRank(r.value, anchor, top.length + 1, world)); last = r.rank; });
+  rest.forEach(r => {
+    // A brand-new player (no matches yet) starts at the very bottom:
+    // one past the number of players (Trevor: "If there's 500 players
+    // then the new player will start from 501"). Never above the top
+    // 20, so the own row always sits below the leaders.
+    const isNew = state.profile && (state.profile.stats?.matches || 0) === 0;
+    r.rank = isNew ? Math.max(Number(world) + 1, top.length + 1) : Math.max(last + 1, estimateRank(r.value, anchor, top.length + 1, world));
+    last = r.rank;
+  });
   return { top, rest };
 }
 
