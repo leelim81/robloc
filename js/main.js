@@ -21,7 +21,7 @@ const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, prizemach
 // it in the new Robloc hunted"). It is NOT in the hub. Open it at
 // ?hunted=1 (or hunted.html) — a standalone Hunted with only one game.
 const HUNTED_MODE = new URLSearchParams(location.search).has('hunted');
-const COMING = [];   // Prize Machine 2 is built now (Trevor: "Open claw macine2", 2026-11-26) — it left COMING SOON and joined GAMES.
+const COMING = [['Bowling', '🎳', 'Roll the ball and knock down all the pins — coming soon!']];   // Trevor: "Now add a comeing soon for any game you want" (2026-11-26) — I chose Bowling.
 
 const state = { user: null, profile: null, view: 'games', lbKind: 'points', editing: false, avatar: { ...DEFAULT_AVATAR } };
 const input = new Input();
