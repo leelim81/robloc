@@ -45,6 +45,9 @@ export const BADGES = [
   { id: 'pm_first',        name: 'Claw Catch',         desc: 'Win a prize from the Prize Machine.',        icon: '🧸', color: '#db2777' },
   { id: 'pm_win',          name: 'Prize Pro',          desc: 'Reach the prize goal in the Prize Machine.', icon: '🎁', color: '#9333ea' },
   { id: 'pm_gold',         name: 'Golden Grab',        desc: 'Win the golden crown from the Prize Machine.', icon: '👑', color: '#ca8a04' },
+  { id: 'pm2_first',       name: 'Candy Claw',         desc: 'Win a sweet from Prize Machine 2.',            icon: '🍬', color: '#f59e0b' },
+  { id: 'pm2_win',         name: 'Candy Pro',          desc: 'Reach the sweet goal in Prize Machine 2.',     icon: '🍭', color: '#d97706' },
+  { id: 'pm2_gold',        name: 'Golden Sweet',       desc: 'Win the golden lollipop from Prize Machine 2.', icon: '🌟', color: '#ca8a04' },
   { id: 'mz_win',          name: 'Maze Runner',        desc: 'Win a Maze game.',                           icon: '🌀', color: '#7c3aed' },
   { id: 'mz_coins',        name: 'Coin Hunter',        desc: 'Collect 8 coins in one Maze game.',          icon: '🪙', color: '#d97706' },
   { id: 'mz_legend',       name: 'Maze Master',        desc: 'Beat Legend difficulty in Maze.',            icon: '🏆', color: '#dc2626' },
@@ -183,6 +186,7 @@ export function emptyStats() {
     baseball: { played: 0, wins: 0, runs: 0, hits: 0, homers: 0, strikeouts: 0, legendWins: 0 },
     price: { played: 0, wins: 0, correct: 0, bestStreak: 0, legendWins: 0 },
     prize: { played: 0, wins: 0, prizes: 0, golden: 0, legendWins: 0 },
+    prize2: { played: 0, wins: 0, prizes: 0, golden: 0, legendWins: 0 },
     maze: { played: 0, wins: 0, coins: 0, bestCoins: 0, bestTime: 0, legendWins: 0 },
     hunted: { played: 0, wins: 0, sweets: 0, cashCents: 0, points: 0, bestSweets: 0, bossWins: 0, legendWins: 0 },
     matches: 0,
@@ -195,7 +199,7 @@ export function emptyStats() {
 // here: it came from an old save when the rules were different, so it is
 // dropped for plain players. The owner keeps every badge by design.
 function badgePossible(id, p, st) {
-  const so = st.soccer, pb = st.pickleball, bb = st.baseball, pr = st.price, pz = st.prize, mz = st.maze || {}, ht = st.hunted || {};
+  const so = st.soccer, pb = st.pickleball, bb = st.baseball, pr = st.price, pz = st.prize, pz2 = st.prize2 || {}, mz = st.maze || {}, ht = st.hunted || {};
   switch (id) {
     case 'first_match': return st.matches > 0;
     case 'soccer_goal': return so.goals > 0;
@@ -219,6 +223,9 @@ function badgePossible(id, p, st) {
     case 'pm_first': return pz.prizes > 0;
     case 'pm_win': return pz.wins > 0;
     case 'pm_gold': return pz.golden > 0;
+    case 'pm2_first': return pz2.prizes > 0;
+    case 'pm2_win': return pz2.wins > 0;
+    case 'pm2_gold': return pz2.golden > 0;
     case 'mz_win': return mz.wins > 0;
     case 'mz_coins': return mz.bestCoins >= 8;
     case 'mz_legend': return mz.legendWins > 0;
@@ -246,6 +253,7 @@ export function normalizeProfile(p) {
     baseball: { ...s.baseball, ...(st.baseball || {}) },
     price: { ...s.price, ...(st.price || {}) },
     prize: { ...s.prize, ...(st.prize || {}) },
+    prize2: { ...s.prize2, ...(st.prize2 || {}) },
     maze: { ...s.maze, ...(st.maze || {}) },
     hunted: { ...s.hunted, ...(st.hunted || {}) },
     matches: st.matches || 0,
@@ -346,7 +354,7 @@ export function totalPoints(p) { return BigInt(p.pointsBase || '0') + BigInt(p.p
 export function careerOf(p) {
   const s = p.stats || emptyStats();
   const played = BigInt(p.playedBase || '0') + BigInt(s.matches || 0);
-  const wins = BigInt(p.winsBase || '0') + BigInt((s.soccer?.wins || 0) + (s.pickleball?.wins || 0) + (s.baseball?.wins || 0) + (s.price?.wins || 0) + (s.prize?.wins || 0) + (s.maze?.wins || 0) + (s.hunted?.wins || 0));
+  const wins = BigInt(p.winsBase || '0') + BigInt((s.soccer?.wins || 0) + (s.pickleball?.wins || 0) + (s.baseball?.wins || 0) + (s.price?.wins || 0) + (s.prize?.wins || 0) + (s.prize2?.wins || 0) + (s.maze?.wins || 0) + (s.hunted?.wins || 0));
   const chance = Number(p.winChance || 0);
   const rate = chance > 0 ? chance : played > 0n ? Number(wins * 100n / played) : 0;
   return { played, wins, rate };
@@ -403,6 +411,9 @@ export function computeRewards(match) {
   } else if (match.game === 'prize') {
     pts = 50 + (match.won ? 120 : draw ? 50 : 0) + match.prizes * 30 + match.golden * 100;
     coins = 10 + (match.won ? 30 : draw ? 12 : 0) + match.prizes * 6 + match.coinBags * 20 + match.golden * 50;
+  } else if (match.game === 'prize2') {
+    pts = 50 + (match.won ? 120 : draw ? 50 : 0) + match.prizes * 30 + match.golden * 100;
+    coins = 10 + (match.won ? 30 : draw ? 12 : 0) + match.prizes * 6 + match.coinBags * 20 + match.golden * 50;
   } else if (match.game === 'price') {
     pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.correct * 15 + match.bestStreak * 5;
     coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.correct * 3;
@@ -440,6 +451,11 @@ export function applyMatch(profile, match) {
     if (match.won && match.difficulty === 'legend') s.legendWins++;
   } else if (match.game === 'prize') {
     const s = stats.prize;
+    s.played++; s.prizes += match.prizes; s.golden += match.golden;
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'prize2') {
+    const s = stats.prize2;
     s.played++; s.prizes += match.prizes; s.golden += match.golden;
     if (match.won) s.wins++;
     if (match.won && match.difficulty === 'legend') s.legendWins++;
@@ -499,6 +515,10 @@ export function applyMatch(profile, match) {
     give('pm_first', match.prizes > 0);
     give('pm_win', match.won);
     give('pm_gold', match.golden > 0);
+  } else if (match.game === 'prize2') {
+    give('pm2_first', match.prizes > 0);
+    give('pm2_win', match.won);
+    give('pm2_gold', match.golden > 0);
   } else if (match.game === 'price') {
     give('gp_win', match.won);
     give('gp_perfect', match.rounds >= 5 && match.correct === match.rounds);

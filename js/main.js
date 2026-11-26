@@ -10,17 +10,18 @@ import baseball from './games/baseball.js';
 import mall from './games/mall.js';
 import guessprice from './games/guessprice.js';
 import prizemachine from './games/prizemachine.js';
+import prizemachine2 from './games/prizemachine2.js';
 import maze from './games/maze.js';
 import hunted from './games/hunted.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, maze, mall];
+const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, prizemachine2, maze, mall];
 // Hunted lives on its own now (Trevor: "delete the one in Robloc, put
 // it in the new Robloc hunted"). It is NOT in the hub. Open it at
 // ?hunted=1 (or hunted.html) — a standalone Hunted with only one game.
 const HUNTED_MODE = new URLSearchParams(location.search).has('hunted');
-const COMING = [['Prize Machine 2', '🧸', 'A brand-new claw machine — coming soon!']];   // Trevor: "Make a new game prize machine2" — "But write coming soon".
+const COMING = [];   // Prize Machine 2 is built now (Trevor: "Open claw macine2", 2026-11-26) — it left COMING SOON and joined GAMES.
 
 const state = { user: null, profile: null, view: 'games', lbKind: 'points', editing: false, avatar: { ...DEFAULT_AVATAR } };
 const input = new Input();
