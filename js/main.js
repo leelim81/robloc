@@ -21,7 +21,7 @@ const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, prizemach
 // it in the new Robloc hunted"). It is NOT in the hub. Open it at
 // ?hunted=1 (or hunted.html) — a standalone Hunted with only one game.
 const HUNTED_MODE = new URLSearchParams(location.search).has('hunted');
-const COMING = [['Bowling', '🎳', 'Roll the ball and knock down all the pins — coming soon!'], ['Fishing', '🎣', 'Cast your line and catch the biggest fish — coming soon!']];   // Trevor: "Now add a comeing soon for any game you want" (Bowling, 2026-11-26) + "Another game but don't tell me I'll find out myself" (Fishing — a surprise, don't tell Trevor what it is).
+const COMING = [['Bowling', '🎳', 'Roll the ball and knock down all the pins — coming soon!'], ['Fishing', '🎣', 'Cast your line and catch the biggest fish — coming soon!'], ['Basketball', '🏀', 'Shoot hoops and score big — coming soon!'], ['Racing', '🏎️', 'Race your car and be the fastest — coming soon!']];   // Trevor: "Now add a comeing soon for any game you want" (Bowling) + "Another game but don't tell me I'll find out myself" (Fishing, a surprise) + "make 2 more games" (Basketball + Racing, 2026-11-26). Trevor's grandpa likes to fish.
 
 const state = { user: null, profile: null, view: 'games', lbKind: 'points', editing: false, avatar: { ...DEFAULT_AVATAR } };
 const input = new Input();
