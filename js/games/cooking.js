@@ -207,7 +207,11 @@ function create(env) {
     } else if (S.phase === 'dishEnd') {
       if (S.t > 2.2) nextDish();
     } else if (S.phase === 'end') {
-      if (S.t > 2.6 && !S.reported) { S.reported = true; report(); }
+      // Save the reward RIGHT AWAY (no long wait). Trevor: "when I
+      // earnsed $3 I have $7 it doesn't make $10" — the old 2.6s wait
+      // meant the reward was not saved yet (or never, if he left the
+      // game early), so $7 + $3 stayed $7 instead of becoming $10.
+      if (!S.reported) { S.reported = true; report(); }
     }
   }
 
@@ -260,15 +264,16 @@ function create(env) {
       });
       drawBtn(ctx, 640 - 200, 238 + 3 * 42, 190, 36, 'SPACE', '#334155', 'key', { ch: ' ' });
       drawBtn(ctx, 640 + 18, 238 + 3 * 42, 190, 36, '✕ CLEAR', '#334155', 'key', { ch: '✕' });
-      // matching foods — ALL of them, so you can see everything you can cook!
+      // matching foods — ALL of them, 5 across x 4 down, so all 20 fit
+      // on the screen at once (no row is cut off).
       S.list.forEach((f, k) => {
-        const col = k % 4, row = Math.floor(k / 4), x = 170 + col * 238, y = 402 + row * 56;
+        const col = k % 5, row = Math.floor(k / 5), x = 170 + col * 190, y = 402 + row * 68;
         const locked = !canCook(f);
-        ctx.fillStyle = locked ? '#0f172a' : '#1e293b'; rrect(ctx, x, y, 222, 50, 12); ctx.fill();
-        if (locked) { ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; rrect(ctx, x, y, 222, 50, 12); ctx.stroke(); }
-        ctx.font = '28px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(locked ? '🔒' : f.icon, x + 111, y + 22);
-        ctx.fillStyle = locked ? '#64748b' : '#fff'; ctx.font = "16px 'Lilita One'"; ctx.fillText(locked ? `Lv ${f.lv} · ${f.name}` : f.name, x + 111, y + 42);
-        hits.push({ x, y, w: 222, h: 50, kind: 'food', food: f });
+        ctx.fillStyle = locked ? '#0f172a' : '#1e293b'; rrect(ctx, x, y, 182, 60, 12); ctx.fill();
+        if (locked) { ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; rrect(ctx, x, y, 182, 60, 12); ctx.stroke(); }
+        ctx.font = '30px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(locked ? '🔒' : f.icon, x + 91, y + 26);
+        ctx.fillStyle = locked ? '#64748b' : '#fff'; ctx.font = "16px 'Lilita One'"; ctx.fillText(locked ? `Lv ${f.lv} · ${f.name}` : f.name, x + 91, y + 50);
+        hits.push({ x, y, w: 182, h: 60, kind: 'food', food: f });
       });
       if (S.msg && S.msgT < 3 && S.phase === 'pick') { ctx.fillStyle = S.msgColor; ctx.font = '800 18px Nunito'; ctx.textAlign = 'center'; ctx.fillText(S.msg, 640, 672); }
       if (!S.q) { ctx.fillStyle = '#94a3b8'; ctx.font = '800 15px Nunito'; ctx.textAlign = 'center'; ctx.fillText('Tap a food to see its recipe!', 640, 690); }
@@ -304,12 +309,14 @@ function create(env) {
       ctx.fillStyle = '#fff'; ctx.font = '900 20px Nunito'; ctx.textAlign = 'center';
       ctx.fillText(`⏱️ ${Math.max(0, Math.ceil(S.timeLeft))}s left`, 640, 212);
       if (k > 0.65) { ctx.fillStyle = '#fca5a5'; ctx.font = '900 18px Nunito'; ctx.fillText('🔥 It is getting hot — hurry before it burns!', 640, 238); }
-      // The big plate: you SEE the food being made. Completed steps
-      // put their ingredients on the plate around the dish.
+      // The big plate: you SEE the food being made. It starts EMPTY
+      // (the food is NOT already cooked!) — each step you finish puts
+      // its ingredient on the plate, and the finished dish only
+      // appears when every step is done.
       ctx.fillStyle = '#f8fafc'; ctx.beginPath(); ctx.ellipse(400, 430, 210, 130, 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#e2e8f0'; ctx.beginPath(); ctx.ellipse(400, 430, 170, 100, 0, 0, Math.PI * 2); ctx.fill();
       ctx.font = '110px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(f.icon, 400, 420);
+      if (S.step >= f.steps.length) ctx.fillText(f.icon, 400, 420);
       f.ingredients.forEach((g, i) => {
         if (i >= S.step) return;
         const a = -Math.PI / 2 + (i / Math.max(1, f.ingredients.length)) * Math.PI * 2;

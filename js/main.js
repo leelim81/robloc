@@ -29,7 +29,30 @@ const COMING = [['Bowling', '🎳', 'Roll the ball and knock down all the pins �
   ['Skateboard', '🛹', 'Ride your skateboard and do cool tricks — coming soon!'],
   ['Hide and Seek', '🙈', 'Hide and seek with your friends — coming soon!'],
   ['Magic', '✨', 'Learn magic tricks and cast spells — coming soon!'],
-  ['Space', '🚀', 'Fly to space and visit the stars — coming soon!']];   // Trevor: "Now add a comeing soon for any game you want" (Bowling) + "Another game but don't tell me I'll find out myself" (Fishing, a surprise) + "make 2 more games" (Basketball + Racing) + "Add 3 more games" (Cooking + Treasure Hunt + Swimming, 2026-11-27) + "Make 7 more games coming soon" (Dance + Gardening + Baking + Skateboard + Hide and Seek + Magic + Space, 2026-11-27). Trevor's grandpa likes to fish. RULE: do NOT tell Trevor what the new games are — he finds them himself on the hub.
+  ['Space', '🚀', 'Fly to space and visit the stars — coming soon!'],
+  ['Volleyball', '🏐', 'Bump, set and spike — coming soon!'],
+  ['Tennis', '🎾', 'Serve and smash on the court — coming soon!'],
+  ['Golf', '⛳', 'Putt the ball in the hole — coming soon!'],
+  ['Hockey', '🏒', 'Skate fast and score goals — coming soon!'],
+  ['Boxing', '🥊', 'Put on your gloves and box — coming soon!'],
+  ['Karate', '🥋', 'Learn karate moves — coming soon!'],
+  ['Yoga', '🧘', 'Stretch and breathe — coming soon!'],
+  ['Running', '🏃', 'Run fast and win the race — coming soon!'],
+  ['Cycling', '🚴', 'Ride your bike and race — coming soon!'],
+  ['Climbing', '🧗', 'Climb to the very top — coming soon!'],
+  ['Surfing', '🏄', 'Ride the waves — coming soon!'],
+  ['Skiing', '⛷️', 'Ski down the mountain — coming soon!'],
+  ['Snowboarding', '🏂', 'Shred the snow — coming soon!'],
+  ['Ice Skating', '⛸️', 'Skate and spin on the ice — coming soon!'],
+  ['Diving', '🤿', 'Dive deep and find treasure — coming soon!'],
+  ['Sailing', '⛵', 'Sail your boat across the sea — coming soon!'],
+  ['Flying', '✈️', 'Fly a plane through the clouds — coming soon!'],
+  ['Driving', '🚗', 'Drive your car around town — coming soon!'],
+  ['Train', '🚂', 'Drive a train and toot the horn — coming soon!'],
+  ['Building', '🏗️', 'Build a big tower — coming soon!'],
+  ['Painting', '🎨', 'Paint a beautiful picture — coming soon!'],
+  ['Music', '🎵', 'Make music and play songs — coming soon!'],
+  ['Singing', '🎤', 'Sing your favourite songs — coming soon!']];   // Trevor: "Now add a comeing soon for any game you want" (Bowling) + "Another game but don't tell me I'll find out myself" (Fishing, a surprise) + "make 2 more games" (Basketball + Racing) + "Add 3 more games" (Cooking + Treasure Hunt + Swimming, 2026-11-27) + "Make 7 more games coming soon" (Dance + Gardening + Baking + Skateboard + Hide and Seek + Magic + Space, 2026-11-27) + "Make 23 more games" (Volleyball + Tennis + Golf + Hockey + Boxing + Karate + Yoga + Running + Cycling + Climbing + Surfing + Skiing + Snowboarding + Ice Skating + Diving + Sailing + Flying + Driving + Train + Building + Painting + Music + Singing, 2026-11-27). Trevor's grandpa likes to fish. RULE: do NOT tell Trevor what the new games are — he finds them himself on the hub.
 
 const state = { user: null, profile: null, view: 'games', lbKind: 'points', editing: false, avatar: { ...DEFAULT_AVATAR } };
 const input = new Input();
