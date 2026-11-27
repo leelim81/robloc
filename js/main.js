@@ -22,7 +22,14 @@ const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, prizemach
 // it in the new Robloc hunted"). It is NOT in the hub. Open it at
 // ?hunted=1 (or hunted.html) — a standalone Hunted with only one game.
 const HUNTED_MODE = new URLSearchParams(location.search).has('hunted');
-const COMING = [['Bowling', '🎳', 'Roll the ball and knock down all the pins — coming soon!'], ['Fishing', '🎣', 'Cast your line and catch the biggest fish — coming soon!'], ['Basketball', '🏀', 'Shoot hoops and score big — coming soon!'], ['Racing', '🏎️', 'Race your car and be the fastest — coming soon!'], ['Treasure Hunt', '🗺️', 'Find the hidden treasure — coming soon!'], ['Swimming', '🏊', 'Splash and race in the pool — coming soon!']];   // Trevor: "Now add a comeing soon for any game you want" (Bowling) + "Another game but don't tell me I'll find out myself" (Fishing, a surprise) + "make 2 more games" (Basketball + Racing) + "Add 3 more games" (Cooking + Treasure Hunt + Swimming, 2026-11-27). Trevor's grandpa likes to fish. RULE: do NOT tell Trevor what the new games are — he finds them himself on the hub.
+const COMING = [['Bowling', '🎳', 'Roll the ball and knock down all the pins — coming soon!'], ['Fishing', '🎣', 'Cast your line and catch the biggest fish — coming soon!'], ['Basketball', '🏀', 'Shoot hoops and score big — coming soon!'], ['Racing', '🏎️', 'Race your car and be the fastest — coming soon!'], ['Treasure Hunt', '🗺️', 'Find the hidden treasure — coming soon!'], ['Swimming', '🏊', 'Splash and race in the pool — coming soon!'],
+  ['Dance', '💃', 'Dance to the music and hit the moves — coming soon!'],
+  ['Gardening', '🌱', 'Plant seeds and grow a garden — coming soon!'],
+  ['Baking', '🧁', 'Bake yummy cakes and cookies — coming soon!'],
+  ['Skateboard', '🛹', 'Ride your skateboard and do cool tricks — coming soon!'],
+  ['Hide and Seek', '🙈', 'Hide and seek with your friends — coming soon!'],
+  ['Magic', '✨', 'Learn magic tricks and cast spells — coming soon!'],
+  ['Space', '🚀', 'Fly to space and visit the stars — coming soon!']];   // Trevor: "Now add a comeing soon for any game you want" (Bowling) + "Another game but don't tell me I'll find out myself" (Fishing, a surprise) + "make 2 more games" (Basketball + Racing) + "Add 3 more games" (Cooking + Treasure Hunt + Swimming, 2026-11-27) + "Make 7 more games coming soon" (Dance + Gardening + Baking + Skateboard + Hide and Seek + Magic + Space, 2026-11-27). Trevor's grandpa likes to fish. RULE: do NOT tell Trevor what the new games are — he finds them himself on the hub.
 
 const state = { user: null, profile: null, view: 'games', lbKind: 'points', editing: false, avatar: { ...DEFAULT_AVATAR } };
 const input = new Input();
