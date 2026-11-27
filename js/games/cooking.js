@@ -400,7 +400,7 @@ export default {
   music: 'mall',
   labels: { a: 'PICK', b: 'COOK' },
   options: [
-    { key: 'dishes', label: 'Dishes', default: 1, choices: [{ v: '1', label: '1 dish', sub: 'quick' }, { v: '2', label: '2 dishes', sub: 'standard' }, { v: '3', label: '3 dishes', sub: 'long' }] },
+    { key: 'dishes', label: 'Dishes', default: 1, choices: [{ v: '1', label: '1 dish', sub: 'quick' }, { v: '2', label: '2 dishes', sub: 'standard' }, { v: '3', label: '3 dishes', sub: 'long' }, { v: '5', label: '5 dishes', sub: 'feast' }] },
   ],
   howto: `<ul>
     <li>Search any food: tap the letters (or type) and tap a food to see its recipe. <b>Trevor can cook anything!</b> Everyone else starts with only <b>rice</b> and unlocks more foods as they level up — reach a higher level to cook more!</li>
