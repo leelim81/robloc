@@ -48,6 +48,9 @@ export const BADGES = [
   { id: 'pm2_first',       name: 'Candy Claw',         desc: 'Win a sweet from Prize Machine 2.',            icon: '🍬', color: '#f59e0b' },
   { id: 'pm2_win',         name: 'Candy Pro',          desc: 'Reach the sweet goal in Prize Machine 2.',     icon: '🍭', color: '#d97706' },
   { id: 'pm2_gold',        name: 'Golden Sweet',       desc: 'Win the golden lollipop from Prize Machine 2.', icon: '🌟', color: '#ca8a04' },
+  { id: 'ck_first',        name: 'First Dish',         desc: 'Cook your first dish in Cooking.',             icon: '🍳', color: '#ea580c' },
+  { id: 'ck_win',          name: 'Master Chef',        desc: 'Win a Cooking match.',                       icon: '👨‍🍳', color: '#b45309' },
+  { id: 'ck_five',         name: 'Five-Star Chef',     desc: 'Cook 5 dishes in one Cooking match.',        icon: '⭐', color: '#f59e0b' },
   { id: 'mz_win',          name: 'Maze Runner',        desc: 'Win a Maze game.',                           icon: '🌀', color: '#7c3aed' },
   { id: 'mz_coins',        name: 'Coin Hunter',        desc: 'Collect 8 coins in one Maze game.',          icon: '🪙', color: '#d97706' },
   { id: 'mz_legend',       name: 'Maze Master',        desc: 'Beat Legend difficulty in Maze.',            icon: '🏆', color: '#dc2626' },
@@ -193,6 +196,7 @@ export function emptyStats() {
     prize2: { played: 0, wins: 0, prizes: 0, golden: 0, legendWins: 0 },
     maze: { played: 0, wins: 0, coins: 0, bestCoins: 0, bestTime: 0, legendWins: 0 },
     hunted: { played: 0, wins: 0, sweets: 0, cashCents: 0, points: 0, bestSweets: 0, bossWins: 0, legendWins: 0 },
+    cooking: { played: 0, wins: 0, dishes: 0, burned: 0, bestDishes: 0, legendWins: 0 },
     matches: 0,
   };
 }
@@ -203,7 +207,7 @@ export function emptyStats() {
 // here: it came from an old save when the rules were different, so it is
 // dropped for plain players. The owner keeps every badge by design.
 function badgePossible(id, p, st) {
-  const so = st.soccer, pb = st.pickleball, bb = st.baseball, pr = st.price, pz = st.prize, pz2 = st.prize2 || {}, mz = st.maze || {}, ht = st.hunted || {};
+  const so = st.soccer, pb = st.pickleball, bb = st.baseball, pr = st.price, pz = st.prize, pz2 = st.prize2 || {}, mz = st.maze || {}, ht = st.hunted || {}, ck = st.cooking || {};
   switch (id) {
     case 'first_match': return st.matches > 0;
     case 'soccer_goal': return so.goals > 0;
@@ -236,6 +240,9 @@ function badgePossible(id, p, st) {
     case 'ht_win': return ht.wins > 0;
     case 'ht_sweets': return ht.bestSweets >= 15;
     case 'ht_boss': return (ht.bossWins || 0) > 0;
+    case 'ck_first': return ck.dishes > 0;
+    case 'ck_win': return ck.wins > 0;
+    case 'ck_five': return ck.bestDishes >= 5;
     case 'all_rounder': return so.wins > 0 && pb.wins > 0;
     case 'coins_250': return (p.totalCoinsEarned || 0) >= 250;
     case 'coins_2000': return (p.totalCoinsEarned || 0) >= 2000;
@@ -260,6 +267,7 @@ export function normalizeProfile(p) {
     prize2: { ...s.prize2, ...(st.prize2 || {}) },
     maze: { ...s.maze, ...(st.maze || {}) },
     hunted: { ...s.hunted, ...(st.hunted || {}) },
+    cooking: { ...s.cooking, ...(st.cooking || {}) },
     matches: st.matches || 0,
   };
   // Only Trevor is the owner, and only by NAME - never by a stored role.
@@ -361,7 +369,7 @@ export function totalPoints(p) { return BigInt(p.pointsBase || '0') + BigInt(p.p
 export function careerOf(p) {
   const s = p.stats || emptyStats();
   const played = BigInt(p.playedBase || '0') + BigInt(s.matches || 0);
-  const wins = BigInt(p.winsBase || '0') + BigInt((s.soccer?.wins || 0) + (s.pickleball?.wins || 0) + (s.baseball?.wins || 0) + (s.price?.wins || 0) + (s.prize?.wins || 0) + (s.prize2?.wins || 0) + (s.maze?.wins || 0) + (s.hunted?.wins || 0));
+  const wins = BigInt(p.winsBase || '0') + BigInt((s.soccer?.wins || 0) + (s.pickleball?.wins || 0) + (s.baseball?.wins || 0) + (s.price?.wins || 0) + (s.prize?.wins || 0) + (s.prize2?.wins || 0) + (s.maze?.wins || 0) + (s.hunted?.wins || 0) + (s.cooking?.wins || 0));
   const chance = Number(p.winChance || 0);
   const rate = chance > 0 ? chance : played > 0n ? Number(wins * 100n / played) : 0;
   return { played, wins, rate };
@@ -433,6 +441,9 @@ export function computeRewards(match) {
   } else if (match.game === 'hunted') {
     pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.sweets * 8 + (match.won ? Math.max(0, match.timeLeft || 0) * 2 : 0);
     coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.sweets * 2;
+  } else if (match.game === 'cooking') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.dishes * 25 + match.stepsDone * 5 + (match.won ? Math.max(0, match.timeLeft || 0) * 2 : 0);
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.dishes * 8;
   }
   pts = Math.min(MAX_POINTS_PER_MATCH, Math.round(pts * m));
   coins = Math.min(MAX_COINS_PER_MATCH, Math.round(coins * m));
@@ -494,6 +505,12 @@ export function applyMatch(profile, match) {
     if (match.bossBeaten) s.bossWins = (s.bossWins || 0) + 1;
     if (match.won) s.wins++;
     if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'cooking') {
+    const s = stats.cooking;
+    s.played++; s.dishes += match.dishes; s.burned += match.burned || 0;
+    s.bestDishes = Math.max(s.bestDishes, match.dishes);
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
   } else {
     const s = stats.pickleball;
     s.played++; s.pointsWon += match.scoreFor; s.aces += match.aces;
@@ -544,6 +561,10 @@ export function applyMatch(profile, match) {
     give('ht_win', match.won);
     give('ht_sweets', match.sweets >= 15);
     give('ht_boss', match.bossBeaten);
+  } else if (match.game === 'cooking') {
+    give('ck_first', match.dishes > 0);
+    give('ck_win', match.won);
+    give('ck_five', match.dishes >= 5);
   } else {
     give('pb_win', match.won);
     give('pb_ace', match.aces > 0);
