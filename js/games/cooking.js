@@ -40,6 +40,17 @@ const FOODS = [
 ];
 const fmtMoney = c => '$' + (c / 100).toFixed(2);
 
+// Cooking Mama actions: every recipe step becomes something you DO
+// with your hands. The action is read from the step's wording.
+function actionFor(step) {
+  const t = step.toLowerCase();
+  if (/chop|slice|cut/.test(t)) return { type: 'chop', icon: '🔪', verb: 'CHOP', taps: 5 };
+  if (/stir|mix|toss|blend/.test(t)) return { type: 'stir', icon: '🥄', verb: 'STIR', taps: 6 };
+  if (/fry|grill|bake|boil|steam|heat|simmer|freeze|toast|warm/.test(t)) return { type: 'cook', icon: '🔥', verb: 'COOK', taps: 4 };
+  if (/roll|shape|fold|pinch/.test(t)) return { type: 'shape', icon: '✋', verb: 'SHAPE', taps: 3 };
+  return { type: 'add', icon: '👉', verb: 'ADD', taps: 1 };
+}
+
 // ---------- game ----------
 function create(env) {
   const { input, audio, fx, options, profile, shop } = env;
@@ -54,13 +65,13 @@ function create(env) {
   const isOwner = isOwnerName(profile?.name);
   const myLevel = (() => { try { return playerLevel(profile || {}).level || 1; } catch (e) { return 1; } })();
   const canCook = f => isOwner || (f.lv || 1) <= myLevel;
-  const S = { phase: 'pick', t: 0, q: '', qPrev: null, list: FOODS.slice(0, 8), keysDown: null, food: null, dish: 0, done: 0, burned: 0, stepsDone: 0, step: 0, timeLeft: TIME, msg: null, msgT: 0, msgColor: '#fff', bought: false, buying: false, labelKey: '', reported: false };
+  const S = { phase: 'pick', t: 0, q: '', qPrev: null, list: FOODS.slice(), keysDown: null, food: null, dish: 0, done: 0, burned: 0, stepsDone: 0, step: 0, act: 0, timeLeft: TIME, msg: null, msgT: 0, msgColor: '#fff', bought: false, buying: false, labelKey: '', reported: false };
 
   function runSearch() {
     if (S.q === S.qPrev) return;
     S.qPrev = S.q;
     const q = S.q.trim().toLowerCase();
-    S.list = q ? FOODS.filter(f => f.name.toLowerCase().includes(q)).slice(0, 8) : FOODS.slice(0, 8);
+    S.list = q ? FOODS.filter(f => f.name.toLowerCase().includes(q)) : FOODS.slice();
   }
   function searchKey(ch) {
     if (ch === '⌫') S.q = S.q.slice(0, -1);
@@ -93,8 +104,21 @@ function create(env) {
     S.buying = false;
   }
   function startCook() {
-    S.phase = 'cook'; S.t = 0; S.step = 0; S.timeLeft = TIME; S.msg = null;
+    S.phase = 'cook'; S.t = 0; S.step = 0; S.act = 0; S.timeLeft = TIME; S.msg = null;
     audio.play('select');
+  }
+  // Do one tap of the current Cooking Mama action. When the action's
+  // taps are done, the step is finished and the next one starts.
+  function doAction() {
+    const f = S.food, act = actionFor(f.steps[S.step]);
+    S.act++;
+    audio.play('click');
+    fx.sparks(400, 420, 6);
+    if (S.act >= act.taps) {
+      S.step++; S.act = 0;
+      audio.play('point');
+      if (S.step >= f.steps.length) dishDone();
+    }
   }
   function dishDone() {
     S.done++; S.stepsDone += S.food.steps.length;
@@ -111,7 +135,7 @@ function create(env) {
   function nextDish() {
     S.dish++;
     if (S.dish >= dishesTotal) { endGame(); return; }
-    S.phase = 'pick'; S.t = 0; S.q = ''; S.qPrev = null; S.list = FOODS.slice(0, 8); S.food = null; S.msg = null;
+    S.phase = 'pick'; S.t = 0; S.q = ''; S.qPrev = null; S.list = FOODS.slice(); S.food = null; S.msg = null;
   }
   function endGame() {
     S.phase = 'end'; S.t = 0;
@@ -170,9 +194,11 @@ function create(env) {
         const i = hits.findIndex(h => t.x >= h.x && t.x <= h.x + h.w && t.y >= h.y && t.y <= h.y + h.h);
         if (i >= 0) {
           const h = hits[i];
-          if (h.kind === 'step') {
-            if (h.step === S.step) { S.step++; audio.play('click'); fx.sparks(640, 300, 8); if (S.step >= S.food.steps.length) { dishDone(); break; } }
-            else { S.timeLeft -= WRONG_COST; S.msg = WRONG_COST ? 'Wrong step! Careful — it is burning!' : 'Wrong step!'; S.msgT = 0; S.msgColor = '#fca5a5'; audio.play('fault'); }
+          if (h.kind === 'action' || (h.kind === 'step' && h.step === S.step)) {
+            doAction();
+            if (S.phase !== 'cook') break;
+          } else if (h.kind === 'step') {
+            S.timeLeft -= WRONG_COST; S.msg = WRONG_COST ? 'Wrong step! Careful — it is burning!' : 'Wrong step!'; S.msgT = 0; S.msgColor = '#fca5a5'; audio.play('fault');
           }
           break;
         }
@@ -221,31 +247,31 @@ function create(env) {
       ctx.textAlign = 'left'; ctx.fillStyle = S.q ? '#fff' : '#64748b'; ctx.font = '900 26px Nunito';
       ctx.fillText(S.q ? S.q + '▌' : 'Tap letters to search…', 188, 193);
       ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '800 15px Nunito';
-      if (S.q) ctx.fillText(S.list.length ? `${S.list.length} food${S.list.length === 1 ? '' : 's'} found — tap one to cook it!` : 'No food with those letters — try fewer letters', 640, 238);
-      // letter keys
-      const key = (label, x, y, w) => drawBtn(ctx, x, y, w, 44, label, '#334155', 'key', { ch: label });
+      ctx.fillText(S.q ? (S.list.length ? `${S.list.length} food${S.list.length === 1 ? '' : 's'} found — tap one to cook it!` : 'No food with those letters — try fewer letters') : `${FOODS.length} foods — tap one to cook it!`, 640, 228);
+      // letter keys (compact, so all 20 foods fit below)
+      const key = (label, x, y, w) => drawBtn(ctx, x, y, w, 36, label, '#334155', 'key', { ch: label });
       const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
       rows.forEach((row, r) => {
         const n = r === 2 ? row.length + 1 : row.length, w = 62, gap = 7, total = n * w + (n - 1) * gap;
         let x = 640 - total / 2;
-        const y = 258 + r * 52;
+        const y = 238 + r * 42;
         for (const ch of row) { key(ch, x, y, w); x += w + gap; }
         if (r === 2) key('⌫', x, y, w);
       });
-      drawBtn(ctx, 640 - 200, 258 + 3 * 52, 190, 44, 'SPACE', '#334155', 'key', { ch: ' ' });
-      drawBtn(ctx, 640 + 18, 258 + 3 * 52, 190, 44, '✕ CLEAR', '#334155', 'key', { ch: '✕' });
-      // matching foods
+      drawBtn(ctx, 640 - 200, 238 + 3 * 42, 190, 36, 'SPACE', '#334155', 'key', { ch: ' ' });
+      drawBtn(ctx, 640 + 18, 238 + 3 * 42, 190, 36, '✕ CLEAR', '#334155', 'key', { ch: '✕' });
+      // matching foods — ALL of them, so you can see everything you can cook!
       S.list.forEach((f, k) => {
-        const col = k % 4, row = Math.floor(k / 4), x = 170 + col * 238, y = 470 + row * 96;
+        const col = k % 4, row = Math.floor(k / 4), x = 170 + col * 238, y = 402 + row * 56;
         const locked = !canCook(f);
-        ctx.fillStyle = locked ? '#0f172a' : '#1e293b'; rrect(ctx, x, y, 222, 84, 14); ctx.fill();
-        if (locked) { ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; rrect(ctx, x, y, 222, 84, 14); ctx.stroke(); }
-        ctx.font = '44px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(locked ? '🔒' : f.icon, x + 111, y + 34);
-        ctx.fillStyle = locked ? '#64748b' : '#fff'; ctx.font = "20px 'Lilita One'"; ctx.fillText(locked ? `Lv ${f.lv} · ${f.name}` : f.name, x + 111, y + 68);
-        hits.push({ x, y, w: 222, h: 84, kind: 'food', food: f });
+        ctx.fillStyle = locked ? '#0f172a' : '#1e293b'; rrect(ctx, x, y, 222, 50, 12); ctx.fill();
+        if (locked) { ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; rrect(ctx, x, y, 222, 50, 12); ctx.stroke(); }
+        ctx.font = '28px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(locked ? '🔒' : f.icon, x + 111, y + 22);
+        ctx.fillStyle = locked ? '#64748b' : '#fff'; ctx.font = "16px 'Lilita One'"; ctx.fillText(locked ? `Lv ${f.lv} · ${f.name}` : f.name, x + 111, y + 42);
+        hits.push({ x, y, w: 222, h: 50, kind: 'food', food: f });
       });
       if (S.msg && S.msgT < 3 && S.phase === 'pick') { ctx.fillStyle = S.msgColor; ctx.font = '800 18px Nunito'; ctx.textAlign = 'center'; ctx.fillText(S.msg, 640, 672); }
-      if (!S.q) { ctx.fillStyle = '#94a3b8'; ctx.font = '800 15px Nunito'; ctx.textAlign = 'center'; ctx.fillText('Tap a food to see its recipe!', 640, 672); }
+      if (!S.q) { ctx.fillStyle = '#94a3b8'; ctx.font = '800 15px Nunito'; ctx.textAlign = 'center'; ctx.fillText('Tap a food to see its recipe!', 640, 690); }
     } else if (S.phase === 'recipe' && S.food) {
       const f = S.food, cost = foodCost(f);
       drawPanel(ctx, 140, 120, 1000, 580, `${f.icon} ${f.name} — Recipe`, '#f59e0b');
@@ -270,24 +296,52 @@ function create(env) {
       if (S.msg && S.msgT < 3) { ctx.fillStyle = S.msgColor; ctx.font = '800 18px Nunito'; ctx.textAlign = 'center'; ctx.fillText(S.msg, 640, 578); }
     } else if (S.phase === 'cook' && S.food) {
       const f = S.food, k = clamp(1 - S.timeLeft / TIME, 0, 1);
+      const act = actionFor(f.steps[S.step] || '');
       drawPanel(ctx, 140, 120, 1000, 580, `${f.icon} Cooking ${f.name}!`, '#f59e0b');
       // timer / heat bar
       ctx.fillStyle = 'rgba(255,255,255,.15)'; rrect(ctx, 180, 168, 920, 22, 11); ctx.fill();
       ctx.fillStyle = k > 0.65 ? '#ef4444' : k > 0.35 ? '#f59e0b' : '#4ade80'; rrect(ctx, 180, 168, 920 * (1 - k), 22, 11); ctx.fill();
       ctx.fillStyle = '#fff'; ctx.font = '900 20px Nunito'; ctx.textAlign = 'center';
-      ctx.fillText(`⏱️ ${Math.max(0, Math.ceil(S.timeLeft))}s left — tap the steps in order!`, 640, 216);
-      if (k > 0.65) { ctx.fillStyle = '#fca5a5'; ctx.font = '900 18px Nunito'; ctx.fillText('🔥 It is getting hot — hurry before it burns!', 640, 242); }
-      // steps as buttons
-      f.steps.forEach((s, i) => {
-        const y = 262 + i * 76, done = i < S.step, cur = i === S.step;
-        const bg = done ? '#16a34a' : cur ? '#ea580c' : '#1e293b';
-        ctx.fillStyle = bg; rrect(ctx, 180, y, 920, 62, 14); ctx.fill();
-        if (cur) { ctx.strokeStyle = '#fde68a'; ctx.lineWidth = 4; rrect(ctx, 180, y, 920, 62, 14); ctx.stroke(); }
-        ctx.fillStyle = '#fff'; ctx.font = "24px 'Lilita One'"; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(`${done ? '✓' : cur ? '👉' : `${i + 1}.`} ${s}`, 204, y + 32);
-        hits.push({ x: 180, y, w: 920, h: 62, kind: 'step', step: i });
+      ctx.fillText(`⏱️ ${Math.max(0, Math.ceil(S.timeLeft))}s left`, 640, 212);
+      if (k > 0.65) { ctx.fillStyle = '#fca5a5'; ctx.font = '900 18px Nunito'; ctx.fillText('🔥 It is getting hot — hurry before it burns!', 640, 238); }
+      // The big plate: you SEE the food being made. Completed steps
+      // put their ingredients on the plate around the dish.
+      ctx.fillStyle = '#f8fafc'; ctx.beginPath(); ctx.ellipse(400, 430, 210, 130, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e2e8f0'; ctx.beginPath(); ctx.ellipse(400, 430, 170, 100, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.font = '110px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(f.icon, 400, 420);
+      f.ingredients.forEach((g, i) => {
+        if (i >= S.step) return;
+        const a = -Math.PI / 2 + (i / Math.max(1, f.ingredients.length)) * Math.PI * 2;
+        ctx.font = '44px sans-serif';
+        ctx.fillText(g.i, 400 + Math.cos(a) * 150, 430 + Math.sin(a) * 88);
       });
-      if (S.msg && S.msgT < 2.5) { ctx.fillStyle = S.msgColor; ctx.font = '800 18px Nunito'; ctx.textAlign = 'center'; ctx.fillText(S.msg, 640, 668); }
+      // The plate is the big tap target: tap it to do the action.
+      hits.push({ x: 190, y: 300, w: 420, h: 260, kind: 'action' });
+      // The current ingredient + what to do with it (Cooking Mama style).
+      const curIng = f.ingredients[Math.min(S.step, f.ingredients.length - 1)];
+      ctx.font = '64px sans-serif'; ctx.fillText(curIng.i, 400, 300 + Math.sin(S.t * 3) * 6);
+      ctx.fillStyle = '#fff'; ctx.font = "30px 'Lilita One'";
+      ctx.fillText(`${act.icon} ${act.verb}! ${f.steps[S.step]}`, 400, 596);
+      ctx.fillStyle = '#cbd5e1'; ctx.font = '800 16px Nunito';
+      ctx.fillText(`Tap the plate ${act.taps} time${act.taps === 1 ? '' : 's'}!`, 400, 624);
+      // action progress bar
+      ctx.fillStyle = 'rgba(255,255,255,.15)'; rrect(ctx, 250, 640, 300, 18, 9); ctx.fill();
+      ctx.fillStyle = '#4ade80'; rrect(ctx, 250, 640, 300 * clamp(S.act / act.taps, 0, 1), 18, 9); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = '900 16px Nunito'; ctx.textAlign = 'left';
+      ctx.fillText(`${S.act}/${act.taps}`, 560, 650);
+      // the recipe steps, on the right (tap the current one to do it too)
+      f.steps.forEach((s, i) => {
+        const y = 262 + i * 62, done = i < S.step, cur = i === S.step;
+        const bg = done ? '#16a34a' : cur ? '#ea580c' : '#1e293b';
+        ctx.fillStyle = bg; rrect(ctx, 660, y, 440, 50, 12); ctx.fill();
+        if (cur) { ctx.strokeStyle = '#fde68a'; ctx.lineWidth = 3; rrect(ctx, 660, y, 440, 50, 12); ctx.stroke(); }
+        ctx.fillStyle = '#fff'; ctx.font = "20px 'Lilita One'"; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        const a2 = actionFor(s);
+        ctx.fillText(`${done ? '✓' : cur ? `${a2.icon}` : `${i + 1}.`} ${s}`, 676, y + 26);
+        hits.push({ x: 660, y, w: 440, h: 50, kind: 'step', step: i });
+      });
+      if (S.msg && S.msgT < 2.5) { ctx.fillStyle = S.msgColor; ctx.font = '800 18px Nunito'; ctx.textAlign = 'center'; ctx.fillText(S.msg, 640, 682); }
     } else if (S.phase === 'dishEnd') {
       drawBanner(ctx, S.msg, 640, 300, S.t, { size: 72, color: S.msgColor, glow: S.msgColor === '#a3e635' ? '#16a34a' : '#ef4444' });
       ctx.fillStyle = '#fff'; ctx.font = '800 20px Nunito'; ctx.textAlign = 'center';
@@ -335,7 +389,7 @@ export default {
   id: 'cooking',
   title: 'Cooking',
   tagline: 'Search a food, get the recipe, cook it before it burns!',
-  desc: 'Search any food and get its recipe. Trevor can cook anything! Everyone else starts with only rice and unlocks more foods as they level up. Buy the ingredients at the Shopping Mall first, then tap the steps in order — but hurry, or oh no, your food is burned!',
+  desc: 'Cook like Cooking Mama! Search any food and get its recipe. Trevor can cook anything! Everyone else starts with only rice and unlocks more foods as they level up. Buy the ingredients at the Shopping Mall first, then SEE the food on the plate and COOK it with your hands — chop, stir, fry and more — before it burns!',
   music: 'mall',
   labels: { a: 'PICK', b: 'COOK' },
   options: [
@@ -344,7 +398,7 @@ export default {
   howto: `<ul>
     <li>Search any food: tap the letters (or type) and tap a food to see its recipe. <b>Trevor can cook anything!</b> Everyone else starts with only <b>rice</b> and unlocks more foods as they level up — reach a higher level to cook more!</li>
     <li>Buy the ingredients at the <b>Shopping Mall</b> first — tap the orange Buy button. It costs money, and 8% goes to Trevor.</li>
-    <li>Then tap <b>Start cooking!</b> and tap the recipe steps <b>in order</b> before the timer runs out.</li>
+    <li>Then tap <b>Start cooking!</b> — like Cooking Mama, you <b>SEE the food on the plate</b> and cook it with your hands: <b>tap the plate</b> to chop 🔪, stir 🥄, fry 🔥, shape ✋ and add 👉 each step, in order, before the timer runs out.</li>
     <li>Tapping the wrong step makes it burn faster. If the timer runs out — <b>🔥 oh no, your food is burned!</b></li>
     <li>Cook more dishes than you burn to win. Higher difficulty gives less time.</li>
   </ul>`,
