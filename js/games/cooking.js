@@ -16,7 +16,14 @@ const TAX_RATE = 0.08;
 
 // Every food: what you need, and the steps to cook it.
 // Ingredient prices are in cents; the Mall adds 8% tax (Trevor's cut).
-const FOODS = [
+// Every food: what you need, and the steps to cook it.
+// Ingredient prices are in cents; the Mall adds 8% tax (Trevor's cut).
+// Trevor wanted 10,000 foods, not just 20! So there are 100 base
+// dishes x 100 flavours = 10,000 foods. The first 20 bases are the
+// original hand-written recipes; the other 80 bases get generated
+// recipes (3 ingredients + 4 steps). Each flavour adds one extra
+// ingredient to the recipe.
+const BASE_FOODS = [
   { id: 'friedrice', name: 'Fried Rice', icon: '🍚', lv: 1, ingredients: [{ n: 'Rice', i: '🍚', c: 100 }, { n: 'Egg', i: '🥚', c: 80 }, { n: 'Peas', i: '🫛', c: 70 }, { n: 'Soy sauce', i: '🫙', c: 80 }], steps: ['Fry the egg', 'Add the rice', 'Add the peas', 'Pour on the soy sauce', 'Stir-fry it all!'] },
   { id: 'fries', name: 'Fries', icon: '🍟', lv: 2, ingredients: [{ n: 'Potato', i: '🥔', c: 80 }, { n: 'Salt', i: '🧂', c: 40 }, { n: 'Ketchup', i: '🍅', c: 60 }], steps: ['Cut the potato into sticks', 'Fry them till they are golden', 'Sprinkle on the salt', 'Add the ketchup', 'Crunchy and yummy!'] },
   { id: 'salad', name: 'Salad', icon: '🥗', lv: 2, ingredients: [{ n: 'Lettuce', i: '🥬', c: 70 }, { n: 'Tomato', i: '🍅', c: 70 }, { n: 'Cucumber', i: '🥒', c: 60 }, { n: 'Dressing', i: '🫙', c: 90 }], steps: ['Wash the lettuce', 'Chop the tomato', 'Slice the cucumber', 'Pour on the dressing', 'Toss it all together!'] },
@@ -38,6 +45,87 @@ const FOODS = [
   { id: 'pizza', name: 'Pizza', icon: '🍕', lv: 10, ingredients: [{ n: 'Dough', i: '🍞', c: 120 }, { n: 'Tomato sauce', i: '🍅', c: 80 }, { n: 'Cheese', i: '🧀', c: 150 }, { n: 'Pepperoni', i: '🍖', c: 180 }], steps: ['Roll the dough', 'Spread the tomato sauce', 'Add the cheese', 'Add the pepperoni', 'Bake it in the oven!'] },
   { id: 'cake', name: 'Cake', icon: '🎂', lv: 11, ingredients: [{ n: 'Flour', i: '🌾', c: 100 }, { n: 'Egg', i: '🥚', c: 80 }, { n: 'Sugar', i: '🍬', c: 90 }, { n: 'Butter', i: '🧈', c: 140 }, { n: 'Frosting', i: '🍦', c: 150 }], steps: ['Mix the flour, egg and sugar', 'Stir in the butter', 'Bake the cake', 'Spread the frosting', 'Put on the candles!'] },
 ];
+// 80 more base dishes: [name, icon, level, main ingredient].
+// Each gets 3 ingredients (the main + 2 from the pool) and 4 steps.
+const EXTRA_BASES = [
+  ['Pasta', '🍝', 3, 'Pasta'], ['Ramen', '🍜', 4, 'Noodles'], ['Pho', '🍲', 5, 'Noodles'],
+  ['Udon', '🍜', 4, 'Noodles'], ['Pad Thai', '🍜', 6, 'Noodles'], ['Lasagne', '🍝', 7, 'Pasta'],
+  ['Macaroni', '🧀', 2, 'Pasta'], ['Risotto', '🍚', 6, 'Rice'], ['Paella', '🥘', 7, 'Rice'],
+  ['Biryani', '🍛', 7, 'Rice'], ['Spring Rolls', '🌯', 3, 'Wrapper'], ['Wonton', '🥟', 4, 'Wrapper'],
+  ['Gyoza', '🥟', 4, 'Wrapper'], ['Bao', '🥟', 3, 'Bun'], ['Banh Mi', '🥖', 4, 'Bread'],
+  ['Kebab', '🍢', 4, 'Meat'], ['Shawarma', '🌯', 5, 'Meat'], ['Falafel', '🧆', 4, 'Chickpeas'],
+  ['Hummus', '🫙', 3, 'Chickpeas'], ['Nachos', '🧀', 3, 'Chips'], ['Quesadilla', '🫓', 4, 'Tortilla'],
+  ['Burrito', '🌯', 5, 'Tortilla'], ['Enchilada', '🌮', 6, 'Tortilla'], ['Fajita', '🫓', 5, 'Chicken'],
+  ['Chilli', '🌶️', 4, 'Beans'], ['Stew', '🍲', 5, 'Beef'], ['Roast Chicken', '🍗', 6, 'Chicken'],
+  ['Grilled Fish', '🐟', 6, 'Fish'], ['Salmon', '🍣', 7, 'Fish'], ['Steak', '🥩', 7, 'Beef'],
+  ['Meatballs', '🧆', 5, 'Beef'], ['Sausage', '🌭', 3, 'Sausage'], ['Omelette', '🍳', 2, 'Egg'],
+  ['Scrambled Eggs', '🍳', 2, 'Egg'], ['French Toast', '🍞', 3, 'Bread'], ['Waffles', '🧇', 3, 'Flour'],
+  ['Crepes', '🥞', 4, 'Flour'], ['Muffins', '🧁', 4, 'Flour'], ['Brownies', '🍫', 4, 'Chocolate'],
+  ['Cheesecake', '🍰', 6, 'Cheese'], ['Pudding', '🍮', 4, 'Milk'], ['Custard', '🍮', 3, 'Milk'],
+  ['Jelly', '🍧', 2, 'Sugar'], ['Fruit Salad', '🍓', 2, 'Fruit'], ['Yogurt', '🍦', 2, 'Milk'],
+  ['Granola', '🥣', 3, 'Oats'], ['Cereal', '🥣', 1, 'Milk'], ['Porridge', '🥣', 2, 'Oats'],
+  ['Congee', '🍚', 3, 'Rice'], ['Miso Soup', '🍲', 3, 'Broth'], ['Tomato Soup', '🍅', 2, 'Tomato'],
+  ['Pumpkin Soup', '🎃', 4, 'Pumpkin'], ['Chicken Soup', '🍲', 3, 'Chicken'], ['Beef Stew', '🥩', 6, 'Beef'],
+  ['Lamb Curry', '🍛', 7, 'Lamb'], ['Fish Curry', '🐟', 6, 'Fish'], ['Veg Curry', '🥦', 7, 'Veggies'],
+  ['Butter Chicken', '🍗', 7, 'Chicken'], ['Tikka Masala', '🍛', 8, 'Chicken'], ['Naan', '🫓', 3, 'Flour'],
+  ['Roti', '🫓', 2, 'Flour'], ['Samosa', '🥟', 4, 'Potato'], ['Pakora', '🧆', 4, 'Chickpeas'],
+  ['Tempura', '🍤', 5, 'Shrimp'], ['Sushi Roll', '🍣', 6, 'Rice'], ['Sashimi', '🍣', 7, 'Fish'],
+  ['Onigiri', '🍙', 3, 'Rice'], ['Bento', '🍱', 6, 'Rice'], ['Bibimbap', '🍚', 6, 'Rice'],
+  ['Kimchi', '🥬', 4, 'Cabbage'], ['Bulgogi', '🥩', 7, 'Beef'], ['Teriyaki', '🍗', 6, 'Chicken'],
+  ['Yakitori', '🍢', 5, 'Chicken'], ['Okonomiyaki', '🥞', 6, 'Flour'], ['Takoyaki', '🐙', 5, 'Octopus'],
+  ['Laksa', '🍜', 6, 'Noodles'], ['Nasi Lemak', '🍚', 5, 'Rice'], ['Rendang', '🥩', 8, 'Beef'],
+  ['Satay', '🍢', 5, 'Chicken'], ['Pho Bo', '🍜', 6, 'Beef'],
+];
+const INGREDIENT_POOL = [
+  ['Rice', '🍚', 100], ['Chicken', '🍗', 200], ['Beef', '🥩', 250], ['Fish', '🐟', 180],
+  ['Egg', '🥚', 80], ['Cheese', '🧀', 120], ['Tomato', '🍅', 70], ['Onion', '🧅', 40],
+  ['Garlic', '🧄', 30], ['Chilli', '🌶️', 35], ['Potato', '🥔', 45], ['Carrot', '🥕', 40],
+  ['Lettuce', '🥬', 50], ['Bread', '🍞', 80], ['Flour', '🌾', 60], ['Milk', '🥛', 90],
+  ['Butter', '🧈', 110], ['Sugar', '🍬', 30], ['Salt', '🧂', 20], ['Pepper', '🌶️', 25],
+  ['Mushroom', '🍄', 90], ['Corn', '🌽', 55], ['Peas', '🫛', 50], ['Beans', '🫘', 45],
+  ['Noodles', '🍜', 70], ['Pasta', '🍝', 75], ['Sauce', '🥫', 85], ['Oil', '🫗', 40],
+  ['Lemon', '🍋', 50], ['Apple', '🍎', 60],
+];
+function extraBaseFood(entry, i) {
+  const [name, icon, lv, main] = entry;
+  const id = name.toLowerCase().replace(/[^a-z]/g, '');
+  const p1 = INGREDIENT_POOL[(i * 7 + 3) % INGREDIENT_POOL.length];
+  const p2 = INGREDIENT_POOL[(i * 13 + 5) % INGREDIENT_POOL.length];
+  return {
+    id, name, icon, lv,
+    ingredients: [{ n: main, i: icon, c: 120 }, { n: p1[0], i: p1[1], c: p1[2] }, { n: p2[0], i: p2[1], c: p2[2] }],
+    steps: [`Chop the ${main.toLowerCase()}`, `Stir in the ${p1[0].toLowerCase()}`, `Cook the ${name} well`, `Serve the ${name}!`],
+  };
+}
+const ALL_BASES = [...BASE_FOODS, ...EXTRA_BASES.map((e, i) => extraBaseFood(e, i))];
+// 100 flavours (the empty one = the plain base dish).
+const MODIFIERS = ['', 'Spicy', 'Cheesy', 'Crispy', 'Sweet', 'Sour', 'Salty', 'Hot', 'Mild', 'BBQ',
+  'Honey', 'Garlic', 'Butter', 'Herb', 'Lemon', 'Tomato', 'Mushroom', 'Chicken', 'Beef', 'Pork',
+  'Fish', 'Veggie', 'Golden', 'Rainbow', 'Giant', 'Tiny', 'Mega', 'Super', 'Double', 'Triple',
+  'Deluxe', 'Special', 'Royal', 'Magic', 'Lucky', 'Happy', 'Sunny', 'Moon', 'Star', 'Fire',
+  'Ice', 'Thunder', 'Ocean', 'Mountain', 'Forest', 'Desert', 'Jungle', 'Snow', 'Rain', 'Wind',
+  'Cloud', 'Dream', 'Night', 'Morning', 'Evening', 'Summer', 'Winter', 'Spring', 'Autumn', 'Fresh',
+  'Tasty', 'Yummy', 'Delicious', 'Crunchy', 'Soft', 'Fluffy', 'Creamy', 'Juicy', 'Smoky', 'Grilled',
+  'Baked', 'Fried', 'Steamed', 'Roasted', 'Boiled', 'Chilled', 'Warm', 'Toasty', 'Spiced', 'Zesty',
+  'Tangy', 'Savory', 'Rich', 'Light', 'Healthy', 'Fancy', 'Silly', 'Funny', 'Brave', 'Fast',
+  'Slow', 'Big', 'Small', 'Red', 'Green', 'Blue', 'Pink', 'Purple', 'Orange', 'Yellow'];
+// 100 bases x 100 flavours = 10,000 foods. Flavour-major order, so
+// browsing shows different dishes on each page (page 1 = the 100
+// plain dishes, then Spicy, Cheesy, ...).
+const FOODS = [];
+for (const mod of MODIFIERS) {
+  for (const base of ALL_BASES) {
+    if (!mod) { FOODS.push(base); continue; }
+    FOODS.push({
+      id: base.id + '_' + mod.toLowerCase(),
+      name: mod + ' ' + base.name,
+      icon: base.icon,
+      lv: base.lv,
+      ingredients: [...base.ingredients, { n: mod, i: '⭐', c: 30 }],
+      steps: base.steps,
+    });
+  }
+}
 const fmtMoney = c => '$' + (c / 100).toFixed(2);
 
 // Cooking Mama actions: every recipe step becomes something you DO
@@ -65,11 +153,12 @@ function create(env) {
   const isOwner = isOwnerName(profile?.name);
   const myLevel = (() => { try { return playerLevel(profile || {}).level || 1; } catch (e) { return 1; } })();
   const canCook = f => isOwner || (f.lv || 1) <= myLevel;
-  const S = { phase: 'pick', t: 0, q: '', qPrev: null, list: FOODS.slice(), keysDown: null, food: null, dish: 0, done: 0, burned: 0, stepsDone: 0, step: 0, act: 0, timeLeft: TIME, msg: null, msgT: 0, msgColor: '#fff', bought: false, buying: false, labelKey: '', reported: false };
+  const S = { phase: 'pick', t: 0, q: '', qPrev: null, list: FOODS.slice(), page: 0, keysDown: null, food: null, dish: 0, done: 0, burned: 0, stepsDone: 0, step: 0, act: 0, timeLeft: TIME, msg: null, msgT: 0, msgColor: '#fff', bought: false, buying: false, labelKey: '', reported: false };
 
   function runSearch() {
     if (S.q === S.qPrev) return;
     S.qPrev = S.q;
+    S.page = 0;
     const q = S.q.trim().toLowerCase();
     S.list = q ? FOODS.filter(f => f.name.toLowerCase().includes(q)) : FOODS.slice();
   }
@@ -174,7 +263,7 @@ function create(env) {
       runSearch();
       for (const t of input.taps) {
         const i = hits.findIndex(h => t.x >= h.x && t.x <= h.x + h.w && t.y >= h.y && t.y <= h.y + h.h);
-        if (i >= 0) { const h = hits[i]; if (h.kind === 'key') searchKey(h.ch); else if (h.kind === 'food') pickFood(h.food); break; }
+        if (i >= 0) { const h = hits[i]; if (h.kind === 'key') searchKey(h.ch); else if (h.kind === 'food') pickFood(h.food); else if (h.kind === 'pageback' && S.page > 0) { S.page--; audio.play('tick'); } else if (h.kind === 'pagenext') { const pc = Math.max(1, Math.ceil(S.list.length / 20)); if (S.page < pc - 1) { S.page++; audio.play('tick'); } } break; }
       }
       if (input.a.pressed && S.list.length) pickFood(S.list[0]);
     } else if (S.phase === 'recipe') {
@@ -251,7 +340,8 @@ function create(env) {
       ctx.textAlign = 'left'; ctx.fillStyle = S.q ? '#fff' : '#64748b'; ctx.font = '900 26px Nunito';
       ctx.fillText(S.q ? S.q + '▌' : 'Tap letters to search…', 188, 193);
       ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '800 15px Nunito';
-      ctx.fillText(S.q ? (S.list.length ? `${S.list.length} food${S.list.length === 1 ? '' : 's'} found — tap one to cook it!` : 'No food with those letters — try fewer letters') : `${FOODS.length} foods — tap one to cook it!`, 640, 228);
+      const pageCount = Math.max(1, Math.ceil(S.list.length / 20));
+      ctx.fillText(S.q ? (S.list.length ? `${S.list.length} food${S.list.length === 1 ? '' : 's'} found — tap one to cook it! · Page ${S.page + 1}/${pageCount}` : 'No food with those letters — try fewer letters') : `${FOODS.length} foods — tap one to cook it! · Page ${S.page + 1}/${pageCount}`, 640, 228);
       // letter keys (compact, so all 20 foods fit below)
       const key = (label, x, y, w) => drawBtn(ctx, x, y, w, 36, label, '#334155', 'key', { ch: label });
       const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
@@ -264,9 +354,11 @@ function create(env) {
       });
       drawBtn(ctx, 640 - 200, 238 + 3 * 42, 190, 36, 'SPACE', '#334155', 'key', { ch: ' ' });
       drawBtn(ctx, 640 + 18, 238 + 3 * 42, 190, 36, '✕ CLEAR', '#334155', 'key', { ch: '✕' });
-      // matching foods — ALL of them, 5 across x 4 down, so all 20 fit
-      // on the screen at once (no row is cut off).
-      S.list.forEach((f, k) => {
+      // matching foods — 20 per page, 5 across x 4 down, so they all
+      // fit on the screen at once (no row is cut off). Tap Next to see
+      // more foods — there are 10,000 of them!
+      const pageFoods = S.list.slice(S.page * 20, S.page * 20 + 20);
+      pageFoods.forEach((f, k) => {
         const col = k % 5, row = Math.floor(k / 5), x = 170 + col * 190, y = 402 + row * 68;
         const locked = !canCook(f);
         ctx.fillStyle = locked ? '#0f172a' : '#1e293b'; rrect(ctx, x, y, 182, 60, 12); ctx.fill();
@@ -275,6 +367,10 @@ function create(env) {
         ctx.fillStyle = locked ? '#64748b' : '#fff'; ctx.font = "16px 'Lilita One'"; ctx.fillText(locked ? `Lv ${f.lv} · ${f.name}` : f.name, x + 91, y + 50);
         hits.push({ x, y, w: 182, h: 60, kind: 'food', food: f });
       });
+      if (pageCount > 1) {
+        drawBtn(ctx, 170, 670, 140, 26, S.page > 0 ? '◀ Back' : '◀ Back', S.page > 0 ? '#ea580c' : '#475569', 'pageback');
+        drawBtn(ctx, 970, 670, 140, 26, S.page < pageCount - 1 ? 'Next ▶' : 'Next ▶', S.page < pageCount - 1 ? '#ea580c' : '#475569', 'pagenext');
+      }
       if (S.msg && S.msgT < 3 && S.phase === 'pick') { ctx.fillStyle = S.msgColor; ctx.font = '800 18px Nunito'; ctx.textAlign = 'center'; ctx.fillText(S.msg, 640, 672); }
       if (!S.q) { ctx.fillStyle = '#94a3b8'; ctx.font = '800 15px Nunito'; ctx.textAlign = 'center'; ctx.fillText('Tap a food to see its recipe!', 640, 690); }
     } else if (S.phase === 'recipe' && S.food) {
@@ -370,7 +466,7 @@ function create(env) {
 
   if (env.debug) env.debug({ S });
   // Test hook: lets a test read the game state (phase, picked food, timer, level gate).
-  if (typeof window !== 'undefined') window.__cooking = { S, FOODS, canCook, myLevel, isOwner };
+  if (typeof window !== 'undefined') window.__cooking = { S, FOODS, ALL_BASES, MODIFIERS, canCook, myLevel, isOwner };
   audio.setCrowd(0.15);
   return { update, draw };
 }
@@ -396,14 +492,14 @@ export default {
   id: 'cooking',
   title: 'Cooking',
   tagline: 'Search a food, get the recipe, cook it before it burns!',
-  desc: 'Cook like Cooking Mama! Search any food and get its recipe. Trevor can cook anything! Everyone else starts with only rice and unlocks more foods as they level up. Buy the ingredients at the Shopping Mall first, then SEE the food on the plate and COOK it with your hands — chop, stir, fry and more — before it burns!',
+  desc: 'Cook like Cooking Mama! Search any of 10,000 foods and get its recipe. Trevor can cook anything! Everyone else starts with only rice and unlocks more foods as they level up. Buy the ingredients at the Shopping Mall first, then SEE the food on the plate and COOK it with your hands — chop, stir, fry and more — before it burns!',
   music: 'mall',
   labels: { a: 'PICK', b: 'COOK' },
   options: [
     { key: 'dishes', label: 'Dishes', default: 1, choices: [{ v: '1', label: '1 dish', sub: 'quick' }, { v: '2', label: '2 dishes', sub: 'standard' }, { v: '3', label: '3 dishes', sub: 'long' }, { v: '5', label: '5 dishes', sub: 'feast' }] },
   ],
   howto: `<ul>
-    <li>Search any food: tap the letters (or type) and tap a food to see its recipe. <b>Trevor can cook anything!</b> Everyone else starts with only <b>rice</b> and unlocks more foods as they level up — reach a higher level to cook more!</li>
+    <li>Search any of <b>10,000 foods</b>: tap the letters (or type) and tap a food to see its recipe. Or tap <b>Next ▶</b> to flip through the pages — there are 500 pages of food! <b>Trevor can cook anything!</b> Everyone else starts with only <b>rice</b> and unlocks more foods as they level up — reach a higher level to cook more!</li>
     <li>Buy the ingredients at the <b>Shopping Mall</b> first — tap the orange Buy button. It costs money, and 8% goes to Trevor.</li>
     <li>Then tap <b>Start cooking!</b> — like Cooking Mama, you <b>SEE the food on the plate</b> and cook it with your hands: <b>tap the plate</b> to chop 🔪, stir 🥄, fry 🔥, shape ✋ and add 👉 each step, in order, before the timer runs out.</li>
     <li>Tapping the wrong step makes it burn faster. If the timer runs out — <b>🔥 oh no, your food is burned!</b></li>
