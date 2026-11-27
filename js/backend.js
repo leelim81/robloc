@@ -247,14 +247,22 @@ class FirebaseBackend {
     // paid twice. Only fall back to reading the cloud profile when the
     // caller did not pass one.
     let p;
+    let fromCloud = false;
     if (currentProfile) {
       p = normalizeProfile(currentProfile);
     } else {
       const snap = await this.F.getDoc(this.userRef());
       if (!snap.exists()) throw new Error('Profile missing');
       p = normalizeProfile(snap.data());
+      fromCloud = true;
     }
-    const base = mergePending(this.user.uid, p);
+    // Only merge the pending list when the profile came fresh from the
+    // cloud: the cloud doc does NOT have those matches yet. The
+    // in-memory profile (state.profile) ALREADY includes them — merging
+    // again here counted every earlier unconfirmed match twice, three
+    // times, ... and made the grand totals wrong (Hunted cash, points,
+    // coins, money). loadProfile still merges pending for reloads.
+    const base = fromCloud ? mergePending(this.user.uid, p) : p;
     const { next, reward, newBadges } = applyMatch(base, match);
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
     const list = readPending(this.user.uid);

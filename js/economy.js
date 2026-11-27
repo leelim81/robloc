@@ -60,6 +60,15 @@ export const BADGES = [
   { id: 'ar_first',       name: 'First Arrow',       desc: 'Hit the target in Archery.',                   icon: '🏹', color: '#65a30d' },
   { id: 'ar_win',         name: 'Sharp Shooter',     desc: 'Win an Archery match.',                        icon: '🎯', color: '#0d9488' },
   { id: 'ar_bull',        name: 'Bullseye!',         desc: 'Hit the bullseye in Archery.',                 icon: '⭕', color: '#dc2626' },
+  { id: 'dt_first',       name: 'First Dart',        desc: 'Score with a dart in Darts.',                  icon: '🎯', color: '#0d9488' },
+  { id: 'dt_win',         name: 'Dart Champ',        desc: 'Win a Darts match.',                           icon: '🏆', color: '#16a34a' },
+  { id: 'dt_bull',        name: 'Bullseye!',         desc: 'Hit the bullseye in Darts.',                   icon: '🎯', color: '#dc2626' },
+  { id: 'fs_first',       name: 'First Catch',       desc: 'Catch a fish in Fishing.',                     icon: '🎣', color: '#0284c7' },
+  { id: 'fs_win',         name: 'Master Angler',     desc: 'Win a Fishing match.',                         icon: '🐟', color: '#0ea5e9' },
+  { id: 'fs_big',         name: 'Big Catch!',        desc: 'Catch a 3-star fish in Fishing.',              icon: '🐡', color: '#0369a1' },
+  { id: 'gf_first',       name: 'First Hole',        desc: 'Sink a putt in Golf.',                         icon: '⛳', color: '#65a30d' },
+  { id: 'gf_win',         name: 'Golf Champ',        desc: 'Win a Golf match.',                            icon: '🏆', color: '#16a34a' },
+  { id: 'gf_ace',         name: 'Hole in One!',      desc: 'Sink a putt on your first try in Golf.',       icon: '⭐', color: '#f59e0b' },
   { id: 'mz_win',          name: 'Maze Runner',        desc: 'Win a Maze game.',                           icon: '🌀', color: '#7c3aed' },
   { id: 'mz_coins',        name: 'Coin Hunter',        desc: 'Collect 8 coins in one Maze game.',          icon: '🪙', color: '#d97706' },
   { id: 'mz_legend',       name: 'Maze Master',        desc: 'Beat Legend difficulty in Maze.',            icon: '🏆', color: '#dc2626' },
@@ -211,6 +220,9 @@ export function emptyStats() {
     bowling: { played: 0, wins: 0, pins: 0, bestPins: 0, strikes: 0, legendWins: 0 },
     basketball: { played: 0, wins: 0, baskets: 0, bestBaskets: 0, legendWins: 0 },
     archery: { played: 0, wins: 0, points: 0, bestPoints: 0, bullseyes: 0, legendWins: 0 },
+    darts: { played: 0, wins: 0, points: 0, bestPoints: 0, bullseyes: 0, legendWins: 0 },
+    fishing: { played: 0, wins: 0, fish: 0, points: 0, biggest: 0, legendWins: 0 },
+    golf: { played: 0, wins: 0, holes: 0, bestHoles: 0, holeInOne: 0, legendWins: 0 },
     matches: 0,
   };
 }
@@ -221,7 +233,7 @@ export function emptyStats() {
 // here: it came from an old save when the rules were different, so it is
 // dropped for plain players. The owner keeps every badge by design.
 function badgePossible(id, p, st) {
-  const so = st.soccer, pb = st.pickleball, bb = st.baseball, pr = st.price, pz = st.prize, pz2 = st.prize2 || {}, mz = st.maze || {}, ht = st.hunted || {}, ck = st.cooking || {}, bw = st.bowling || {}, bk = st.basketball || {}, ar = st.archery || {};
+  const so = st.soccer, pb = st.pickleball, bb = st.baseball, pr = st.price, pz = st.prize, pz2 = st.prize2 || {}, mz = st.maze || {}, ht = st.hunted || {}, ck = st.cooking || {}, bw = st.bowling || {}, bk = st.basketball || {}, ar = st.archery || {}, dt = st.darts || {}, fs = st.fishing || {}, gf = st.golf || {};
   switch (id) {
     case 'first_match': return st.matches > 0;
     case 'soccer_goal': return so.goals > 0;
@@ -266,6 +278,15 @@ function badgePossible(id, p, st) {
     case 'ar_first': return ar.points > 0;
     case 'ar_win': return ar.wins > 0;
     case 'ar_bull': return ar.bullseyes > 0;
+    case 'dt_first': return dt.points > 0;
+    case 'dt_win': return dt.wins > 0;
+    case 'dt_bull': return dt.bullseyes > 0;
+    case 'fs_first': return fs.fish > 0;
+    case 'fs_win': return fs.wins > 0;
+    case 'fs_big': return fs.biggest >= 3;
+    case 'gf_first': return gf.holes > 0;
+    case 'gf_win': return gf.wins > 0;
+    case 'gf_ace': return (gf.holeInOne || 0) > 0;
     case 'all_rounder': return so.wins > 0 && pb.wins > 0;
     case 'coins_250': return (p.totalCoinsEarned || 0) >= 250;
     case 'coins_2000': return (p.totalCoinsEarned || 0) >= 2000;
@@ -294,6 +315,9 @@ export function normalizeProfile(p) {
     bowling: { ...s.bowling, ...(st.bowling || {}) },
     basketball: { ...s.basketball, ...(st.basketball || {}) },
     archery: { ...s.archery, ...(st.archery || {}) },
+    darts: { ...s.darts, ...(st.darts || {}) },
+    fishing: { ...s.fishing, ...(st.fishing || {}) },
+    golf: { ...s.golf, ...(st.golf || {}) },
     matches: st.matches || 0,
   };
   // Only Trevor is the owner, and only by NAME - never by a stored role.
@@ -397,7 +421,7 @@ export function totalPoints(p) { return BigInt(p.pointsBase || '0') + BigInt(p.p
 export function careerOf(p) {
   const s = p.stats || emptyStats();
   const played = BigInt(p.playedBase || '0') + BigInt(s.matches || 0);
-  const wins = BigInt(p.winsBase || '0') + BigInt((s.soccer?.wins || 0) + (s.pickleball?.wins || 0) + (s.baseball?.wins || 0) + (s.price?.wins || 0) + (s.prize?.wins || 0) + (s.prize2?.wins || 0) + (s.maze?.wins || 0) + (s.hunted?.wins || 0) + (s.cooking?.wins || 0) + (s.bowling?.wins || 0) + (s.basketball?.wins || 0) + (s.archery?.wins || 0));
+  const wins = BigInt(p.winsBase || '0') + BigInt((s.soccer?.wins || 0) + (s.pickleball?.wins || 0) + (s.baseball?.wins || 0) + (s.price?.wins || 0) + (s.prize?.wins || 0) + (s.prize2?.wins || 0) + (s.maze?.wins || 0) + (s.hunted?.wins || 0) + (s.cooking?.wins || 0) + (s.bowling?.wins || 0) + (s.basketball?.wins || 0) + (s.archery?.wins || 0) + (s.darts?.wins || 0) + (s.fishing?.wins || 0) + (s.golf?.wins || 0));
   const chance = Number(p.winChance || 0);
   const rate = chance > 0 ? chance : played > 0n ? Number(wins * 100n / played) : 0;
   return { played, wins, rate };
@@ -483,6 +507,16 @@ export function computeRewards(match) {
     pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.points * 2 + match.bullseyes * 15;
     coins = 10 + (match.won ? 40 : draw ? 12 : 0) + Math.floor(match.points / 5) + match.bullseyes * 3;
   }
+  else if (match.game === 'darts') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.points + match.bullseyes * 15;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + Math.floor(match.points / 10) + match.bullseyes * 3;
+  } else if (match.game === 'fishing') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.points * 10 + match.fish * 5;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.fish * 3;
+  } else if (match.game === 'golf') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.holes * 20;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.holes * 4;
+  }
   pts = Math.min(MAX_POINTS_PER_MATCH, Math.round(pts * m));
   coins = Math.min(MAX_COINS_PER_MATCH, Math.round(coins * m));
   // The Double Points superpower doubles the points (up to twice the cap).
@@ -567,6 +601,25 @@ export function applyMatch(profile, match) {
     s.bestPoints = Math.max(s.bestPoints, match.points);
     if (match.won) s.wins++;
     if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'darts') {
+    const s = stats.darts;
+    s.played++; s.points += match.points; s.bullseyes += match.bullseyes || 0;
+    s.bestPoints = Math.max(s.bestPoints, match.points);
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'fishing') {
+    const s = stats.fishing;
+    s.played++; s.fish += match.fish; s.points += match.points;
+    s.biggest = Math.max(s.biggest, match.biggest || 0);
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'golf') {
+    const s = stats.golf;
+    s.played++; s.holes += match.holes;
+    s.bestHoles = Math.max(s.bestHoles, match.holes);
+    if (match.holeInOne) s.holeInOne = (s.holeInOne || 0) + 1;
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
   } else {
     const s = stats.pickleball;
     s.played++; s.pointsWon += match.scoreFor; s.aces += match.aces;
@@ -633,6 +686,18 @@ export function applyMatch(profile, match) {
     give('ar_first', match.points > 0);
     give('ar_win', match.won);
     give('ar_bull', (match.bullseyes || 0) > 0);
+  } else if (match.game === 'darts') {
+    give('dt_first', match.points > 0);
+    give('dt_win', match.won);
+    give('dt_bull', (match.bullseyes || 0) > 0);
+  } else if (match.game === 'fishing') {
+    give('fs_first', match.fish > 0);
+    give('fs_win', match.won);
+    give('fs_big', (match.biggest || 0) >= 3);
+  } else if (match.game === 'golf') {
+    give('gf_first', match.holes > 0);
+    give('gf_win', match.won);
+    give('gf_ace', match.holeInOne === true);
   } else {
     give('pb_win', match.won);
     give('pb_ace', match.aces > 0);

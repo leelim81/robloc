@@ -71,10 +71,10 @@ function create(env) {
   // Superpowers: Speed = target sways slower, Power = bigger bullseye.
   const SWAY = options.power === 'speed' ? 0.55 : 1;
   const BULL = options.power === 'power' ? 30 : 20;
-  const S = { phase: 'intro', t: 0, arrow: 0, points: 0, bullseyes: 0, aimX: 640, aimY: 300, flyT: 0, flyFrom: { x: 640, y: 600 }, msg: null, msgT: 0, reported: false };
+  const S = { phase: 'intro', t: 0, swayT: 0, arrow: 0, points: 0, bullseyes: 0, aimX: 640, aimY: 300, flyT: 0, flyFrom: { x: 640, y: 600 }, msg: null, msgT: 0, reported: false };
   let hits = [];
 
-  const targetX = () => 640 + Math.sin(S.t * 0.8 * SWAY) * 200;
+  const targetX = () => 640 + Math.sin(S.swayT * 0.8 * SWAY) * 200;
   const targetY = () => 300;
   const say = (msg, color = '#fff') => { S.msg = msg; S.msgColor = color; S.msgT = 0; };
   function shoot() {
@@ -98,7 +98,7 @@ function create(env) {
   }
 
   function update(dt) {
-    S.t += dt; S.msgT += dt;
+    S.t += dt; S.msgT += dt; S.swayT += dt;
     input.setTapMode(true);
     if (S.labelKey !== 'bow') { S.labelKey = 'bow'; input.setLabels('SHOOT', 'SHOOT'); }
     for (const t of input.taps) for (let k = hits.length - 1; k >= 0; k--) {

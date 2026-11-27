@@ -55,10 +55,10 @@ function create(env) {
   // Superpowers: Speed = hoop sways slower, Power = bigger hoop.
   const SWAY = options.power === 'speed' ? 0.55 : 1;
   const RIM = options.power === 'power' ? 68 : 46;
-  const S = { phase: 'intro', t: 0, shot: 0, baskets: 0, ballX: 640, ballY: 600, flyT: 0, flyFrom: 640, msg: null, msgT: 0, reported: false };
+  const S = { phase: 'intro', t: 0, swayT: 0, shot: 0, baskets: 0, ballX: 640, ballY: 600, flyT: 0, flyFrom: 640, msg: null, msgT: 0, reported: false };
   let hits = [];
 
-  const hoopX = () => 640 + Math.sin(S.t * 0.9 * SWAY) * 220;
+  const hoopX = () => 640 + Math.sin(S.swayT * 0.9 * SWAY) * 220;
   const say = (msg, color = '#fff') => { S.msg = msg; S.msgColor = color; S.msgT = 0; };
   function shoot() {
     if (S.phase !== 'aim') return;
@@ -81,7 +81,7 @@ function create(env) {
   }
 
   function update(dt) {
-    S.t += dt; S.msgT += dt;
+    S.t += dt; S.msgT += dt; S.swayT += dt;
     input.setTapMode(true);
     if (S.labelKey !== 'hoop') { S.labelKey = 'hoop'; input.setLabels('SHOOT', 'SHOOT'); }
     for (const t of input.taps) for (let k = hits.length - 1; k >= 0; k--) {

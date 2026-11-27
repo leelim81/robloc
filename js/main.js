@@ -17,15 +17,18 @@ import cooking from './games/cooking.js';
 import bowling from './games/bowling.js';
 import basketball from './games/basketball.js';
 import archery from './games/archery.js';
+import darts from './games/darts.js';
+import fishing from './games/fishing.js';
+import golf from './games/golf.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, prizemachine2, maze, cooking, bowling, basketball, archery, mall];
+const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, prizemachine2, maze, cooking, bowling, basketball, archery, darts, fishing, golf, mall];
 // Hunted lives on its own now (Trevor: "delete the one in Robloc, put
 // it in the new Robloc hunted"). It is NOT in the hub. Open it at
 // ?hunted=1 (or hunted.html) — a standalone Hunted with only one game.
 const HUNTED_MODE = new URLSearchParams(location.search).has('hunted');
-const COMING = [['Fishing', '🎣', 'Cast your line and catch the biggest fish — coming soon!'], ['Racing', '🏎️', 'Race your car and be the fastest — coming soon!'], ['Treasure Hunt', '🗺️', 'Find the hidden treasure — coming soon!'], ['Swimming', '🏊', 'Splash and race in the pool — coming soon!'],
+const COMING = [['Racing', '🏎️', 'Race your car and be the fastest — coming soon!'], ['Treasure Hunt', '🗺️', 'Find the hidden treasure — coming soon!'], ['Swimming', '🏊', 'Splash and race in the pool — coming soon!'],
   ['Dance', '💃', 'Dance to the music and hit the moves — coming soon!'],
   ['Gardening', '🌱', 'Plant seeds and grow a garden — coming soon!'],
   ['Baking', '🧁', 'Bake yummy cakes and cookies — coming soon!'],
@@ -35,7 +38,7 @@ const COMING = [['Fishing', '🎣', 'Cast your line and catch the biggest fish �
   ['Space', '🚀', 'Fly to space and visit the stars — coming soon!'],
   ['Volleyball', '🏐', 'Bump, set and spike — coming soon!'],
   ['Tennis', '🎾', 'Serve and smash on the court — coming soon!'],
-  ['Golf', '⛳', 'Putt the ball in the hole — coming soon!'],
+  
   ['Hockey', '🏒', 'Skate fast and score goals — coming soon!'],
   ['Boxing', '🥊', 'Put on your gloves and box — coming soon!'],
   ['Karate', '🥋', 'Learn karate moves — coming soon!'],
@@ -67,7 +70,7 @@ const COMING = [['Fishing', '🎣', 'Cast your line and catch the biggest fish �
   ['Rugby', '🏉', 'Run with the ball and score a try — coming soon!'],
   ['Lacrosse', '🥍', 'Catch and throw with your stick — coming soon!'],
   ['Table Tennis', '🏓', 'Ping pong fast and fun — coming soon!'],
-  ['Darts', '🎯', 'Throw darts and hit the bullseye — coming soon!'],
+  
   ['Pool', '🎱', 'Play pool and sink the balls — coming soon!'],
   ['Horse Riding', '🐴', 'Ride a horse and jump — coming soon!'],
   ['Camping', '⛺', 'Camp under the stars — coming soon!'],

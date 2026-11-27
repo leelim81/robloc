@@ -5,11 +5,11 @@ import { rrect } from '../art.js';
 import { drawBanner } from '../fx.js';
 
 const DIFF = {
-  rookie: { target: 25, rolls: 5, aimTime: 20 },
-  pro: { target: 30, rolls: 5, aimTime: 15 },
-  legend: { target: 35, rolls: 5, aimTime: 12 },
-  boost: { target: 20, rolls: 5, aimTime: 25 },   // win-chance matches
-  tough: { target: 40, rolls: 5, aimTime: 10 },  // others: hard game, so they win about 25%
+  rookie: { target: 30, rolls: 5, aimTime: 15 },
+  pro: { target: 35, rolls: 5, aimTime: 12 },
+  legend: { target: 40, rolls: 5, aimTime: 10 },
+  boost: { target: 25, rolls: 5, aimTime: 18 },   // win-chance matches
+  tough: { target: 42, rolls: 5, aimTime: 8 },  // others: hard game, so they win about 25%
 };
 const LANE = { x0: 440, x1: 840, y0: 120, y1: 660 };
 const CENTER = 640;
@@ -74,7 +74,7 @@ function create(env) {
   const SPD = options.power === 'speed' ? 1.5 : 1;
   const PWR = options.power === 'power' ? 2 : 0;
   const pins = makePins();
-  const S = { phase: 'intro', t: 0, roll: 0, pinsTotal: 0, strikes: 0, lastPins: 0, ballX: CENTER, ballY: 600, msg: null, msgT: 0, reported: false };
+  const S = { phase: 'intro', t: 0, roll: 0, pinsTotal: 0, strikes: 0, lastPins: 0, ballX: 480 + Math.random() * 320, ballY: 600, msg: null, msgT: 0, reported: false };
   let hits = [];
 
   const say = (msg, color = '#fff') => { S.msg = msg; S.msgColor = color; S.msgT = 0; };
@@ -115,9 +115,9 @@ function create(env) {
       S.ballY -= 620 * SPD * dt;
       if (S.ballY <= 320) {
         // pins fall: how close to the middle of the lane?
-        const acc = 1 - Math.abs(S.ballX - CENTER) / 200;
+        const acc = Math.max(0, 1 - Math.pow(Math.abs(S.ballX - CENTER) / 160, 2));
         const standing = pins.filter(p => !p.fallen);
-        let n = clamp(Math.round(acc * 10 * rand(0.8, 1.1)) + PWR, 0, 10);
+        let n = clamp(Math.round(acc * 10 * rand(0.75, 1.05)) + PWR, 0, 10);
         n = Math.min(n, standing.length);
         for (let i = 0; i < n; i++) {
           const p = standing.splice(Math.floor(Math.random() * standing.length), 1)[0];
@@ -136,7 +136,7 @@ function create(env) {
         if (S.roll >= D.rolls) endGame();
         else {
           pins.forEach(p => { p.fallen = false; p.rot = 0; });
-          S.ballX = CENTER; S.ballY = 600;
+          S.ballX = 480 + Math.random() * 320; S.ballY = 600;
           S.phase = 'aim'; S.t = 0;
         }
       }
