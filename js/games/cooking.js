@@ -2,7 +2,7 @@
 // at the Shopping Mall, then cook it before it burns!
 import { rrect } from '../art.js';
 import { drawBanner } from '../fx.js';
-import { moneyOf, payPlan } from '../economy.js';
+import { moneyOf, payPlan, playerLevel, isOwnerName } from '../economy.js';
 
 const DIFF = {
   rookie: { time: 60 },
@@ -17,26 +17,26 @@ const TAX_RATE = 0.08;
 // Every food: what you need, and the steps to cook it.
 // Ingredient prices are in cents; the Mall adds 8% tax (Trevor's cut).
 const FOODS = [
-  { id: 'pizza', name: 'Pizza', icon: '🍕', ingredients: [{ n: 'Dough', i: '🍞', c: 120 }, { n: 'Tomato sauce', i: '🍅', c: 80 }, { n: 'Cheese', i: '🧀', c: 150 }, { n: 'Pepperoni', i: '🍖', c: 180 }], steps: ['Roll the dough', 'Spread the tomato sauce', 'Add the cheese', 'Add the pepperoni', 'Bake it in the oven!'] },
-  { id: 'burger', name: 'Burger', icon: '🍔', ingredients: [{ n: 'Bun', i: '🍞', c: 90 }, { n: 'Beef patty', i: '🥩', c: 200 }, { n: 'Lettuce', i: '🥬', c: 60 }, { n: 'Cheese', i: '🧀', c: 120 }, { n: 'Tomato', i: '🍅', c: 70 }], steps: ['Toast the bun', 'Fry the beef patty', 'Add the lettuce', 'Add the cheese and tomato', 'Put it all together!'] },
-  { id: 'noodles', name: 'Noodles', icon: '🍜', ingredients: [{ n: 'Noodles', i: '🍝', c: 110 }, { n: 'Broth', i: '🍲', c: 130 }, { n: 'Egg', i: '🥚', c: 80 }, { n: 'Spring onion', i: '🧅', c: 50 }], steps: ['Boil the noodles', 'Heat the broth', 'Add the egg', 'Sprinkle the spring onion', 'Serve it hot!'] },
-  { id: 'pancakes', name: 'Pancakes', icon: '🥞', ingredients: [{ n: 'Flour', i: '🌾', c: 90 }, { n: 'Egg', i: '🥚', c: 80 }, { n: 'Milk', i: '🥛', c: 70 }, { n: 'Syrup', i: '🍯', c: 110 }], steps: ['Mix the flour and egg', 'Pour in the milk', 'Fry the pancakes', 'Pour on the syrup', 'Stack them high!'] },
-  { id: 'cake', name: 'Cake', icon: '🎂', ingredients: [{ n: 'Flour', i: '🌾', c: 100 }, { n: 'Egg', i: '🥚', c: 80 }, { n: 'Sugar', i: '🍬', c: 90 }, { n: 'Butter', i: '🧈', c: 140 }, { n: 'Frosting', i: '🍦', c: 150 }], steps: ['Mix the flour, egg and sugar', 'Stir in the butter', 'Bake the cake', 'Spread the frosting', 'Put on the candles!'] },
-  { id: 'salad', name: 'Salad', icon: '🥗', ingredients: [{ n: 'Lettuce', i: '🥬', c: 70 }, { n: 'Tomato', i: '🍅', c: 70 }, { n: 'Cucumber', i: '🥒', c: 60 }, { n: 'Dressing', i: '🫙', c: 90 }], steps: ['Wash the lettuce', 'Chop the tomato', 'Slice the cucumber', 'Pour on the dressing', 'Toss it all together!'] },
-  { id: 'sushi', name: 'Sushi', icon: '🍣', ingredients: [{ n: 'Rice', i: '🍚', c: 100 }, { n: 'Fish', i: '🐟', c: 220 }, { n: 'Seaweed', i: '🌿', c: 90 }], steps: ['Cook the rice', 'Slice the fish', 'Roll it in seaweed', 'Cut into pieces', 'Serve with soy sauce!'] },
-  { id: 'tacos', name: 'Tacos', icon: '🌮', ingredients: [{ n: 'Tortilla', i: '🫓', c: 90 }, { n: 'Beef', i: '🥩', c: 190 }, { n: 'Cheese', i: '🧀', c: 120 }, { n: 'Lettuce', i: '🥬', c: 60 }, { n: 'Salsa', i: '🌶️', c: 80 }], steps: ['Warm the tortilla', 'Fry the beef', 'Add the cheese', 'Add the lettuce and salsa', 'Fold it up!'] },
-  { id: 'spaghetti', name: 'Spaghetti', icon: '🍝', ingredients: [{ n: 'Pasta', i: '🍝', c: 110 }, { n: 'Tomato sauce', i: '🍅', c: 90 }, { n: 'Meatballs', i: '🧆', c: 180 }, { n: 'Cheese', i: '🧀', c: 120 }], steps: ['Boil the pasta', 'Heat the tomato sauce', 'Add the meatballs', 'Sprinkle the cheese', 'Twirl it on your fork!'] },
-  { id: 'icecream', name: 'Ice Cream', icon: '🍦', ingredients: [{ n: 'Milk', i: '🥛', c: 80 }, { n: 'Sugar', i: '🍬', c: 80 }, { n: 'Vanilla', i: '🌸', c: 120 }, { n: 'Sprinkles', i: '✨', c: 90 }], steps: ['Mix the milk and sugar', 'Add the vanilla', 'Freeze it till it is cold', 'Add the sprinkles', 'Scoop it into a cone!'] },
-  { id: 'sandwich', name: 'Sandwich', icon: '🥪', ingredients: [{ n: 'Bread', i: '🍞', c: 80 }, { n: 'Ham', i: '🍖', c: 150 }, { n: 'Cheese', i: '🧀', c: 120 }, { n: 'Lettuce', i: '🥬', c: 60 }], steps: ['Take two slices of bread', 'Add the ham', 'Add the cheese', 'Add the lettuce', 'Cut it in half!'] },
-  { id: 'cookies', name: 'Cookies', icon: '🍪', ingredients: [{ n: 'Flour', i: '🌾', c: 90 }, { n: 'Butter', i: '🧈', c: 130 }, { n: 'Sugar', i: '🍬', c: 80 }, { n: 'Chocolate chips', i: '🍫', c: 140 }], steps: ['Mix the flour and sugar', 'Stir in the butter', 'Add the chocolate chips', 'Bake them in the oven', 'Let them cool — yummy!'] },
-  { id: 'friedrice', name: 'Fried Rice', icon: '🍚', ingredients: [{ n: 'Rice', i: '🍚', c: 100 }, { n: 'Egg', i: '🥚', c: 80 }, { n: 'Peas', i: '🫛', c: 70 }, { n: 'Soy sauce', i: '🫙', c: 80 }], steps: ['Fry the egg', 'Add the rice', 'Add the peas', 'Pour on the soy sauce', 'Stir-fry it all!'] },
-  { id: 'soup', name: 'Soup', icon: '🍲', ingredients: [{ n: 'Broth', i: '🍲', c: 120 }, { n: 'Carrot', i: '🥕', c: 60 }, { n: 'Potato', i: '🥔', c: 70 }, { n: 'Noodles', i: '🍝', c: 100 }], steps: ['Heat the broth', 'Add the carrot', 'Add the potato', 'Add the noodles', 'Simmer till it is yummy!'] },
-  { id: 'hotdog', name: 'Hot Dog', icon: '🌭', ingredients: [{ n: 'Bun', i: '🍞', c: 90 }, { n: 'Sausage', i: '🌭', c: 160 }, { n: 'Ketchup', i: '🍅', c: 60 }, { n: 'Mustard', i: '🟡', c: 60 }], steps: ['Toast the bun', 'Grill the sausage', 'Add the ketchup', 'Add the mustard', 'Eat it while it is hot!'] },
-  { id: 'donut', name: 'Donut', icon: '🍩', ingredients: [{ n: 'Dough', i: '🍞', c: 110 }, { n: 'Sugar', i: '🍬', c: 80 }, { n: 'Frosting', i: '🍦', c: 130 }, { n: 'Sprinkles', i: '✨', c: 90 }], steps: ['Shape the dough into a ring', 'Fry it till it is golden', 'Dip it in frosting', 'Add the sprinkles', 'Take a big bite!'] },
-  { id: 'curry', name: 'Curry', icon: '🍛', ingredients: [{ n: 'Rice', i: '🍚', c: 100 }, { n: 'Curry sauce', i: '🍛', c: 150 }, { n: 'Chicken', i: '🍗', c: 200 }, { n: 'Potato', i: '🥔', c: 70 }], steps: ['Cook the rice', 'Fry the chicken', 'Add the potato', 'Pour on the curry sauce', 'Serve it with rice!'] },
-  { id: 'smoothie', name: 'Smoothie', icon: '🥤', ingredients: [{ n: 'Banana', i: '🍌', c: 80 }, { n: 'Milk', i: '🥛', c: 70 }, { n: 'Yogurt', i: '🍶', c: 100 }, { n: 'Honey', i: '🍯', c: 110 }], steps: ['Peel the banana', 'Pour in the milk', 'Add the yogurt and honey', 'Blend it all up', 'Pour it in a glass!'] },
-  { id: 'fries', name: 'Fries', icon: '🍟', ingredients: [{ n: 'Potato', i: '🥔', c: 80 }, { n: 'Salt', i: '🧂', c: 40 }, { n: 'Ketchup', i: '🍅', c: 60 }], steps: ['Cut the potato into sticks', 'Fry them till they are golden', 'Sprinkle on the salt', 'Add the ketchup', 'Crunchy and yummy!'] },
-  { id: 'dumplings', name: 'Dumplings', icon: '🥟', ingredients: [{ n: 'Wrapper', i: '🥟', c: 100 }, { n: 'Pork', i: '🥩', c: 180 }, { n: 'Cabbage', i: '🥬', c: 60 }, { n: 'Soy sauce', i: '🫙', c: 80 }], steps: ['Mix the pork and cabbage', 'Fill the wrappers', 'Pinch them closed', 'Steam the dumplings', 'Dip in soy sauce!'] },
+  { id: 'friedrice', name: 'Fried Rice', icon: '🍚', lv: 1, ingredients: [{ n: 'Rice', i: '🍚', c: 100 }, { n: 'Egg', i: '🥚', c: 80 }, { n: 'Peas', i: '🫛', c: 70 }, { n: 'Soy sauce', i: '🫙', c: 80 }], steps: ['Fry the egg', 'Add the rice', 'Add the peas', 'Pour on the soy sauce', 'Stir-fry it all!'] },
+  { id: 'fries', name: 'Fries', icon: '🍟', lv: 2, ingredients: [{ n: 'Potato', i: '🥔', c: 80 }, { n: 'Salt', i: '🧂', c: 40 }, { n: 'Ketchup', i: '🍅', c: 60 }], steps: ['Cut the potato into sticks', 'Fry them till they are golden', 'Sprinkle on the salt', 'Add the ketchup', 'Crunchy and yummy!'] },
+  { id: 'salad', name: 'Salad', icon: '🥗', lv: 2, ingredients: [{ n: 'Lettuce', i: '🥬', c: 70 }, { n: 'Tomato', i: '🍅', c: 70 }, { n: 'Cucumber', i: '🥒', c: 60 }, { n: 'Dressing', i: '🫙', c: 90 }], steps: ['Wash the lettuce', 'Chop the tomato', 'Slice the cucumber', 'Pour on the dressing', 'Toss it all together!'] },
+  { id: 'sandwich', name: 'Sandwich', icon: '🥪', lv: 3, ingredients: [{ n: 'Bread', i: '🍞', c: 80 }, { n: 'Ham', i: '🍖', c: 150 }, { n: 'Cheese', i: '🧀', c: 120 }, { n: 'Lettuce', i: '🥬', c: 60 }], steps: ['Take two slices of bread', 'Add the ham', 'Add the cheese', 'Add the lettuce', 'Cut it in half!'] },
+  { id: 'noodles', name: 'Noodles', icon: '🍜', lv: 3, ingredients: [{ n: 'Noodles', i: '🍝', c: 110 }, { n: 'Broth', i: '🍲', c: 130 }, { n: 'Egg', i: '🥚', c: 80 }, { n: 'Spring onion', i: '🧅', c: 50 }], steps: ['Boil the noodles', 'Heat the broth', 'Add the egg', 'Sprinkle the spring onion', 'Serve it hot!'] },
+  { id: 'pancakes', name: 'Pancakes', icon: '🥞', lv: 4, ingredients: [{ n: 'Flour', i: '🌾', c: 90 }, { n: 'Egg', i: '🥚', c: 80 }, { n: 'Milk', i: '🥛', c: 70 }, { n: 'Syrup', i: '🍯', c: 110 }], steps: ['Mix the flour and egg', 'Pour in the milk', 'Fry the pancakes', 'Pour on the syrup', 'Stack them high!'] },
+  { id: 'hotdog', name: 'Hot Dog', icon: '🌭', lv: 4, ingredients: [{ n: 'Bun', i: '🍞', c: 90 }, { n: 'Sausage', i: '🌭', c: 160 }, { n: 'Ketchup', i: '🍅', c: 60 }, { n: 'Mustard', i: '🟡', c: 60 }], steps: ['Toast the bun', 'Grill the sausage', 'Add the ketchup', 'Add the mustard', 'Eat it while it is hot!'] },
+  { id: 'smoothie', name: 'Smoothie', icon: '🥤', lv: 5, ingredients: [{ n: 'Banana', i: '🍌', c: 80 }, { n: 'Milk', i: '🥛', c: 70 }, { n: 'Yogurt', i: '🍶', c: 100 }, { n: 'Honey', i: '🍯', c: 110 }], steps: ['Peel the banana', 'Pour in the milk', 'Add the yogurt and honey', 'Blend it all up', 'Pour it in a glass!'] },
+  { id: 'soup', name: 'Soup', icon: '🍲', lv: 5, ingredients: [{ n: 'Broth', i: '🍲', c: 120 }, { n: 'Carrot', i: '🥕', c: 60 }, { n: 'Potato', i: '🥔', c: 70 }, { n: 'Noodles', i: '🍝', c: 100 }], steps: ['Heat the broth', 'Add the carrot', 'Add the potato', 'Add the noodles', 'Simmer till it is yummy!'] },
+  { id: 'cookies', name: 'Cookies', icon: '🍪', lv: 6, ingredients: [{ n: 'Flour', i: '🌾', c: 90 }, { n: 'Butter', i: '🧈', c: 130 }, { n: 'Sugar', i: '🍬', c: 80 }, { n: 'Chocolate chips', i: '🍫', c: 140 }], steps: ['Mix the flour and sugar', 'Stir in the butter', 'Add the chocolate chips', 'Bake them in the oven', 'Let them cool — yummy!'] },
+  { id: 'spaghetti', name: 'Spaghetti', icon: '🍝', lv: 6, ingredients: [{ n: 'Pasta', i: '🍝', c: 110 }, { n: 'Tomato sauce', i: '🍅', c: 90 }, { n: 'Meatballs', i: '🧆', c: 180 }, { n: 'Cheese', i: '🧀', c: 120 }], steps: ['Boil the pasta', 'Heat the tomato sauce', 'Add the meatballs', 'Sprinkle the cheese', 'Twirl it on your fork!'] },
+  { id: 'tacos', name: 'Tacos', icon: '🌮', lv: 7, ingredients: [{ n: 'Tortilla', i: '🫓', c: 90 }, { n: 'Beef', i: '🥩', c: 190 }, { n: 'Cheese', i: '🧀', c: 120 }, { n: 'Lettuce', i: '🥬', c: 60 }, { n: 'Salsa', i: '🌶️', c: 80 }], steps: ['Warm the tortilla', 'Fry the beef', 'Add the cheese', 'Add the lettuce and salsa', 'Fold it up!'] },
+  { id: 'dumplings', name: 'Dumplings', icon: '🥟', lv: 7, ingredients: [{ n: 'Wrapper', i: '🥟', c: 100 }, { n: 'Pork', i: '🥩', c: 180 }, { n: 'Cabbage', i: '🥬', c: 60 }, { n: 'Soy sauce', i: '🫙', c: 80 }], steps: ['Mix the pork and cabbage', 'Fill the wrappers', 'Pinch them closed', 'Steam the dumplings', 'Dip in soy sauce!'] },
+  { id: 'sushi', name: 'Sushi', icon: '🍣', lv: 8, ingredients: [{ n: 'Rice', i: '🍚', c: 100 }, { n: 'Fish', i: '🐟', c: 220 }, { n: 'Seaweed', i: '🌿', c: 90 }], steps: ['Cook the rice', 'Slice the fish', 'Roll it in seaweed', 'Cut into pieces', 'Serve with soy sauce!'] },
+  { id: 'burger', name: 'Burger', icon: '🍔', lv: 8, ingredients: [{ n: 'Bun', i: '🍞', c: 90 }, { n: 'Beef patty', i: '🥩', c: 200 }, { n: 'Lettuce', i: '🥬', c: 60 }, { n: 'Cheese', i: '🧀', c: 120 }, { n: 'Tomato', i: '🍅', c: 70 }], steps: ['Toast the bun', 'Fry the beef patty', 'Add the lettuce', 'Add the cheese and tomato', 'Put it all together!'] },
+  { id: 'icecream', name: 'Ice Cream', icon: '🍦', lv: 9, ingredients: [{ n: 'Milk', i: '🥛', c: 80 }, { n: 'Sugar', i: '🍬', c: 80 }, { n: 'Vanilla', i: '🌸', c: 120 }, { n: 'Sprinkles', i: '✨', c: 90 }], steps: ['Mix the milk and sugar', 'Add the vanilla', 'Freeze it till it is cold', 'Add the sprinkles', 'Scoop it into a cone!'] },
+  { id: 'donut', name: 'Donut', icon: '🍩', lv: 9, ingredients: [{ n: 'Dough', i: '🍞', c: 110 }, { n: 'Sugar', i: '🍬', c: 80 }, { n: 'Frosting', i: '🍦', c: 130 }, { n: 'Sprinkles', i: '✨', c: 90 }], steps: ['Shape the dough into a ring', 'Fry it till it is golden', 'Dip it in frosting', 'Add the sprinkles', 'Take a big bite!'] },
+  { id: 'curry', name: 'Curry', icon: '🍛', lv: 10, ingredients: [{ n: 'Rice', i: '🍚', c: 100 }, { n: 'Curry sauce', i: '🍛', c: 150 }, { n: 'Chicken', i: '🍗', c: 200 }, { n: 'Potato', i: '🥔', c: 70 }], steps: ['Cook the rice', 'Fry the chicken', 'Add the potato', 'Pour on the curry sauce', 'Serve it with rice!'] },
+  { id: 'pizza', name: 'Pizza', icon: '🍕', lv: 10, ingredients: [{ n: 'Dough', i: '🍞', c: 120 }, { n: 'Tomato sauce', i: '🍅', c: 80 }, { n: 'Cheese', i: '🧀', c: 150 }, { n: 'Pepperoni', i: '🍖', c: 180 }], steps: ['Roll the dough', 'Spread the tomato sauce', 'Add the cheese', 'Add the pepperoni', 'Bake it in the oven!'] },
+  { id: 'cake', name: 'Cake', icon: '🎂', lv: 11, ingredients: [{ n: 'Flour', i: '🌾', c: 100 }, { n: 'Egg', i: '🥚', c: 80 }, { n: 'Sugar', i: '🍬', c: 90 }, { n: 'Butter', i: '🧈', c: 140 }, { n: 'Frosting', i: '🍦', c: 150 }], steps: ['Mix the flour, egg and sugar', 'Stir in the butter', 'Bake the cake', 'Spread the frosting', 'Put on the candles!'] },
 ];
 const fmtMoney = c => '$' + (c / 100).toFixed(2);
 
@@ -49,6 +49,11 @@ function create(env) {
   const TIME = D.time * (options.power === 'speed' ? 1.5 : options.power === 'power' ? 1.2 : 1);
   const WRONG_COST = options.power === 'power' ? 0 : 5;
   const dishesTotal = +(options.dishes || 2);
+  // Trevor can cook ANY food. Everyone else starts with only rice
+  // (Fried Rice, lv 1) and unlocks more foods as they level up.
+  const isOwner = isOwnerName(profile?.name);
+  const myLevel = (() => { try { return playerLevel(profile || {}).level || 1; } catch (e) { return 1; } })();
+  const canCook = f => isOwner || (f.lv || 1) <= myLevel;
   const S = { phase: 'pick', t: 0, q: '', qPrev: null, list: FOODS.slice(0, 8), keysDown: null, food: null, dish: 0, done: 0, burned: 0, stepsDone: 0, step: 0, timeLeft: TIME, msg: null, msgT: 0, msgColor: '#fff', bought: false, buying: false, labelKey: '', reported: false };
 
   function runSearch() {
@@ -64,6 +69,7 @@ function create(env) {
     audio.play('tick');
   }
   function pickFood(f) {
+    if (!canCook(f)) { S.msg = `🔒 Reach level ${f.lv} to cook ${f.name}!`; S.msgT = 0; S.msgColor = '#fca5a5'; audio.play('fault'); return; }
     S.food = f; S.phase = 'recipe'; S.t = 0; S.bought = false; S.buying = false;
     audio.play('select');
   }
@@ -205,7 +211,7 @@ function create(env) {
     ctx.fillStyle = '#fff'; ctx.font = "44px 'Lilita One'";
     ctx.fillText('COOKING!', 640, 62);
     ctx.font = '800 16px Nunito'; ctx.fillStyle = '#fde68a';
-    ctx.fillText(`Dish ${Math.min(S.dish + 1, dishesTotal)} of ${dishesTotal} · Cooked ${S.done} · Burned ${S.burned}`, 640, 100);
+    ctx.fillText(`Dish ${Math.min(S.dish + 1, dishesTotal)} of ${dishesTotal} · Cooked ${S.done} · Burned ${S.burned} · You are level ${myLevel}${isOwner ? ' · Trevor can cook anything!' : ''}`, 640, 100);
 
     if (S.phase === 'pick') {
       drawPanel(ctx, 140, 120, 1000, 580, '🔍 Search a food', '#f59e0b');
@@ -231,11 +237,14 @@ function create(env) {
       // matching foods
       S.list.forEach((f, k) => {
         const col = k % 4, row = Math.floor(k / 4), x = 170 + col * 238, y = 470 + row * 96;
-        ctx.fillStyle = '#1e293b'; rrect(ctx, x, y, 222, 84, 14); ctx.fill();
-        ctx.font = '44px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(f.icon, x + 111, y + 34);
-        ctx.fillStyle = '#fff'; ctx.font = "20px 'Lilita One'"; ctx.fillText(f.name, x + 111, y + 68);
+        const locked = !canCook(f);
+        ctx.fillStyle = locked ? '#0f172a' : '#1e293b'; rrect(ctx, x, y, 222, 84, 14); ctx.fill();
+        if (locked) { ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; rrect(ctx, x, y, 222, 84, 14); ctx.stroke(); }
+        ctx.font = '44px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(locked ? '🔒' : f.icon, x + 111, y + 34);
+        ctx.fillStyle = locked ? '#64748b' : '#fff'; ctx.font = "20px 'Lilita One'"; ctx.fillText(locked ? `Lv ${f.lv} · ${f.name}` : f.name, x + 111, y + 68);
         hits.push({ x, y, w: 222, h: 84, kind: 'food', food: f });
       });
+      if (S.msg && S.msgT < 3 && S.phase === 'pick') { ctx.fillStyle = S.msgColor; ctx.font = '800 18px Nunito'; ctx.textAlign = 'center'; ctx.fillText(S.msg, 640, 672); }
       if (!S.q) { ctx.fillStyle = '#94a3b8'; ctx.font = '800 15px Nunito'; ctx.textAlign = 'center'; ctx.fillText('Tap a food to see its recipe!', 640, 672); }
     } else if (S.phase === 'recipe' && S.food) {
       const f = S.food, cost = foodCost(f);
@@ -299,8 +308,8 @@ function create(env) {
   }
 
   if (env.debug) env.debug({ S });
-  // Test hook: lets a test read the game state (phase, picked food, timer).
-  if (typeof window !== 'undefined') window.__cooking = { S, FOODS };
+  // Test hook: lets a test read the game state (phase, picked food, timer, level gate).
+  if (typeof window !== 'undefined') window.__cooking = { S, FOODS, canCook, myLevel, isOwner };
   audio.setCrowd(0.15);
   return { update, draw };
 }
@@ -326,14 +335,14 @@ export default {
   id: 'cooking',
   title: 'Cooking',
   tagline: 'Search a food, get the recipe, cook it before it burns!',
-  desc: 'Search any food and get its recipe. Buy the ingredients at the Shopping Mall first, then tap the steps in order — but hurry, or oh no, your food is burned!',
+  desc: 'Search any food and get its recipe. Trevor can cook anything! Everyone else starts with only rice and unlocks more foods as they level up. Buy the ingredients at the Shopping Mall first, then tap the steps in order — but hurry, or oh no, your food is burned!',
   music: 'mall',
   labels: { a: 'PICK', b: 'COOK' },
   options: [
     { key: 'dishes', label: 'Dishes', default: 1, choices: [{ v: '1', label: '1 dish', sub: 'quick' }, { v: '2', label: '2 dishes', sub: 'standard' }, { v: '3', label: '3 dishes', sub: 'long' }] },
   ],
   howto: `<ul>
-    <li>Search any food: tap the letters (or type) and tap a food to see its recipe.</li>
+    <li>Search any food: tap the letters (or type) and tap a food to see its recipe. <b>Trevor can cook anything!</b> Everyone else starts with only <b>rice</b> and unlocks more foods as they level up — reach a higher level to cook more!</li>
     <li>Buy the ingredients at the <b>Shopping Mall</b> first — tap the orange Buy button. It costs money, and 8% goes to Trevor.</li>
     <li>Then tap <b>Start cooking!</b> and tap the recipe steps <b>in order</b> before the timer runs out.</li>
     <li>Tapping the wrong step makes it burn faster. If the timer runs out — <b>🔥 oh no, your food is burned!</b></li>

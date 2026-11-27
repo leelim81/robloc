@@ -86,6 +86,8 @@ export const MAZE_TREVOR_START_WINS = 76769;
 // else starts from 0. (Trevor's numbers, given 2026-11-26.)
 export const PRIZE2_TREVOR_START_PLAYED = 376;
 export const PRIZE2_TREVOR_START_WINS = 367;
+export const COOKING_TREVOR_START_PLAYED = 76000000000000;   // 76T
+export const COOKING_TREVOR_START_WINS = 75900000000000;     // 75.9T
 
 // Fake leaderboard players (Trevor: "put a lot of fake people, put top
 // 20 just put fake people... close to my points"). A pool of 40 names;
@@ -313,6 +315,8 @@ export function normalizeProfile(p) {
   // Prize Machine 2: Trevor starts with 376 played and 367 won.
   if (isOwnerName(p.name) && (stats.prize2.played || 0) < PRIZE2_TREVOR_START_PLAYED) stats.prize2.played = PRIZE2_TREVOR_START_PLAYED;
   if (isOwnerName(p.name) && (stats.prize2.wins || 0) < PRIZE2_TREVOR_START_WINS) stats.prize2.wins = PRIZE2_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.cooking.played || 0) < COOKING_TREVOR_START_PLAYED) stats.cooking.played = COOKING_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.cooking.wins || 0) < COOKING_TREVOR_START_WINS) stats.cooking.wins = COOKING_TREVOR_START_WINS;
   // A plain player cannot keep things bought with money they never earned.
   // Lifetime spending (money + coins at $1 each) can never pass lifetime
   // earnings; when it does, the items came from an old owner-era save, so
