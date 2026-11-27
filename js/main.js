@@ -20,10 +20,20 @@ import archery from './games/archery.js';
 import darts from './games/darts.js';
 import fishing from './games/fishing.js';
 import golf from './games/golf.js';
+import acrobat from './games/acrobat.js';
+import actor from './games/actor.js';
+import alien from './games/alien.js';
+import ambulance from './games/ambulance.js';
+import anatomy from './games/anatomy.js';
+import ant from './games/ant.js';
+import aquarium from './games/aquarium.js';
+import archaeologist from './games/archaeologist.js';
+import astrology from './games/astrology.js';
+import astronaut from './games/astronaut.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, prizemachine2, maze, cooking, bowling, basketball, archery, darts, fishing, golf, mall];
+const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, prizemachine2, maze, cooking, bowling, basketball, archery, darts, fishing, golf, acrobat, actor, alien, ambulance, anatomy, ant, aquarium, archaeologist, astrology, astronaut, mall];
 // Hunted lives on its own now (Trevor: "delete the one in Robloc, put
 // it in the new Robloc hunted"). It is NOT in the hub. Open it at
 // ?hunted=1 (or hunted.html) — a standalone Hunted with only one game.
@@ -89,7 +99,7 @@ const COMING = [['Racing', '🏎️', 'Race your car and be the fastest — comi
   ['Superhero', '🦸', 'Be a superhero and save the day — coming soon!'],
   ['Detective', '🕵️', 'Solve the mystery — coming soon!'],
   ['Doctor', '🩺', 'Be a doctor and help people — coming soon!'],
-  ['Astronaut', '👨‍🚀', 'Be an astronaut and walk on the moon — coming soon!'],
+  ,
   ['Vet', '🐾', 'Be a vet and help sick animals — coming soon!'],
   ['Teacher', '👩‍🏫', 'Be a teacher and teach a class — coming soon!'],
   ['Writer', '✍️', 'Write a story and make a book — coming soon!'],
@@ -109,17 +119,17 @@ const COMING = [['Racing', '🏎️', 'Race your car and be the fastest — comi
   ['Juice Maker', '🧃', 'Make fresh juice — coming soon!'],
   ['Popcorn', '🍿', 'Pop popcorn for movie night — coming soon!'],
   ['Movie', '🎬', 'Make a movie and be a star — coming soon!'],
-  ['Actor', '🌟', 'Act in a play and be a star — coming soon!'],
+  ,
   ['Comedian', '😂', 'Tell jokes and make people laugh — coming soon!'],
   ['Clown', '🤡', 'Be a funny clown — coming soon!'],
-  ['Acrobat', '🤸', 'Flip and tumble in the air — coming soon!'],
+  ,
   ['Juggler', '🤹', 'Juggle balls and clubs — coming soon!'],
   ['Strongman', '💪', 'Lift heavy weights — coming soon!'],
   ['Firefighter', '🚒', 'Be a firefighter and save the day — coming soon!'],
   ['Lifeguard', '🛟', 'Be a lifeguard and keep swimmers safe — coming soon!'],
   ['Park Ranger', '🌲', 'Look after the forest and animals — coming soon!'],
   ['Explorer', '🧭', 'Explore new lands — coming soon!'],
-  ['Archaeologist', '🏺', 'Dig up old treasures — coming soon!'],
+  ,
   ['Geologist', '🪨', 'Study rocks and find gems — coming soon!'],
   ['Astronomer', '🔭', 'Look at the stars and planets — coming soon!'],
   ['Biologist', '🦠', 'Study living things — coming soon!'],
@@ -178,11 +188,11 @@ const COMING = [['Racing', '🏎️', 'Race your car and be the fastest — comi
   ['Hopscotch', '🔢', 'Play hopscotch — coming soon!'],
   ['Hula Hoop', '⭕', 'Spin a hula hoop — coming soon!'],
   ['Yo-Yo', '🪀', 'Play with a yo-yo — coming soon!'],
-  ['Aquarium', '🐠', 'Look after fish in the aquarium — coming soon!'],
+  ,
   ['Butterfly', '🦋', 'Catch butterflies in the garden — coming soon!'],
   ['Ladybug', '🐞', 'Find ladybugs on the leaves — coming soon!'],
   ['Bee', '🐝', 'Be a bee and make honey — coming soon!'],
-  ['Ant', '🐜', 'Be an ant and carry food home — coming soon!'],
+  ,
   ['Spider', '🕷️', 'Be a spider and spin a web — coming soon!'],
   ['Snake', '🐍', 'Be a snake and slither — coming soon!'],
   ['Frog', '🐸', 'Be a frog and jump on lily pads — coming soon!'],
@@ -223,7 +233,7 @@ const COMING = [['Racing', '🏎️', 'Race your car and be the fastest — comi
   ['Werewolf', '🐺', 'Be a werewolf under the moon — coming soon!'],
   ['Skeleton', '💀', 'Be a skeleton and rattle — coming soon!'],
   ['Frankenstein', '🧟‍♂️', 'Be Frankenstein\'s monster — coming soon!'],
-  ['Alien', '👽', 'Be an alien from outer space — coming soon!'],
+  ,
   ['UFO', '🛸', 'Fly a UFO — coming soon!'],
   ['Moon', '🌙', 'Walk on the moon — coming soon!'],
   ['Sun', '☀️', 'Be the sun and shine — coming soon!'],
@@ -319,7 +329,7 @@ const COMING = [['Racing', '🏎️', 'Race your car and be the fastest — comi
   ['Frost', '🥶', 'Feel the frost — coming soon!'],
   ['Sled', '🛷', 'Ride a sled — coming soon!'],
   ['Snowmobile', '🏍️', 'Ride a snowmobile — coming soon!'],
-  ['Ambulance', '🚑', 'Drive an ambulance — coming soon!'],
+  ,
   ['Police Car', '🚔', 'Drive a police car — coming soon!'],
   ['Garbage Truck', '🚛', 'Drive a garbage truck — coming soon!'],
   ['Food Truck', '🚚', 'Run a food truck — coming soon!'],
@@ -350,7 +360,7 @@ const COMING = [['Racing', '🏎️', 'Race your car and be the fastest — comi
   ['Jazz', '🎷', 'Play jazz — coming soon!'],
   ['Rock', '🤘', 'Rock out — coming soon!'],
   ['Palm Reading', '🤲', 'Read palms — coming soon!'],
-  ['Astrology', '♈', 'Read the stars — coming soon!'],
+  ,
   ['Horoscope', '♉', 'Read horoscopes — coming soon!'],
   ['Zodiac', '♊', 'Learn the zodiac — coming soon!'],
   ['Feng Shui', '☯️', 'Arrange feng shui — coming soon!'],
@@ -381,7 +391,7 @@ const COMING = [['Racing', '🏎️', 'Race your car and be the fastest — comi
   ['CPR', '❤️', 'Learn CPR — coming soon!'],
   ['Blood Donation', '🩸', 'Donate blood — coming soon!'],
   ['Organ Donation', '🫀', 'Learn about organs — coming soon!'],
-  ['Anatomy', '🦴', 'Learn anatomy — coming soon!'],
+  ,
   ['Brain', '🧠', 'Learn about the brain — coming soon!'],
   ['Lungs', '🫁', 'Learn about lungs — coming soon!'],
   ['Eyes', '👀', 'Learn about eyes — coming soon!'],

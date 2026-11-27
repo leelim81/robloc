@@ -69,6 +69,36 @@ export const BADGES = [
   { id: 'gf_first',       name: 'First Hole',        desc: 'Sink a putt in Golf.',                         icon: '⛳', color: '#65a30d' },
   { id: 'gf_win',         name: 'Golf Champ',        desc: 'Win a Golf match.',                            icon: '🏆', color: '#16a34a' },
   { id: 'gf_ace',         name: 'Hole in One!',      desc: 'Sink a putt on your first try in Golf.',       icon: '⭐', color: '#f59e0b' },
+  { id: 'ac_first',       name: 'First Flip',        desc: 'Land a flip in Acrobat.',                     icon: '🤸', color: '#7c3aed' },
+  { id: 'ac_win',         name: 'Acrobat Star',      desc: 'Win an Acrobat match.',                      icon: '🏆', color: '#16a34a' },
+  { id: 'ac_centre',      name: 'Perfect Landing',   desc: 'Land a perfect 100 flip in Acrobat.',        icon: '🎯', color: '#f59e0b' },
+  { id: 'at_first',       name: 'First Role',        desc: 'Get an emotion right in Actor.',             icon: '🎭', color: '#db2777' },
+  { id: 'at_win',         name: 'Superstar',         desc: 'Win an Actor match.',                         icon: '⭐', color: '#f59e0b' },
+  { id: 'at_streak',      name: 'Perfect Performance', desc: 'Get all 8 emotions right in Actor.',        icon: '🎬', color: '#be185d' },
+  { id: 'al_first',       name: 'First Abduction',   desc: 'Abduct a cow in Alien.',                      icon: '👽', color: '#16a34a' },
+  { id: 'al_win',         name: 'Alien Boss',        desc: 'Win an Alien match.',                         icon: '🛸', color: '#0d9488' },
+  { id: 'al_cow',         name: 'Cow Napper',        desc: 'Abduct 3 cows in one Alien match.',           icon: '🐄', color: '#65a30d' },
+  { id: 'am_first',       name: 'First Rescue',      desc: 'Rescue a patient in Ambulance.',              icon: '🚑', color: '#dc2626' },
+  { id: 'am_win',         name: 'Life Saver',        desc: 'Win an Ambulance match.',                     icon: '🏆', color: '#16a34a' },
+  { id: 'am_perfect',     name: 'Perfect Rescue',    desc: 'Rescue all 10 patients in Ambulance.',        icon: '⭐', color: '#f59e0b' },
+  { id: 'an_first',       name: 'First Body Part',   desc: 'Find a body part in Anatomy.',                icon: '🫀', color: '#e11d48' },
+  { id: 'an_win',         name: 'Doctor',            desc: 'Win an Anatomy match.',                       icon: '🩺', color: '#0ea5e9' },
+  { id: 'an_streak',      name: 'Body Expert',       desc: 'Get all 8 body parts right in Anatomy.',      icon: '🧠', color: '#7c3aed' },
+  { id: 'nt_first',       name: 'First Crumb',       desc: 'Collect a crumb in Ant.',                     icon: '🐜', color: '#92400e' },
+  { id: 'nt_win',         name: 'Ant Hero',          desc: 'Win an Ant match.',                           icon: '🏆', color: '#16a34a' },
+  { id: 'nt_full',        name: 'Crumb King',        desc: 'Collect all 10 crumbs in Ant.',               icon: '🍪', color: '#b45309' },
+  { id: 'aq_first',       name: 'First Fish Fed',    desc: 'Feed a fish in Aquarium.',                    icon: '🐠', color: '#0284c7' },
+  { id: 'aq_win',         name: 'Fish Friend',       desc: 'Win an Aquarium match.',                      icon: '🏆', color: '#16a34a' },
+  { id: 'aq_full',        name: 'Full Tank',         desc: 'Feed all 10 fish in Aquarium.',               icon: '⭐', color: '#f59e0b' },
+  { id: 'ah_first',       name: 'First Artifact',    desc: 'Dig up an artifact in Archaeologist.',        icon: '🏺', color: '#b45309' },
+  { id: 'ah_win',         name: 'Treasure Hunter',   desc: 'Win an Archaeologist match.',                 icon: '🏆', color: '#16a34a' },
+  { id: 'ah_rich',        name: 'Rich Dig',          desc: 'Dig up 5 artifacts in one match.',            icon: '💎', color: '#0d9488' },
+  { id: 'as_first',       name: 'First Star',        desc: 'Tap a star in Astrology.',                    icon: '🔮', color: '#7c3aed' },
+  { id: 'as_win',         name: 'Star Gazer',        desc: 'Win an Astrology match.',                     icon: '⭐', color: '#f59e0b' },
+  { id: 'as_full',        name: 'Constellation Master', desc: 'Tap 20 stars in one Astrology match.',    icon: '🌟', color: '#a855f7' },
+  { id: 'au_first',       name: 'First Rock',        desc: 'Grab a moon rock in Astronaut.',              icon: '🧑‍🚀', color: '#0284c7' },
+  { id: 'au_win',         name: 'Space Hero',        desc: 'Win an Astronaut match.',                     icon: '🏆', color: '#16a34a' },
+  { id: 'au_full',        name: 'Rock Collector',    desc: 'Grab all 10 moon rocks in Astronaut.',        icon: '🪨', color: '#475569' },
   { id: 'mz_win',          name: 'Maze Runner',        desc: 'Win a Maze game.',                           icon: '🌀', color: '#7c3aed' },
   { id: 'mz_coins',        name: 'Coin Hunter',        desc: 'Collect 8 coins in one Maze game.',          icon: '🪙', color: '#d97706' },
   { id: 'mz_legend',       name: 'Maze Master',        desc: 'Beat Legend difficulty in Maze.',            icon: '🏆', color: '#dc2626' },
@@ -124,6 +154,30 @@ export const FISHING_TREVOR_START_PLAYED = 61205;
 export const FISHING_TREVOR_START_WINS = 55438;
 export const GOLF_TREVOR_START_PLAYED = 33762;
 export const GOLF_TREVOR_START_WINS = 30415;
+// The 10 new A games: Trevor starts with a lot of played and wins in
+// every game (his rule, 2026-11-27: "All the games I got a lot of play
+// and a lot of wins... put a number so like it can be real"). Real,
+// varied numbers in the tens of thousands, about 90% wins.
+export const ACROBAT_TREVOR_START_PLAYED = 28415;
+export const ACROBAT_TREVOR_START_WINS = 25903;
+export const ACTOR_TREVOR_START_PLAYED = 34728;
+export const ACTOR_TREVOR_START_WINS = 31204;
+export const ALIEN_TREVOR_START_PLAYED = 41936;
+export const ALIEN_TREVOR_START_WINS = 38157;
+export const AMBULANCE_TREVOR_START_PLAYED = 22847;
+export const AMBULANCE_TREVOR_START_WINS = 20613;
+export const ANATOMY_TREVOR_START_PLAYED = 47519;
+export const ANATOMY_TREVOR_START_WINS = 43286;
+export const ANT_TREVOR_START_PLAYED = 58203;
+export const ANT_TREVOR_START_WINS = 52874;
+export const AQUARIUM_TREVOR_START_PLAYED = 31685;
+export const AQUARIUM_TREVOR_START_WINS = 28942;
+export const ARCHAEOLOGIST_TREVOR_START_PLAYED = 26431;
+export const ARCHAEOLOGIST_TREVOR_START_WINS = 23918;
+export const ASTROLOGY_TREVOR_START_PLAYED = 39874;
+export const ASTROLOGY_TREVOR_START_WINS = 36105;
+export const ASTRONAUT_TREVOR_START_PLAYED = 44562;
+export const ASTRONAUT_TREVOR_START_WINS = 40731;
 
 // Fake leaderboard players (Trevor: "put a lot of fake people, put top
 // 20 just put fake people... close to my points"). A pool of 40 names;
@@ -241,6 +295,16 @@ export function emptyStats() {
     darts: { played: 0, wins: 0, points: 0, bestPoints: 0, bullseyes: 0, legendWins: 0 },
     fishing: { played: 0, wins: 0, fish: 0, points: 0, biggest: 0, legendWins: 0 },
     golf: { played: 0, wins: 0, holes: 0, bestHoles: 0, holeInOne: 0, legendWins: 0 },
+    acrobat: { played: 0, wins: 0, flips: 0, points: 0, bestPoints: 0, legendWins: 0 },
+    actor: { played: 0, wins: 0, correct: 0, bestStreak: 0, legendWins: 0 },
+    alien: { played: 0, wins: 0, points: 0, abductions: 0, bestPoints: 0, legendWins: 0 },
+    ambulance: { played: 0, wins: 0, rescued: 0, points: 0, legendWins: 0 },
+    anatomy: { played: 0, wins: 0, correct: 0, bestStreak: 0, points: 0, legendWins: 0 },
+    ant: { played: 0, wins: 0, crumbs: 0, points: 0, legendWins: 0 },
+    aquarium: { played: 0, wins: 0, fed: 0, points: 0, legendWins: 0 },
+    archaeologist: { played: 0, wins: 0, artifacts: 0, points: 0, legendWins: 0 },
+    astrology: { played: 0, wins: 0, stars: 0, points: 0, legendWins: 0 },
+    astronaut: { played: 0, wins: 0, rocks: 0, points: 0, legendWins: 0 },
     matches: 0,
   };
 }
@@ -251,7 +315,7 @@ export function emptyStats() {
 // here: it came from an old save when the rules were different, so it is
 // dropped for plain players. The owner keeps every badge by design.
 function badgePossible(id, p, st) {
-  const so = st.soccer, pb = st.pickleball, bb = st.baseball, pr = st.price, pz = st.prize, pz2 = st.prize2 || {}, mz = st.maze || {}, ht = st.hunted || {}, ck = st.cooking || {}, bw = st.bowling || {}, bk = st.basketball || {}, ar = st.archery || {}, dt = st.darts || {}, fs = st.fishing || {}, gf = st.golf || {};
+  const so = st.soccer, pb = st.pickleball, bb = st.baseball, pr = st.price, pz = st.prize, pz2 = st.prize2 || {}, mz = st.maze || {}, ht = st.hunted || {}, ck = st.cooking || {}, bw = st.bowling || {}, bk = st.basketball || {}, ar = st.archery || {}, dt = st.darts || {}, fs = st.fishing || {}, gf = st.golf || {}, ac = st.acrobat || {}, at = st.actor || {}, al = st.alien || {}, am = st.ambulance || {}, an = st.anatomy || {}, nt = st.ant || {}, aq = st.aquarium || {}, ah = st.archaeologist || {}, as = st.astrology || {}, au = st.astronaut || {};
   switch (id) {
     case 'first_match': return st.matches > 0;
     case 'soccer_goal': return so.goals > 0;
@@ -305,6 +369,36 @@ function badgePossible(id, p, st) {
     case 'gf_first': return gf.holes > 0;
     case 'gf_win': return gf.wins > 0;
     case 'gf_ace': return (gf.holeInOne || 0) > 0;
+    case 'ac_first': return ac.points > 0;
+    case 'ac_win': return ac.wins > 0;
+    case 'ac_centre': return ac.bestPoints >= 100;
+    case 'at_first': return at.correct > 0;
+    case 'at_win': return at.wins > 0;
+    case 'at_streak': return at.bestStreak >= 8;
+    case 'al_first': return al.abductions > 0;
+    case 'al_win': return al.wins > 0;
+    case 'al_cow': return al.abductions >= 3;
+    case 'am_first': return am.rescued > 0;
+    case 'am_win': return am.wins > 0;
+    case 'am_perfect': return am.rescued >= 10;
+    case 'an_first': return an.correct > 0;
+    case 'an_win': return an.wins > 0;
+    case 'an_streak': return an.bestStreak >= 8;
+    case 'nt_first': return nt.crumbs > 0;
+    case 'nt_win': return nt.wins > 0;
+    case 'nt_full': return nt.crumbs >= 10;
+    case 'aq_first': return aq.fed > 0;
+    case 'aq_win': return aq.wins > 0;
+    case 'aq_full': return aq.fed >= 10;
+    case 'ah_first': return ah.artifacts > 0;
+    case 'ah_win': return ah.wins > 0;
+    case 'ah_rich': return ah.artifacts >= 5;
+    case 'as_first': return as.stars > 0;
+    case 'as_win': return as.wins > 0;
+    case 'as_full': return as.stars >= 20;
+    case 'au_first': return au.rocks > 0;
+    case 'au_win': return au.wins > 0;
+    case 'au_full': return au.rocks >= 10;
     case 'all_rounder': return so.wins > 0 && pb.wins > 0;
     case 'coins_250': return (p.totalCoinsEarned || 0) >= 250;
     case 'coins_2000': return (p.totalCoinsEarned || 0) >= 2000;
@@ -336,6 +430,16 @@ export function normalizeProfile(p) {
     darts: { ...s.darts, ...(st.darts || {}) },
     fishing: { ...s.fishing, ...(st.fishing || {}) },
     golf: { ...s.golf, ...(st.golf || {}) },
+    acrobat: { ...s.acrobat, ...(st.acrobat || {}) },
+    actor: { ...s.actor, ...(st.actor || {}) },
+    alien: { ...s.alien, ...(st.alien || {}) },
+    ambulance: { ...s.ambulance, ...(st.ambulance || {}) },
+    anatomy: { ...s.anatomy, ...(st.anatomy || {}) },
+    ant: { ...s.ant, ...(st.ant || {}) },
+    aquarium: { ...s.aquarium, ...(st.aquarium || {}) },
+    archaeologist: { ...s.archaeologist, ...(st.archaeologist || {}) },
+    astrology: { ...s.astrology, ...(st.astrology || {}) },
+    astronaut: { ...s.astronaut, ...(st.astronaut || {}) },
     matches: st.matches || 0,
   };
   // Only Trevor is the owner, and only by NAME - never by a stored role.
@@ -396,6 +500,27 @@ export function normalizeProfile(p) {
   if (isOwnerName(p.name) && (stats.fishing.wins || 0) < FISHING_TREVOR_START_WINS) stats.fishing.wins = FISHING_TREVOR_START_WINS;
   if (isOwnerName(p.name) && (stats.golf.played || 0) < GOLF_TREVOR_START_PLAYED) stats.golf.played = GOLF_TREVOR_START_PLAYED;
   if (isOwnerName(p.name) && (stats.golf.wins || 0) < GOLF_TREVOR_START_WINS) stats.golf.wins = GOLF_TREVOR_START_WINS;
+  // The 10 new A games: Trevor starts with a lot of played and wins.
+  if (isOwnerName(p.name) && (stats.acrobat.played || 0) < ACROBAT_TREVOR_START_PLAYED) stats.acrobat.played = ACROBAT_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.acrobat.wins || 0) < ACROBAT_TREVOR_START_WINS) stats.acrobat.wins = ACROBAT_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.actor.played || 0) < ACTOR_TREVOR_START_PLAYED) stats.actor.played = ACTOR_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.actor.wins || 0) < ACTOR_TREVOR_START_WINS) stats.actor.wins = ACTOR_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.alien.played || 0) < ALIEN_TREVOR_START_PLAYED) stats.alien.played = ALIEN_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.alien.wins || 0) < ALIEN_TREVOR_START_WINS) stats.alien.wins = ALIEN_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.ambulance.played || 0) < AMBULANCE_TREVOR_START_PLAYED) stats.ambulance.played = AMBULANCE_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.ambulance.wins || 0) < AMBULANCE_TREVOR_START_WINS) stats.ambulance.wins = AMBULANCE_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.anatomy.played || 0) < ANATOMY_TREVOR_START_PLAYED) stats.anatomy.played = ANATOMY_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.anatomy.wins || 0) < ANATOMY_TREVOR_START_WINS) stats.anatomy.wins = ANATOMY_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.ant.played || 0) < ANT_TREVOR_START_PLAYED) stats.ant.played = ANT_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.ant.wins || 0) < ANT_TREVOR_START_WINS) stats.ant.wins = ANT_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.aquarium.played || 0) < AQUARIUM_TREVOR_START_PLAYED) stats.aquarium.played = AQUARIUM_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.aquarium.wins || 0) < AQUARIUM_TREVOR_START_WINS) stats.aquarium.wins = AQUARIUM_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.archaeologist.played || 0) < ARCHAEOLOGIST_TREVOR_START_PLAYED) stats.archaeologist.played = ARCHAEOLOGIST_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.archaeologist.wins || 0) < ARCHAEOLOGIST_TREVOR_START_WINS) stats.archaeologist.wins = ARCHAEOLOGIST_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.astrology.played || 0) < ASTROLOGY_TREVOR_START_PLAYED) stats.astrology.played = ASTROLOGY_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.astrology.wins || 0) < ASTROLOGY_TREVOR_START_WINS) stats.astrology.wins = ASTROLOGY_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.astronaut.played || 0) < ASTRONAUT_TREVOR_START_PLAYED) stats.astronaut.played = ASTRONAUT_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.astronaut.wins || 0) < ASTRONAUT_TREVOR_START_WINS) stats.astronaut.wins = ASTRONAUT_TREVOR_START_WINS;
   // A plain player cannot keep things bought with money they never earned.
   // Lifetime spending (money + coins at $1 each) can never pass lifetime
   // earnings; when it does, the items came from an old owner-era save, so
@@ -452,7 +577,7 @@ export function totalPoints(p) { return BigInt(p.pointsBase || '0') + BigInt(p.p
 export function careerOf(p) {
   const s = p.stats || emptyStats();
   const played = BigInt(p.playedBase || '0') + BigInt(s.matches || 0);
-  const wins = BigInt(p.winsBase || '0') + BigInt((s.soccer?.wins || 0) + (s.pickleball?.wins || 0) + (s.baseball?.wins || 0) + (s.price?.wins || 0) + (s.prize?.wins || 0) + (s.prize2?.wins || 0) + (s.maze?.wins || 0) + (s.hunted?.wins || 0) + (s.cooking?.wins || 0) + (s.bowling?.wins || 0) + (s.basketball?.wins || 0) + (s.archery?.wins || 0) + (s.darts?.wins || 0) + (s.fishing?.wins || 0) + (s.golf?.wins || 0));
+  const wins = BigInt(p.winsBase || '0') + BigInt((s.soccer?.wins || 0) + (s.pickleball?.wins || 0) + (s.baseball?.wins || 0) + (s.price?.wins || 0) + (s.prize?.wins || 0) + (s.prize2?.wins || 0) + (s.maze?.wins || 0) + (s.hunted?.wins || 0) + (s.cooking?.wins || 0) + (s.bowling?.wins || 0) + (s.basketball?.wins || 0) + (s.archery?.wins || 0) + (s.darts?.wins || 0) + (s.fishing?.wins || 0) + (s.golf?.wins || 0) + (s.acrobat?.wins || 0) + (s.actor?.wins || 0) + (s.alien?.wins || 0) + (s.ambulance?.wins || 0) + (s.anatomy?.wins || 0) + (s.ant?.wins || 0) + (s.aquarium?.wins || 0) + (s.archaeologist?.wins || 0) + (s.astrology?.wins || 0) + (s.astronaut?.wins || 0));
   const chance = Number(p.winChance || 0);
   const rate = chance > 0 ? chance : played > 0n ? Number(wins * 100n / played) : 0;
   return { played, wins, rate };
@@ -547,6 +672,36 @@ export function computeRewards(match) {
   } else if (match.game === 'golf') {
     pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.holes * 20;
     coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.holes * 4;
+  } else if (match.game === 'acrobat') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.points;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + Math.floor(match.points / 10);
+  } else if (match.game === 'actor') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.correct * 15;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.correct * 3;
+  } else if (match.game === 'alien') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.points + match.abductions * 15;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + Math.floor(match.points / 10) + match.abductions * 3;
+  } else if (match.game === 'ambulance') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.rescued * 15;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.rescued * 3;
+  } else if (match.game === 'anatomy') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.correct * 15;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.correct * 3;
+  } else if (match.game === 'ant') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.crumbs * 10 + match.points;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.crumbs * 3;
+  } else if (match.game === 'aquarium') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.fed * 15;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.fed * 3;
+  } else if (match.game === 'archaeologist') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.artifacts * 20 + match.points;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.artifacts * 4;
+  } else if (match.game === 'astrology') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.stars * 10;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.stars * 2;
+  } else if (match.game === 'astronaut') {
+    pts = 50 + (match.won ? 130 : draw ? 50 : 0) + match.rocks * 15;
+    coins = 10 + (match.won ? 40 : draw ? 12 : 0) + match.rocks * 3;
   }
   pts = Math.min(MAX_POINTS_PER_MATCH, Math.round(pts * m));
   coins = Math.min(MAX_COINS_PER_MATCH, Math.round(coins * m));
@@ -651,6 +806,60 @@ export function applyMatch(profile, match) {
     if (match.holeInOne) s.holeInOne = (s.holeInOne || 0) + 1;
     if (match.won) s.wins++;
     if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'acrobat') {
+    const s = stats.acrobat;
+    s.played++; s.flips += match.flips; s.points += match.points;
+    s.bestPoints = Math.max(s.bestPoints, match.bestPoints || match.points);
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'actor') {
+    const s = stats.actor;
+    s.played++; s.correct += match.correct;
+    s.bestStreak = Math.max(s.bestStreak, match.bestStreak || 0);
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'alien') {
+    const s = stats.alien;
+    s.played++; s.points += match.points; s.abductions += match.abductions;
+    s.bestPoints = Math.max(s.bestPoints, match.points);
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'ambulance') {
+    const s = stats.ambulance;
+    s.played++; s.rescued += match.rescued; s.points += match.points;
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'anatomy') {
+    const s = stats.anatomy;
+    s.played++; s.correct += match.correct; s.points += match.points || 0;
+    s.bestStreak = Math.max(s.bestStreak, match.bestStreak || 0);
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'ant') {
+    const s = stats.ant;
+    s.played++; s.crumbs += match.crumbs; s.points += match.points;
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'aquarium') {
+    const s = stats.aquarium;
+    s.played++; s.fed += match.fed; s.points += match.points;
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'archaeologist') {
+    const s = stats.archaeologist;
+    s.played++; s.artifacts += match.artifacts; s.points += match.points;
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'astrology') {
+    const s = stats.astrology;
+    s.played++; s.stars += match.stars; s.points += match.points;
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
+  } else if (match.game === 'astronaut') {
+    const s = stats.astronaut;
+    s.played++; s.rocks += match.rocks; s.points += match.points;
+    if (match.won) s.wins++;
+    if (match.won && match.difficulty === 'legend') s.legendWins++;
   } else {
     const s = stats.pickleball;
     s.played++; s.pointsWon += match.scoreFor; s.aces += match.aces;
@@ -729,6 +938,46 @@ export function applyMatch(profile, match) {
     give('gf_first', match.holes > 0);
     give('gf_win', match.won);
     give('gf_ace', match.holeInOne === true);
+  } else if (match.game === 'acrobat') {
+    give('ac_first', match.points > 0);
+    give('ac_win', match.won);
+    give('ac_centre', (match.bestPoints || match.points) >= 100);
+  } else if (match.game === 'actor') {
+    give('at_first', match.correct > 0);
+    give('at_win', match.won);
+    give('at_streak', (match.bestStreak || 0) >= 8);
+  } else if (match.game === 'alien') {
+    give('al_first', match.abductions > 0);
+    give('al_win', match.won);
+    give('al_cow', (match.abductions || 0) >= 3);
+  } else if (match.game === 'ambulance') {
+    give('am_first', match.rescued > 0);
+    give('am_win', match.won);
+    give('am_perfect', (match.rescued || 0) >= 10);
+  } else if (match.game === 'anatomy') {
+    give('an_first', match.correct > 0);
+    give('an_win', match.won);
+    give('an_streak', (match.bestStreak || 0) >= 8);
+  } else if (match.game === 'ant') {
+    give('nt_first', match.crumbs > 0);
+    give('nt_win', match.won);
+    give('nt_full', (match.crumbs || 0) >= 10);
+  } else if (match.game === 'aquarium') {
+    give('aq_first', match.fed > 0);
+    give('aq_win', match.won);
+    give('aq_full', (match.fed || 0) >= 10);
+  } else if (match.game === 'archaeologist') {
+    give('ah_first', match.artifacts > 0);
+    give('ah_win', match.won);
+    give('ah_rich', (match.artifacts || 0) >= 5);
+  } else if (match.game === 'astrology') {
+    give('as_first', match.stars > 0);
+    give('as_win', match.won);
+    give('as_full', (match.stars || 0) >= 20);
+  } else if (match.game === 'astronaut') {
+    give('au_first', match.rocks > 0);
+    give('au_win', match.won);
+    give('au_full', (match.rocks || 0) >= 10);
   } else {
     give('pb_win', match.won);
     give('pb_ace', match.aces > 0);
