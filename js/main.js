@@ -14,15 +14,18 @@ import prizemachine2 from './games/prizemachine2.js';
 import maze from './games/maze.js';
 import hunted from './games/hunted.js';
 import cooking from './games/cooking.js';
+import bowling from './games/bowling.js';
+import basketball from './games/basketball.js';
+import archery from './games/archery.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, prizemachine2, maze, cooking, mall];
+const GAMES = [soccer, pickleball, baseball, guessprice, prizemachine, prizemachine2, maze, cooking, bowling, basketball, archery, mall];
 // Hunted lives on its own now (Trevor: "delete the one in Robloc, put
 // it in the new Robloc hunted"). It is NOT in the hub. Open it at
 // ?hunted=1 (or hunted.html) — a standalone Hunted with only one game.
 const HUNTED_MODE = new URLSearchParams(location.search).has('hunted');
-const COMING = [['Bowling', '🎳', 'Roll the ball and knock down all the pins — coming soon!'], ['Fishing', '🎣', 'Cast your line and catch the biggest fish — coming soon!'], ['Basketball', '🏀', 'Shoot hoops and score big — coming soon!'], ['Racing', '🏎️', 'Race your car and be the fastest — coming soon!'], ['Treasure Hunt', '🗺️', 'Find the hidden treasure — coming soon!'], ['Swimming', '🏊', 'Splash and race in the pool — coming soon!'],
+const COMING = [['Fishing', '🎣', 'Cast your line and catch the biggest fish — coming soon!'], ['Racing', '🏎️', 'Race your car and be the fastest — coming soon!'], ['Treasure Hunt', '🗺️', 'Find the hidden treasure — coming soon!'], ['Swimming', '🏊', 'Splash and race in the pool — coming soon!'],
   ['Dance', '💃', 'Dance to the music and hit the moves — coming soon!'],
   ['Gardening', '🌱', 'Plant seeds and grow a garden — coming soon!'],
   ['Baking', '🧁', 'Bake yummy cakes and cookies — coming soon!'],
@@ -57,7 +60,7 @@ const COMING = [['Bowling', '🎳', 'Roll the ball and knock down all the pins �
   ['Puzzle', '🧩', 'Solve a big jigsaw puzzle — coming soon!'],
   ['Memory', '🃏', 'Flip the cards and find the pairs — coming soon!'],
   ['Dominoes', '🎲', 'Line up the dominoes and knock them down — coming soon!'],
-  ['Archery', '🏹', 'Shoot the bow and hit the target — coming soon!'],
+  
   ['Fencing', '🤺', 'Fence with a sword — coming soon!'],
   ['Badminton', '🏸', 'Hit the shuttlecock over the net — coming soon!'],
   ['Cricket', '🏏', 'Bat and bowl in a cricket match — coming soon!'],
