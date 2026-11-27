@@ -106,6 +106,24 @@ export const PRIZE2_TREVOR_START_PLAYED = 376;
 export const PRIZE2_TREVOR_START_WINS = 367;
 export const COOKING_TREVOR_START_PLAYED = 76000000000000;   // 76T
 export const COOKING_TREVOR_START_WINS = 75900000000000;     // 75.9T
+// The 6 new A-I games: Trevor starts with a LOT of played and wins in
+// every game, like he does in Maze and Hunted. Trevor, 2026-11-27:
+// "Just put a lot don't put everything at nine and don't put unlimited
+// put a number so like it can be real." So these are real, varied
+// numbers in the tens of thousands (not all 9s, not unlimited), with
+// about 90% wins, like his other games.
+export const BOWLING_TREVOR_START_PLAYED = 45218;
+export const BOWLING_TREVOR_START_WINS = 41376;
+export const BASKETBALL_TREVOR_START_PLAYED = 38904;
+export const BASKETBALL_TREVOR_START_WINS = 35127;
+export const ARCHERY_TREVOR_START_PLAYED = 52631;
+export const ARCHERY_TREVOR_START_WINS = 47892;
+export const DARTS_TREVOR_START_PLAYED = 29847;
+export const DARTS_TREVOR_START_WINS = 26914;
+export const FISHING_TREVOR_START_PLAYED = 61205;
+export const FISHING_TREVOR_START_WINS = 55438;
+export const GOLF_TREVOR_START_PLAYED = 33762;
+export const GOLF_TREVOR_START_WINS = 30415;
 
 // Fake leaderboard players (Trevor: "put a lot of fake people, put top
 // 20 just put fake people... close to my points"). A pool of 40 names;
@@ -365,6 +383,19 @@ export function normalizeProfile(p) {
   if (isOwnerName(p.name) && (stats.prize2.wins || 0) < PRIZE2_TREVOR_START_WINS) stats.prize2.wins = PRIZE2_TREVOR_START_WINS;
   if (isOwnerName(p.name) && (stats.cooking.played || 0) < COOKING_TREVOR_START_PLAYED) stats.cooking.played = COOKING_TREVOR_START_PLAYED;
   if (isOwnerName(p.name) && (stats.cooking.wins || 0) < COOKING_TREVOR_START_WINS) stats.cooking.wins = COOKING_TREVOR_START_WINS;
+  // The 6 new A-I games: Trevor starts with a lot of played and wins.
+  if (isOwnerName(p.name) && (stats.bowling.played || 0) < BOWLING_TREVOR_START_PLAYED) stats.bowling.played = BOWLING_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.bowling.wins || 0) < BOWLING_TREVOR_START_WINS) stats.bowling.wins = BOWLING_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.basketball.played || 0) < BASKETBALL_TREVOR_START_PLAYED) stats.basketball.played = BASKETBALL_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.basketball.wins || 0) < BASKETBALL_TREVOR_START_WINS) stats.basketball.wins = BASKETBALL_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.archery.played || 0) < ARCHERY_TREVOR_START_PLAYED) stats.archery.played = ARCHERY_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.archery.wins || 0) < ARCHERY_TREVOR_START_WINS) stats.archery.wins = ARCHERY_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.darts.played || 0) < DARTS_TREVOR_START_PLAYED) stats.darts.played = DARTS_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.darts.wins || 0) < DARTS_TREVOR_START_WINS) stats.darts.wins = DARTS_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.fishing.played || 0) < FISHING_TREVOR_START_PLAYED) stats.fishing.played = FISHING_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.fishing.wins || 0) < FISHING_TREVOR_START_WINS) stats.fishing.wins = FISHING_TREVOR_START_WINS;
+  if (isOwnerName(p.name) && (stats.golf.played || 0) < GOLF_TREVOR_START_PLAYED) stats.golf.played = GOLF_TREVOR_START_PLAYED;
+  if (isOwnerName(p.name) && (stats.golf.wins || 0) < GOLF_TREVOR_START_WINS) stats.golf.wins = GOLF_TREVOR_START_WINS;
   // A plain player cannot keep things bought with money they never earned.
   // Lifetime spending (money + coins at $1 each) can never pass lifetime
   // earnings; when it does, the items came from an old owner-era save, so
